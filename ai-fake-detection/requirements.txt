@@ -1,0 +1,5 @@
+flask
+transformers
+torch
+pillow
+opencv-python-headless

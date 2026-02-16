@@ -1,0 +1,67 @@
+Total rows: 721
+Sample raw (row 0): 'Fire Department'
+Bad rows count (after strip): 700
+First 10 bad rows details:
+Row Someone has lit a small fire to burn paper waste near the corner. It is not spreading but causing a little smoke. Kindly look into it.:
+  Text: Fire Department...
+  Dept Raw: 'Low'
+  Prio: 0
+--------------------
+Row A few twigs are burning in an empty plot nearby. The fire is minor and not affecting anyone. It should be cleared for safety.:
+  Text: Fire Department...
+  Dept Raw: 'Low'
+  Prio: 0
+--------------------
+Row There is a small pile of leaves being burned near our lane. The smoke is light and not very disturbing. Please check when possible.:
+  Text: Fire Department...
+  Dept Raw: 'Low'
+  Prio: 0
+--------------------
+Row A small trash fire is seen near the empty ground. It is not spreading and looks manageable. Kindly look into it.:
+  Text: Fire Department...
+  Dept Raw: 'Low'
+  Prio: 0
+--------------------
+Row Some paper waste is being burned behind the shops. The fire is small and not dangerous. Please send someone to check.:
+  Text: Fire Department...
+  Dept Raw: 'Low'
+  Prio: 0
+--------------------
+Row A small controlled fire is seen in the corner of the park. It is not large but producing light smoke. Kindly inspect it.:
+  Text: Fire Department...
+  Dept Raw: 'Low'
+  Prio: 0
+--------------------
+Row Dry leaves are being burned near the roadside. The flames are small and contained. Please ensure it is safe.:
+  Text: Fire Department...
+  Dept Raw: 'Low'
+  Prio: 0
+--------------------
+Row Someone is burning small twigs near the empty plot. It is not spreading but causing mild smoke. Kindly check.:
+  Text: Fire Department...
+  Dept Raw: 'Low'
+  Prio: 0
+--------------------
+Row Light smoke is coming from a small fire near the corner. It looks under control. Kindly verify the situation.:
+  Text: Fire Department...
+  Dept Raw: 'Low'
+  Prio: 0
+--------------------
+Row A few dry branches are burning near the road. The fire is small and not spreading. Please check it when possible.:
+  Text: Fire Department...
+  Dept Raw: 'Low'
+  Prio: 0
+--------------------
+
+Department Value Counts:
+department
+Low                        252
+Medium                     222
+High                       137
+Emergency                   89
+Water Department             8
+Public Works Department      7
+Fire Department              4
+Cleaning Department          1
+Electricity Department       1
+Name: count, dtype: int64
