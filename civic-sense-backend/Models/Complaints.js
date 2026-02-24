@@ -81,9 +81,14 @@ const complaintSchema = new mongoose.Schema({
         item: { type: String, required: true },
         cost: { type: Number, required: true }
     }],
-    feedback: {
-        message: { type: String, default: "" },
-        date: { type: Date, default: null }
+    feedbackHistory: [{
+        message: { type: String, required: true },
+        action: { type: String, required: true, enum: ['Reopen', 'Accept', 'General'] },
+        date: { type: Date, default: Date.now }
+    }],
+    accepted: {
+        type: Boolean,
+        default: false
     }
 
 }, { timestamps: true })

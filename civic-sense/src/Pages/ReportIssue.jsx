@@ -288,7 +288,7 @@ const ReportIssue = () => {
                                             </div>
                                             <div className="flex-grow-1">
                                                 <h5 className="fw-bold mb-1" style={{ background: 'linear-gradient(to right, #3b82f6, #8b5cf6, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                                                    {isCaptioning ? "Analyzing Image..." : isVideoAnalyzing ? "Analyzing Video..." : "Civic AI is Thinking..."}
+                                                    {isCaptioning ? "Analyzing Image..." : isVideoAnalyzing ? "Analyzing Video..." : "Civic Connect AI is Thinking..."}
                                                 </h5>
                                                 <p className="small text-muted mb-0">
                                                     {isCaptioning ? "Generating description from your photo..." : isVideoAnalyzing ? "Extracting insights from video..." : "Analyzing description to identify department and priority."}

@@ -37,16 +37,30 @@ const registerUser = async (req, res) => {
         const salt = await bcrypt.genSalt(12);
         const hashedPassword = await bcrypt.hash(userPassword, salt);
 
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
         const newUser = new userModel({
             userName: userName,
             userEmail: userEmail,
             userAddress: userAddress,
-            userPassword: hashedPassword
+            userPassword: hashedPassword,
+            verificationOTP: otp
         });
 
         await newUser.save();
 
-        res.status(200).json({ status: "success", message: "User registered successfully" });
+        try {
+            await sendEmail({
+                email: userEmail,
+                subject: 'Verify your Civic Connect Account',
+                message: `Welcome to Civic Connect! Your OTP for email verification is: ${otp}`
+            });
+        } catch (emailError) {
+            console.error("Error sending OTP email:", emailError);
+            // Even if email fails, we register the user, but they'll need to use resend OTP
+        }
+
+        res.status(200).json({ status: "success", message: "User registered successfully. Please verify your email with the OTP sent." });
 
     } catch (err) {
         res.status(500).json({ status: "error", message: err.message });
@@ -66,6 +80,9 @@ const loginUser = async (req, res) => {
         const isMatch = await bcrypt.compare(userPassword, user.userPassword);
         if (!isMatch)
             return res.status(401).json({ status: "error", message: "Invalid credentials" });
+
+        if (!user.isEmailVerified)
+            return res.status(403).json({ status: "error", message: "Please verify your email to log in.", unverified: true });
 
         const accessToken = generateAccessToken(user._id);
         const refreshToken = generateRefreshToken(user._id);
@@ -362,6 +379,51 @@ const markNotificationRead = async (req, res) => {
     }
 };
 
+const verifyEmail = async (req, res) => {
+    const { userEmail, otp } = req.body;
+    try {
+        if (!userEmail || !otp) return res.status(400).json({ message: "Email and OTP are required" });
+
+        const user = await userModel.findOne({ userEmail });
+        if (!user) return res.status(404).json({ message: "User not found" });
+        if (user.isEmailVerified) return res.status(400).json({ message: "Email already verified" });
+        if (user.verificationOTP !== otp) return res.status(400).json({ message: "Invalid OTP" });
+
+        user.isEmailVerified = true;
+        user.verificationOTP = null;
+        await user.save();
+
+        res.status(200).json({ status: "success", message: "Email verified successfully" });
+    } catch (err) {
+        res.status(500).json({ message: "Server error", error: err.message });
+    }
+};
+
+const resendOtp = async (req, res) => {
+    const { userEmail } = req.body;
+    try {
+        if (!userEmail) return res.status(400).json({ message: "Email is required" });
+
+        const user = await userModel.findOne({ userEmail });
+        if (!user) return res.status(404).json({ message: "User not found" });
+        if (user.isEmailVerified) return res.status(400).json({ message: "Email already verified" });
+
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        user.verificationOTP = otp;
+        await user.save();
+
+        await sendEmail({
+            email: userEmail,
+            subject: 'Civic Connect - New OTP',
+            message: `Your new OTP for email verification is: ${otp}`
+        });
+
+        res.status(200).json({ status: "success", message: "New OTP sent" });
+    } catch (err) {
+        res.status(500).json({ message: "Server error", error: err.message });
+    }
+};
+
 module.exports = {
     registerUser,
     loginUser,
@@ -372,5 +434,7 @@ module.exports = {
     resetPassword,
     getUserStats,
     getNotifications,
-    markNotificationRead
+    markNotificationRead,
+    verifyEmail,
+    resendOtp
 };

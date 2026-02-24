@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { CommunityPost } = require('../Models/CommunityPost');
+const userModel = require('../Models/User');
+const sendEmail = require('../Utils/emailService');
 
 // Get all posts (for User Dashboard)
 router.get('/', async (req, res) => {
@@ -77,6 +79,20 @@ router.post('/create', upload.single("image"), async (req, res) => {
             if (io) {
                 io.emit('new_alert', newPost);
                 console.log("Emitted new_alert event");
+            }
+
+            // Send Email to Citizens
+            try {
+                const citizens = await userModel.find({ userRole: 'Citizen' });
+                citizens.forEach(citizen => {
+                    sendEmail({
+                        email: citizen.userEmail,
+                        subject: `Civic Connect EMERGENCY ALERT: ${title}`,
+                        message: `An emergency alert has been issued by ${author} (${role}).\n\nTitle: ${title}\n\nDetails: ${content}\n\nPlease stay safe and check the Civic Connect platform for updates.`
+                    }).catch(err => console.error(`Failed to send alert email to citizen ${citizen.userEmail}:`, err.message));
+                });
+            } catch (citizenError) {
+                console.error("Error fetching citizens for alert email notification:", citizenError.message);
             }
         }
 

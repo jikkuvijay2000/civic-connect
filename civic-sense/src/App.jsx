@@ -20,6 +20,7 @@ import RequireAuthority from './components/RequireAuthority'
 import ForgotPassword from './Pages/ForgotPassword'
 import ResetPassword from './Pages/ResetPassword'
 import Documentation from './Pages/Documentation'
+import ResolvedIssues from './Pages/ResolvedIssues'
 
 function App() {
 
@@ -50,6 +51,7 @@ function App() {
             <Route index element={<DashboardHome />} />
             <Route path="report-issue" element={<ReportIssue />} />
             <Route path="contributions" element={<Contributions />} />
+            <Route path="resolved-issues" element={<ResolvedIssues />} />
             <Route path="leaderboard" element={<Leaderboard />} />
           </Route>
 

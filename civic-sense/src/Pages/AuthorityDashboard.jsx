@@ -4,10 +4,10 @@ import { motion } from 'framer-motion';
 import { Area, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, PieChart, Pie, Cell, Legend } from 'recharts';
 import api from '../api/axios';
 import { notify } from '../utils/notify';
-import NotificationDropdown from '../components/NotificationDropdown';
 import { initiateSocketConnection, subscribeToEmergency, disconnectSocket } from '../utils/socketService';
 import { io } from 'socket.io-client';
 import EmergencyAlertModal from '../components/EmergencyAlertModal';
+import AIAnimation from '../Components/AIAnimation';
 
 const AuthorityDashboard = () => {
     const [statsData, setStatsData] = useState({
@@ -82,7 +82,6 @@ const AuthorityDashboard = () => {
             // No Toast here, sidebar handles it.
         });
 
-        // Also listen for emergency to add to list
         socket.on("new_emergency_complaint", (data) => {
             const newNotif = {
                 _id: Date.now(),
@@ -93,6 +92,16 @@ const AuthorityDashboard = () => {
             };
             setNotifications(prev => [newNotif, ...prev]);
             setUnreadCount(prev => prev + 1);
+
+            // Trigger the Emergency Modal
+            setCurrentAlert({
+                title: "Emergency Issue Registered! \n" + data.complaint.complaintType,
+                content: `Location: ${data.complaint.complaintLocation}\nDetails: ${data.complaint.complaintDescription}`,
+                image: data.complaint.complaintImage,
+                author: data.complaint.complaintAuthority,
+                createdAt: new Date().toISOString()
+            });
+            setAlertModalOpen(true);
         });
 
         return () => {
@@ -141,13 +150,7 @@ const AuthorityDashboard = () => {
                 </div>
 
                 <div className="d-flex align-items-center gap-4">
-                    <NotificationDropdown
-                        notifications={notifications}
-                        unreadCount={unreadCount}
-                        onMarkRead={markAsRead}
-                        isOpen={isNotifOpen}
-                        toggleDropdown={() => setIsNotifOpen(!isNotifOpen)}
-                    />
+                    {/* NotificationDropdown removed since AuthoritySidebar already has an Alert bell */}
                 </div>
             </div>
 
@@ -185,23 +188,24 @@ const AuthorityDashboard = () => {
 
                 {/* AI Analytics Section */}
                 <div className="row mt-5">
-                    <div className="col-lg-8 mb-4">
+                    <div className="col-lg-4 mb-4">
                         <div className="bg-surface rounded-custom-xl shadow-custom-sm p-4 border border-light h-100">
                             <div className="d-flex justify-content-between align-items-center mb-4">
-                                <h5 className="fw-bold text-dark ls-tight mb-0">AI Confidence Distribution</h5>
-                                <span className="badge bg-primary-subtle text-primary rounded-pill px-3">Real-time</span>
+                                <h5 className="fw-bold text-dark ls-tight mb-0">AI Confidence Map</h5>
+                                <span className="badge bg-primary-subtle text-primary rounded-pill px-3">Live</span>
                             </div>
-                            <div style={{ height: '300px' }}>
+                            <div style={{ height: '250px' }}>
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={statsData.confidenceDistribution || []}>
+                                    <BarChart data={statsData.confidenceDistribution || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e0e0" />
-                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6c757d' }} />
-                                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6c757d' }} />
+                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#6c757d' }} />
+                                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#6c757d' }} />
                                         <Tooltip
                                             cursor={{ fill: 'rgba(0,0,0,0.05)' }}
                                             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
+                                            formatter={(value) => [`${value} issues`, 'Count']}
                                         />
-                                        <Bar dataKey="value" fill="#4c6ef5" radius={[10, 10, 0, 0]} barSize={60} />
+                                        <Bar dataKey="value" fill="#4c6ef5" radius={[6, 6, 0, 0]} barSize={40} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
@@ -209,27 +213,61 @@ const AuthorityDashboard = () => {
                     </div>
 
                     <div className="col-lg-4 mb-4">
+                        <div className="bg-surface rounded-custom-xl shadow-custom-sm p-4 border border-light h-100 position-relative overflow-hidden group">
+                            <h5 className="fw-bold text-dark ls-tight mb-4 d-flex align-items-center gap-2">
+                                <FaExclamationCircle className="text-danger" /> Priority & Emergency
+                            </h5>
+                            <div style={{ height: '250px' }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={statsData.priorityStats || []} layout="vertical" margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e0e0e0" />
+                                        <XAxis type="number" hide domain={[0, dataMax => Math.max(10, dataMax)]} />
+                                        <YAxis dataKey="_id" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6c757d', fontWeight: 'bold' }} width={80} />
+                                        <Tooltip
+                                            cursor={{ fill: 'rgba(0,0,0,0.05)' }}
+                                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
+                                            formatter={(value) => [`${value} complaints`, 'Count']}
+                                        />
+                                        <Bar dataKey="count" radius={[0, 8, 8, 0]} barSize={25}>
+                                            {
+                                                (statsData.priorityStats || []).map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={entry._id === 'Emergency' ? '#fa5252' : entry._id === 'High' ? '#fd7e14' : entry._id === 'Medium' ? '#fcc419' : '#51cf66'} />
+                                                ))
+                                            }
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                            {/* Decorative background circle for emphasis */}
+                            <div className="position-absolute bottom-0 end-0 p-5 rounded-circle bg-danger translate-middle-y me-n5 mb-n5" style={{ width: '100px', height: '100px', opacity: 0.1 }}></div>
+                        </div>
+                    </div>
+
+                    <div className="col-lg-4 mb-4">
                         <div className="bg-surface rounded-custom-xl shadow-custom-sm p-4 border border-light h-100">
                             <h5 className="fw-bold text-dark ls-tight mb-4">Category Analysis</h5>
-                            <div style={{ height: '300px' }}>
+                            <div style={{ height: '250px' }}>
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
                                         <Pie
                                             data={statsData.categoryStats || []}
                                             cx="50%"
                                             cy="50%"
-                                            innerRadius={60}
-                                            outerRadius={90}
+                                            innerRadius={50}
+                                            outerRadius={80}
                                             paddingAngle={5}
                                             dataKey="count"
                                             nameKey="_id"
                                         >
                                             {(statsData.categoryStats || []).map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={['#339af0', '#51cf66', '#fcc419', '#ff6b6b'][index % 4]} />
+                                                <Cell key={`cell-${index}`} fill={['#339af0', '#51cf66', '#fcc419', '#ff6b6b', '#845ef7', '#20c997'][index % 6]} />
                                             ))}
                                         </Pie>
-                                        <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} />
-                                        <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                                        <Tooltip
+                                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
+                                            formatter={(value) => [value, 'Complaints']}
+                                        />
+                                        <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px' }} />
                                     </PieChart>
                                 </ResponsiveContainer>
                             </div>
@@ -239,10 +277,10 @@ const AuthorityDashboard = () => {
 
                 {/* System Status Section */}
                 <div className="mt-2">
-                    <div className="bg-surface rounded-custom-xl shadow-custom-sm p-5 border border-light text-center py-5">
-                        <img src="https://illustrations.popsy.co/amber/success.svg" alt="All caught up" height="200" className="mb-4 opacity-75" />
-                        <h5 className="text-muted fw-bold">System Status: Optimal</h5>
-                        <p className="text-secondary max-w-sm mx-auto">AI Model v2.1 running. Average latency: 45ms. Confidence metrics are within expected range.</p>
+                    <div className="bg-surface rounded-custom-xl shadow-custom-sm p-5 border border-light text-center py-5 d-flex flex-column align-items-center">
+                        <AIAnimation size="large" />
+                        <h5 className="text-muted fw-bold mt-4">System Status: Optimal</h5>
+                        <p className="text-secondary max-w-sm mx-auto">Civic AI Model v2.1 running. Average latency: 45ms. Confidence metrics are within expected range.</p>
                     </div>
                 </div>
 

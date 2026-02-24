@@ -6,7 +6,7 @@ import NotificationDropdown from '../components/NotificationDropdown';
 import EmergencyAlertModal from '../components/EmergencyAlertModal';
 import { notify } from '../utils/notify';
 import { initiateSocketConnection, subscribeToNotifications, subscribeToAlerts, disconnectSocket } from '../utils/socketService';
-
+import AIAnimation from '../Components/AIAnimation';
 import api from '../api/axios';
 
 const DashboardHome = () => {
@@ -295,6 +295,12 @@ const DashboardHome = () => {
                 <Calendar />
 
                 <div className="mt-5">
+                    <div className="bg-surface rounded-custom shadow-custom-sm p-4 text-center border border-light mb-4">
+                        <AIAnimation size="small" />
+                        <h6 className="fw-bold text-dark mt-3 mb-1">Civic AI Monitor</h6>
+                        <p className="text-muted extra-small mb-0" style={{ fontSize: '11px' }}>Analyzing community trends locally</p>
+                    </div>
+
                     <h6 className="fw-bold text-secondary mb-4 text-uppercase ls-wide" style={{ fontSize: '0.8rem' }}>Suggested Groups</h6>
 
                     <div className="bg-surface rounded-custom shadow-custom-sm p-3 mb-3 d-flex gap-3 align-items-center hover-scale border border-light cursor-pointer transition-fast">

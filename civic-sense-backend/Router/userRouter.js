@@ -1,4 +1,4 @@
-const { registerUser, loginUser, refreshToken, logoutUser, getLeaderboard, forgotPassword, resetPassword, getUserStats, getNotifications, markNotificationRead } = require("../Controllers/UserController");
+const { registerUser, loginUser, refreshToken, logoutUser, getLeaderboard, forgotPassword, resetPassword, getUserStats, getNotifications, markNotificationRead, verifyEmail, resendOtp } = require("../Controllers/UserController");
 const express = require("express");
 const { generateCSRFToken, verifyCsrfToken } = require("../Middlewares/csrfMiddleware");
 const { protect } = require("../Middlewares/authMiddleware");
@@ -6,6 +6,8 @@ const router = express.Router();
 
 
 router.post("/register", registerUser);
+router.post("/verify-email", verifyEmail);
+router.post("/resend-otp", resendOtp);
 router.get("/csrf-token", generateCSRFToken);
 
 router.post("/login", verifyCsrfToken, loginUser);

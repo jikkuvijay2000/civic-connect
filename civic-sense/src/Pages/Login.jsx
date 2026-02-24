@@ -23,6 +23,13 @@ const Login = () => {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
 
+    // OTP State
+    const [showOtp, setShowOtp] = useState(false);
+    const [otp, setOtp] = useState('');
+    const [unverifiedEmail, setUnverifiedEmail] = useState('');
+    const [isVerifying, setIsVerifying] = useState(false);
+    const [isResending, setIsResending] = useState(false);
+
     // Auto-rotate carousel every 4 seconds
     useEffect(() => {
         const interval = setInterval(() => {
@@ -98,11 +105,60 @@ const Login = () => {
                 notify("error", response.data.message || "Login failed");
             }
         } catch (err) {
-            notify("error", err.response?.data?.message || "Something went wrong");
+            if (err.response?.status === 403 && err.response?.data?.unverified) {
+                setUnverifiedEmail(loginDetails.userEmail);
+                setShowOtp(true);
+                notify("warning", err.response.data.message);
+            } else {
+                notify("error", err.response?.data?.message || "Something went wrong");
+            }
         } finally {
             setIsLoading(false);
         }
     }
+
+    const handleVerifyOtp = async (e) => {
+        e.preventDefault();
+        if (!otp || otp.length !== 6) {
+            notify("error", "Please enter a valid 6-digit OTP.");
+            return;
+        }
+
+        setIsVerifying(true);
+        try {
+            const response = await api.post('/user/verify-email', {
+                userEmail: unverifiedEmail,
+                otp: otp
+            });
+
+            if (response.status === 200) {
+                notify("success", "Email verified successfully! Please log in again.");
+                setShowOtp(false);
+                setOtp('');
+                setLoginDetails({ ...loginDetails, userPassword: '' }); // Clear password for security
+            }
+        } catch (err) {
+            notify("error", err.response?.data?.message || "Failed to verify OTP. Please try again.");
+        } finally {
+            setIsVerifying(false);
+        }
+    };
+
+    const handleResendOtp = async () => {
+        setIsResending(true);
+        try {
+            const response = await api.post('/user/resend-otp', {
+                userEmail: unverifiedEmail
+            });
+            if (response.status === 200) {
+                notify("success", "A new OTP has been sent to your email.");
+            }
+        } catch (err) {
+            notify("error", err.response?.data?.message || "Failed to resend OTP.");
+        } finally {
+            setIsResending(false);
+        }
+    };
 
 
 
@@ -185,61 +241,128 @@ const Login = () => {
                                 <img src={civicLogo} alt="Civic Sense Logo" height="150" />
                             </div> */}
                             <h1 className="display-6 fw-bold text-dark mb-2">Welcome Back</h1>
-                            <p className="text-muted">Log in to continue your journey with Civic Sense.</p>
+                            <p className="text-muted">Log in to continue your journey with Civic Connect.</p>
                         </div>
 
                         <form>
-                            <div className="mb-4">
-                                <label htmlFor="emailInput" className="form-label fw-semibold text-secondary small text-uppercase ls-1">Email Address</label>
-                                <input
-                                    type="email"
-                                    className="form-control input-modern"
-                                    id="emailInput"
-                                    placeholder="name@example.com"
-                                    autoComplete="username"
-                                    onChange={(e) => setLoginDetails({ ...loginDetails, userEmail: e.target.value })}
-                                />
-                            </div>
+                            {!showOtp ? (
+                                <>
+                                    <div className="mb-4">
+                                        <label htmlFor="emailInput" className="form-label fw-semibold text-secondary small text-uppercase ls-1">Email Address</label>
+                                        <input
+                                            type="email"
+                                            className="form-control input-modern"
+                                            id="emailInput"
+                                            placeholder="name@example.com"
+                                            autoComplete="username"
+                                            value={loginDetails.userEmail}
+                                            onChange={(e) => setLoginDetails({ ...loginDetails, userEmail: e.target.value })}
+                                        />
+                                    </div>
 
-                            <div className="mb-4">
-                                <div className="d-flex justify-content-between align-items-center mb-2">
-                                    <label htmlFor="passwordInput" className="form-label fw-semibold text-secondary small text-uppercase ls-1 mb-0">Password</label>
-                                    <a href="/forgot-password" className="small text-primary text-decoration-none fw-semibold">Forgot Password?</a>
-                                </div>
-                                <input
-                                    type="password"
-                                    className="form-control input-modern"
-                                    id="passwordInput"
-                                    placeholder="••••••••"
-                                    autoComplete="current-password"
-                                    onChange={(e) => setLoginDetails({ ...loginDetails, userPassword: e.target.value })}
-                                />
-                            </div>
+                                    <div className="mb-4">
+                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                            <label htmlFor="passwordInput" className="form-label fw-semibold text-secondary small text-uppercase ls-1 mb-0">Password</label>
+                                            <a href="/forgot-password" className="small text-primary text-decoration-none fw-semibold">Forgot Password?</a>
+                                        </div>
+                                        <input
+                                            type="password"
+                                            className="form-control input-modern"
+                                            id="passwordInput"
+                                            placeholder="••••••••"
+                                            autoComplete="current-password"
+                                            value={loginDetails.userPassword}
+                                            onChange={(e) => setLoginDetails({ ...loginDetails, userPassword: e.target.value })}
+                                        />
+                                    </div>
 
-                            <motion.button
-                                type="submit"
-                                className={`btn btn-primary w-100 btn-modern mb-4 text-white ${!isFormValid ? 'disabled' : ''}`}
-                                whileHover={isFormValid ? { scale: 1.02 } : {}}
-                                whileTap={isFormValid ? { scale: 0.98 } : {}}
-                                onClick={handleLogin}
-                                disabled={!isFormValid || isLoading}
-                            >
-                                {isLoading ? (
-                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                ) : null}
-                                {isLoading ? 'Logging In...' : 'Log In'}
-                            </motion.button>
+                                    <motion.button
+                                        type="submit"
+                                        className={`btn btn-primary w-100 btn-modern mb-4 text-white ${!isFormValid ? 'disabled' : ''}`}
+                                        whileHover={isFormValid ? { scale: 1.02 } : {}}
+                                        whileTap={isFormValid ? { scale: 0.98 } : {}}
+                                        onClick={handleLogin}
+                                        disabled={!isFormValid || isLoading}
+                                    >
+                                        {isLoading ? (
+                                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                        ) : null}
+                                        {isLoading ? 'Logging In...' : 'Log In'}
+                                    </motion.button>
 
-                            <div className="text-center">
-                                <p className="text-muted mb-3">
-                                    Don't have an account? <a href="/register" className="text-primary fw-bold text-decoration-none">Sign Up</a>
-                                </p>
-                                <div className="d-flex justify-content-center gap-3 small">
-                                    <a href="/documentation" className="text-muted text-decoration-none hover-underline">Terms of Service</a>
-                                    <span className="text-muted">•</span>
-                                    <a href="/documentation" className="text-muted text-decoration-none hover-underline">Privacy Policy</a>
-                                </div>
-                            </div>
+                                    <div className="text-center">
+                                        <p className="text-muted mb-3">
+                                            Don't have an account? <a href="/register" className="text-primary fw-bold text-decoration-none">Sign Up</a>
+                                        </p>
+                                        <div className="d-flex justify-content-center gap-3 small">
+                                            <a href="/documentation" className="text-muted text-decoration-none hover-underline">Terms of Service</a>
+                                            <span className="text-muted">•</span>
+                                            <a href="/documentation" className="text-muted text-decoration-none hover-underline">Privacy Policy</a>
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="text-center"
+                                >
+                                    <div className="mb-4">
+                                        <div className="bg-warning-subtle d-inline-block p-3 rounded-circle text-warning mb-3">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
+                                                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
+                                                <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z" />
+                                            </svg>
+                                        </div>
+                                        <h4 className="fw-bold">Email Not Verified</h4>
+                                        <p className="text-muted">Please enter the 6-digit OTP sent to <strong>{unverifiedEmail}</strong>.</p>
+                                    </div>
+
+                                    <div className="mb-4">
+                                        <input
+                                            type="text"
+                                            className="form-control form-control-lg text-center fw-bold rounded-custom border-2 text-dark focus-ring-primary"
+                                            placeholder="------"
+                                            maxLength="6"
+                                            value={otp}
+                                            onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                                            style={{ letterSpacing: '0.5rem', fontSize: '1.5rem' }}
+                                        />
+                                    </div>
+
+                                    <motion.button
+                                        type="button"
+                                        className={`btn btn-primary w-100 btn-modern mb-3 text-white ${otp.length !== 6 ? 'disabled' : ''}`}
+                                        whileHover={otp.length === 6 ? { scale: 1.02 } : {}}
+                                        whileTap={otp.length === 6 ? { scale: 0.98 } : {}}
+                                        onClick={handleVerifyOtp}
+                                        disabled={otp.length !== 6 || isVerifying}
+                                    >
+                                        {isVerifying ? (
+                                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                        ) : null}
+                                        {isVerifying ? 'Verifying...' : 'Verify Email'}
+                                    </motion.button>
+
+                                    <div className="d-flex justify-content-between align-items-center mt-3">
+                                        <button
+                                            type="button"
+                                            className="btn btn-link text-decoration-none text-muted p-0"
+                                            onClick={() => setShowOtp(false)}
+                                        >
+                                            &larr; Back to Login
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="btn btn-link text-decoration-none text-primary p-0 fw-semibold"
+                                            onClick={handleResendOtp}
+                                            disabled={isResending}
+                                        >
+                                            {isResending ? 'Resending...' : 'Resend OTP'}
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            )}
                         </form>
                     </motion.div>
                 </div>

@@ -4,6 +4,8 @@ const fs = require('fs');
 const axios = require('axios');
 const FormData = require('form-data');
 const crypto = require('crypto');
+const userModel = require('../Models/User');
+const sendEmail = require('../Utils/emailService');
 
 const calculateFileHash = (filePath) => {
     return new Promise((resolve, reject) => {
@@ -177,6 +179,10 @@ const createComplaint = async (req, res) => {
             }
         }
 
+        let finalAIScore = (aiScore && !isNaN(parseFloat(aiScore))) ? parseFloat(aiScore) : 45;
+        if (priority === 'Emergency') finalAIScore = 100;
+        else if (priority === 'High') finalAIScore = Math.max(finalAIScore, 90);
+
         const newComplaint = new Complaint({
             complaintId: `CMP-${Date.now()}`,
             complaintDescription: description,
@@ -189,7 +195,7 @@ const createComplaint = async (req, res) => {
             complaintPriority: priority,
             complaintUser: userId,
             complaintAuthority: getDepartmentFromCategory(category),
-            complaintAIScore: (aiScore && !isNaN(parseFloat(aiScore))) ? parseFloat(aiScore) : 0
+            complaintAIScore: finalAIScore
         });
 
         // Re-mapping to match model
@@ -222,6 +228,20 @@ const createComplaint = async (req, res) => {
                     notification: newNotification
                 });
                 console.log("Emitted new_emergency_complaint event");
+            }
+
+            // Send Email to Department Authorities
+            try {
+                const authorities = await userModel.find({ userRole: 'Authority', userDepartment: newComplaint.complaintAuthority });
+                authorities.forEach(auth => {
+                    sendEmail({
+                        email: auth.userEmail,
+                        subject: 'URGENT: New Emergency Complaint Received',
+                        message: `An emergency complaint has been filed in your department (${newComplaint.complaintAuthority}).\n\nTitle: ${title}\nCategory: ${category}\nLocation: ${location}\nPriority: ${priority}\n\nPlease check your Civic Connect dashboard immediately for more details.`
+                    }).catch(err => console.error(`Failed to send emergency email to authority ${auth.userEmail}:`, err.message));
+                });
+            } catch (authError) {
+                console.error("Error fetching authorities for email notification:", authError.message);
             }
         }
 
@@ -389,6 +409,12 @@ const getAuthorityStats = async (req, res) => {
             { $group: { _id: "$complaintType", count: { $sum: 1 } } }
         ]);
 
+        // Priority Stats for Emergency Tracking
+        const priorityStats = await Complaint.aggregate([
+            { $match: query },
+            { $group: { _id: "$complaintPriority", count: { $sum: 1 } } }
+        ]);
+
         res.status(200).json({
             status: "success",
             data: {
@@ -397,7 +423,8 @@ const getAuthorityStats = async (req, res) => {
                 pending: pendingComplaints,
                 avgConfidence: avgConfidence,
                 confidenceDistribution,
-                categoryStats
+                categoryStats,
+                priorityStats
             }
         });
 
@@ -464,10 +491,28 @@ const updateComplaintStatus = async (req, res) => {
     }
 };
 
+const getResolvedComplaints = async (req, res) => {
+    try {
+        const complaints = await Complaint.find({
+            complaintStatus: { $in: ['Resolved', 'Closed'] }
+        })
+            .populate('complaintUser', 'userName')
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({
+            status: "success",
+            data: complaints
+        });
+    } catch (error) {
+        console.error("Error fetching resolved complaints:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
 const addFeedback = async (req, res) => {
     try {
         const { id } = req.params;
-        const { message } = req.body;
+        const { message, action } = req.body; // action: 'Accept' | 'Reopen' | 'General'
 
         if (!message) {
             return res.status(400).json({ message: "Feedback message is required" });
@@ -483,40 +528,63 @@ const addFeedback = async (req, res) => {
             return res.status(404).json({ message: "Complaint not found" });
         }
 
+        const feedbackEntry = {
+            message: message,
+            action: action || 'General',
+            date: Date.now()
+        };
+
+        if (!complaint.feedbackHistory) {
+            complaint.feedbackHistory = [];
+        }
+
+        // Push to array
+        complaint.feedbackHistory.push(feedbackEntry);
+
+        // Also support old UI falling back to last message
         complaint.feedback = {
             message: message,
             date: Date.now()
         };
 
-        // Auto-change status to Pending
-        complaint.complaintStatus = "Pending";
+        const Notification = require('../Models/Notification');
+
+        if (action === 'Accept') {
+            complaint.complaintStatus = "Closed";
+            complaint.accepted = true;
+
+            const newNotification = new Notification({
+                recipientRole: 'Authority',
+                message: `User accepted resolution for ticket: ${complaint.complaintType} - ${complaint.complaintId}`,
+                type: 'success',
+                relatedId: complaint.complaintId
+            });
+            await newNotification.save();
+        } else {
+            complaint.complaintStatus = "Pending";
+
+            const newNotification = new Notification({
+                recipientRole: 'Authority',
+                message: `Feedback received, ticket reopened: ${complaint.complaintType} - ${complaint.complaintId}`,
+                type: 'warning',
+                relatedId: complaint.complaintId
+            });
+            await newNotification.save();
+        }
 
         await complaint.save();
-
-        // Notify Authority
-        const Notification = require('../Models/Notification');
-        const newNotification = new Notification({
-            recipientRole: 'Authority',
-            // If we had specific authority IDs, we'd use that, but for now generic role or maybe filter by dept later
-            // For now, let's create a notification that Authorities can fetch
-            message: `Feedback received on unresolved ticket: ${complaint.complaintType} - ${complaint.complaintId}`,
-            type: 'warning',
-            relatedId: complaint.complaintId
-        });
-        await newNotification.save();
 
         // Emit Socket Event to Authority Room (or broadcast to authorities)
         const io = req.app.get('io');
         if (io) {
-            // Broadcasting to all authorities for now, or specific department room if implemented
             io.emit('authority_notification', {
-                message: `User reported feedback on ${complaint.complaintId}`,
+                message: `User updated feedback on ${complaint.complaintId}`,
                 complaintId: complaint.complaintId,
                 department: complaint.complaintAuthority
             });
         }
 
-        res.status(200).json({ message: "Feedback added and status reverted to Pending", complaint });
+        res.status(200).json({ message: "Feedback action processed", complaint });
 
     } catch (error) {
         console.error("Error adding feedback:", error);
@@ -579,4 +647,4 @@ const analyzeVideo = async (req, res) => {
     }
 };
 
-module.exports = { createComplaint, getUserContributions, predictComplaint, generateCaption, getAuthorityComplaints, getAuthorityStats, updateComplaintStatus, analyzeVideo, addFeedback };
+module.exports = { createComplaint, getUserContributions, predictComplaint, generateCaption, getAuthorityComplaints, getAuthorityStats, updateComplaintStatus, addFeedback, getResolvedComplaints, analyzeVideo };

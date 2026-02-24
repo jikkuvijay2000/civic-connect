@@ -9,6 +9,13 @@ const ComplaintManagement = () => {
     const [sortBy, setSortBy] = useState('newest');
     const [complaints, setComplaints] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [stats, setStats] = useState({ total: 0, resolved: 0, pending: 0 });
+    const [saving, setSaving] = useState(false);
+
+    // New state for expense input UX
+    const [newExpenseItem, setNewExpenseItem] = useState("");
+    const [newExpenseCost, setNewExpenseCost] = useState("");
 
     useEffect(() => {
         const fetchComplaints = async () => {
@@ -173,7 +180,11 @@ const ComplaintManagement = () => {
                         >
                             <div className="p-4 border-bottom d-flex justify-content-between align-items-center bg-light" style={{ height: '80px' }}>
                                 <h5 className="fw-bold mb-0">Complaint Details</h5>
-                                <button onClick={() => setSelectedComplaint(null)} className="btn btn-sm btn-light rounded-circle p-2 hover-bg-danger text-secondary hover-text-white transition-fast">
+                                <button onClick={() => {
+                                    setSelectedComplaint(null);
+                                    setNewExpenseItem("");
+                                    setNewExpenseCost("");
+                                }} className="btn btn-sm btn-light rounded-circle p-2 hover-bg-danger text-secondary hover-text-white transition-fast">
                                     <FaTimes size={16} />
                                 </button>
                             </div>
@@ -249,59 +260,90 @@ const ComplaintManagement = () => {
                                         ></textarea>
                                     </div>
 
-                                    {selectedComplaint.status === 'Resolved' && (
-                                        <div className="mb-4">
-                                            <label className="text-uppercase small fw-bold text-muted ls-wide mb-2">Expense Report</label>
-                                            <div className="bg-light p-3 rounded-custom border">
-                                                {(!selectedComplaint.expenses || selectedComplaint.expenses.length === 0) && (
-                                                    <p className="small text-muted mb-2">Add expenses incurred for this resolution.</p>
-                                                )}
+                                    <div className="mb-4">
+                                        <label className="text-uppercase small fw-bold text-muted ls-wide mb-2">Expense Report</label>
+                                        <div className="bg-light p-3 rounded-custom border">
+                                            {(!selectedComplaint.expenses || selectedComplaint.expenses.length === 0) && (
+                                                <p className="small text-muted mb-3 text-center py-2 bg-white rounded border border-light">No expenses recorded yet.</p>
+                                            )}
 
-                                                {(selectedComplaint.expenses || []).map((exp, idx) => (
-                                                    <div key={idx} className="d-flex justify-content-between align-items-center mb-2 small">
-                                                        <span>{exp.item}</span>
-                                                        <div className="d-flex align-items-center gap-2">
-                                                            <span className="fw-bold">₹{exp.cost}</span>
-                                                            <button
-                                                                onClick={() => {
-                                                                    const newExpenses = selectedComplaint.expenses.filter((_, i) => i !== idx);
-                                                                    setSelectedComplaint({ ...selectedComplaint, expenses: newExpenses });
-                                                                }}
-                                                                className="btn btn-xs btn-outline-danger p-0 border-0"
-                                                            >
-                                                                <FaTimes />
-                                                            </button>
-                                                        </div>
+                                            {(selectedComplaint.expenses || []).map((exp, idx) => (
+                                                <div key={idx} className="d-flex justify-content-between align-items-center mb-2 px-3 py-2 bg-white rounded shadow-sm border border-light small">
+                                                    <span className="fw-medium text-dark">{exp.item}</span>
+                                                    <div className="d-flex align-items-center gap-3">
+                                                        <span className="fw-bold text-primary">₹{exp.cost}</span>
+                                                        <button
+                                                            onClick={() => {
+                                                                const newExpenses = selectedComplaint.expenses.filter((_, i) => i !== idx);
+                                                                setSelectedComplaint({ ...selectedComplaint, expenses: newExpenses });
+                                                            }}
+                                                            className="btn btn-sm btn-light text-danger p-1 rounded-circle hover-bg-danger-subtle d-flex align-items-center justify-content-center"
+                                                            style={{ width: '24px', height: '24px' }}
+                                                            title="Remove expense"
+                                                        >
+                                                            <FaTimes size={12} />
+                                                        </button>
                                                     </div>
-                                                ))}
+                                                </div>
+                                            ))}
 
-                                                <div className="d-flex gap-2 mt-2">
+                                            <div className="mt-3 pt-3 border-top">
+                                                <label className="small text-muted mb-1 fw-bold">Add New Expense Item</label>
+                                                <div className="d-flex gap-2">
                                                     <input
                                                         type="text"
-                                                        placeholder="Item"
-                                                        className="form-control form-control-sm"
-                                                        id="expense-item"
-                                                    />
-                                                    <input
-                                                        type="number"
-                                                        placeholder="Cost"
-                                                        className="form-control form-control-sm"
-                                                        style={{ width: '80px' }}
-                                                        id="expense-cost"
-                                                    />
-                                                    <button
-                                                        className="btn btn-sm btn-dark"
-                                                        onClick={() => {
-                                                            const itemInput = document.getElementById('expense-item');
-                                                            const costInput = document.getElementById('expense-cost');
-                                                            if (itemInput.value && costInput.value) {
-                                                                const newExpense = { item: itemInput.value, cost: parseFloat(costInput.value) };
+                                                        placeholder="E.g., Replacement Bulb"
+                                                        className="form-control form-control-sm shadow-none border-secondary-subtle"
+                                                        value={newExpenseItem}
+                                                        onChange={(e) => setNewExpenseItem(e.target.value)}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter' && newExpenseItem && newExpenseCost) {
+                                                                const newExpense = { item: newExpenseItem, cost: parseFloat(newExpenseCost) };
+                                                                const expArray = selectedComplaint.expenses || [];
                                                                 setSelectedComplaint({
                                                                     ...selectedComplaint,
-                                                                    expenses: [...(selectedComplaint.expenses || []), newExpense]
+                                                                    expenses: [...expArray, newExpense]
                                                                 });
-                                                                itemInput.value = '';
-                                                                costInput.value = '';
+                                                                setNewExpenseItem("");
+                                                                setNewExpenseCost("");
+                                                            }
+                                                        }}
+                                                    />
+                                                    <div className="input-group input-group-sm" style={{ width: '120px' }}>
+                                                        <span className="input-group-text bg-light border-secondary-subtle text-muted">₹</span>
+                                                        <input
+                                                            type="number"
+                                                            placeholder="Cost"
+                                                            className="form-control shadow-none border-secondary-subtle"
+                                                            value={newExpenseCost}
+                                                            onChange={(e) => setNewExpenseCost(e.target.value)}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter' && newExpenseItem && newExpenseCost) {
+                                                                    const newExpense = { item: newExpenseItem, cost: parseFloat(newExpenseCost) };
+                                                                    const expArray = selectedComplaint.expenses || [];
+                                                                    setSelectedComplaint({
+                                                                        ...selectedComplaint,
+                                                                        expenses: [...expArray, newExpense]
+                                                                    });
+                                                                    setNewExpenseItem("");
+                                                                    setNewExpenseCost("");
+                                                                }
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    <button
+                                                        className="btn btn-sm btn-primary px-3 fw-bold"
+                                                        disabled={!newExpenseItem.trim() || !newExpenseCost}
+                                                        onClick={() => {
+                                                            if (newExpenseItem && newExpenseCost) {
+                                                                const newExpense = { item: newExpenseItem, cost: parseFloat(newExpenseCost) };
+                                                                const expArray = selectedComplaint.expenses || [];
+                                                                setSelectedComplaint({
+                                                                    ...selectedComplaint,
+                                                                    expenses: [...expArray, newExpense]
+                                                                });
+                                                                setNewExpenseItem("");
+                                                                setNewExpenseCost("");
                                                             }
                                                         }}
                                                     >
@@ -310,7 +352,7 @@ const ComplaintManagement = () => {
                                                 </div>
                                             </div>
                                         </div>
-                                    )}
+                                    </div>
 
                                     {/* User Feedback Display */}
                                     {selectedComplaint.feedback && selectedComplaint.feedback.message && (

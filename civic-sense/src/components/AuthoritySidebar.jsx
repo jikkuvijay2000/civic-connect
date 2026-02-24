@@ -146,8 +146,8 @@ const AuthoritySidebar = () => {
                                 initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                className="position-absolute top-100 start-0 w-100 mt-2 bg-white rounded-custom shadow-custom-lg border border-light overflow-hidden"
-                                style={{ zIndex: 1000, maxHeight: '300px', overflowY: 'auto' }}
+                                className="position-absolute top-100 start-0 mt-2 bg-white rounded-custom shadow-custom-lg border border-light overflow-hidden"
+                                style={{ zIndex: 1000, width: '280px', maxHeight: '300px', overflowY: 'auto' }}
                             >
                                 <div className="p-2 border-bottom bg-light">
                                     <h6 className="mb-0 fw-bold small text-uppercase">Notifications</h6>

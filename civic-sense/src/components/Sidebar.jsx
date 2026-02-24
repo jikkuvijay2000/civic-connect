@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FaHome, FaExclamationTriangle, FaHandsHelping, FaTrophy, FaUserCircle, FaSignOutAlt, FaChevronUp, FaUser, FaChevronDown } from 'react-icons/fa';
+import { FaHome, FaExclamationTriangle, FaHandsHelping, FaCheckDouble, FaTrophy, FaUserCircle, FaSignOutAlt, FaChevronUp, FaUser, FaChevronDown } from 'react-icons/fa';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import civicLogo from '../assets/civic_sense_symbolic_logo.png';
@@ -80,7 +80,7 @@ const Sidebar = () => {
                 {/* Logo Area */}
                 <div className="d-flex align-items-center gap-3 mb-5 px-2">
                     <img src={civicLogo} alt="Logo" width="40" className='hover-scale' />
-                    <h5 className="fw-bold mb-0" style={{ color: 'var(--primary-color)', letterSpacing: '1px' }}>CIVIC SENSE</h5>
+                    <h5 className="fw-bold mb-0" style={{ color: 'var(--primary-color)', letterSpacing: '1px' }}>CIVIC CONNECT</h5>
                 </div>
 
                 {/* Navigation */}
@@ -88,6 +88,7 @@ const Sidebar = () => {
                     <NavItem icon={FaHome} label="Home" path="/dashboard" />
                     <NavItem icon={FaExclamationTriangle} label="Report Issue" path="/dashboard/report-issue" />
                     <NavItem icon={FaHandsHelping} label="Contributions" path="/dashboard/contributions" />
+                    <NavItem icon={FaCheckDouble} label="Resolved Issues" path="/dashboard/resolved-issues" />
                     <NavItem icon={FaTrophy} label="Leaderboard" path="/dashboard/leaderboard" />
                 </nav>
             </div>

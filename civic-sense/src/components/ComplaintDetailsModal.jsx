@@ -12,6 +12,12 @@ const ComplaintDetailsModal = ({ isOpen, onClose, complaint, onUpdate }) => {
 
     if (!isOpen || !complaint) return null;
 
+    const currentUser = JSON.parse(localStorage.getItem('user') || 'null');
+    const isOwner = currentUser && complaint && (
+        (complaint.complaintUser && complaint.complaintUser._id === currentUser._id) ||
+        complaint.complaintUser === currentUser._id
+    );
+
     const downloadExpenseReport = () => {
         const doc = new jsPDF();
 
@@ -56,16 +62,21 @@ const ComplaintDetailsModal = ({ isOpen, onClose, complaint, onUpdate }) => {
         doc.save(`Expense_Report_${complaint.complaintId || 'CivicIsuse'}.pdf`);
     };
 
-    const submitFeedback = async () => {
-        if (!feedbackMsg.trim()) return;
+    const submitFeedback = async (action) => {
+        if (action === 'Reopen' && !feedbackMsg.trim()) {
+            notify("warning", "Please provide a reason to reopen the issue.");
+            return;
+        }
         setSubmitting(true);
         try {
             await api.post(`/complaint/feedback/${complaint.complaintId || complaint._id}`, {
-                message: feedbackMsg
+                message: action === 'Accept' ? (feedbackMsg || "Resolution accepted by citizen.") : feedbackMsg,
+                action: action
             });
-            notify("success", "Feedback sent to authority");
+            notify("success", action === 'Accept' ? "Resolution Accepted" : "Issue Reopened");
             if (onUpdate) onUpdate(); // Refresh parent
             setFeedbackMsg("");
+            if (onClose) onClose();
         } catch (error) {
             console.error(error);
             notify("error", "Failed to send feedback");
@@ -130,7 +141,7 @@ const ComplaintDetailsModal = ({ isOpen, onClose, complaint, onUpdate }) => {
                             <div className="col-md-5 p-4 bg-surface">
                                 <h6 className="fw-bold text-uppercase small text-muted ls-wide mb-4">Resolution Details</h6>
 
-                                {complaint.complaintStatus === 'Resolved' ? (
+                                {complaint.complaintStatus === 'Resolved' || complaint.complaintStatus === 'Closed' ? (
                                     <>
                                         <div className="mb-4">
                                             <div className="d-flex align-items-center gap-2 text-success mb-2">
@@ -154,31 +165,62 @@ const ComplaintDetailsModal = ({ isOpen, onClose, complaint, onUpdate }) => {
                                         </div>
 
                                         {/* Feedback Section */}
-                                        <div>
-                                            <label className="text-uppercase small fw-bold text-muted ls-wide mb-2">Your Feedback</label>
+                                        <div className="mt-4">
+                                            <label className="text-uppercase small fw-bold text-muted ls-wide mb-2">Feedback History</label>
 
-                                            {complaint.feedback && complaint.feedback.message ? (
-                                                <div className="bg-white p-3 rounded-custom border shadow-sm">
-                                                    <small className="text-muted d-block mb-1">You said:</small>
-                                                    <p className="mb-0 text-dark fst-italic">"{complaint.feedback.message}"</p>
+                                            {complaint.feedbackHistory && complaint.feedbackHistory.length > 0 ? (
+                                                <div className="d-flex flex-column gap-2 mb-3">
+                                                    {complaint.feedbackHistory.map((fb, idx) => (
+                                                        <div key={idx} className={`p-3 rounded-custom border shadow-sm ${fb.action === 'Accept' ? 'bg-success-subtle' : fb.action === 'Reopen' ? 'bg-warning-subtle' : 'bg-light'}`}>
+                                                            <div className="d-flex justify-content-between align-items-center mb-1">
+                                                                <small className={`fw-bold ${fb.action === 'Accept' ? 'text-success' : fb.action === 'Reopen' ? 'text-warning text-darken' : 'text-dark'}`}>{fb.action} Action</small>
+                                                                <small className="text-muted" style={{ fontSize: '0.7rem' }}>{new Date(fb.date).toLocaleString()}</small>
+                                                            </div>
+                                                            <p className="mb-0 text-dark fst-italic small">"{fb.message}"</p>
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                            ) : (
+                                            ) : complaint.feedback && complaint.feedback.message && (
+                                                <div className="bg-light p-3 rounded-custom border shadow-sm mb-3">
+                                                    <small className="text-muted d-block mb-1">Legacy Feedback:</small>
+                                                    <p className="mb-0 text-dark fst-italic small">"{complaint.feedback.message}"</p>
+                                                </div>
+                                            )}
+
+                                            {isOwner && complaint.complaintStatus === 'Resolved' && !complaint.accepted && (
                                                 <div className="p-3 bg-white rounded-custom border shadow-sm">
-                                                    <p className="small text-muted mb-3">Is the issue not fully resolved? Question the authority.</p>
+                                                    <p className="small text-muted mb-2 fw-medium">Review the resolution. You can accept it or reopen if the issue persists.</p>
                                                     <textarea
                                                         className="form-control shadow-none border-secondary-subtle mb-3 text-sm"
-                                                        rows="3"
-                                                        placeholder="Describe any flaws in the resolution..."
+                                                        rows="2"
+                                                        placeholder="Add an optional comment... (Required if reopening)"
                                                         value={feedbackMsg}
                                                         onChange={(e) => setFeedbackMsg(e.target.value)}
                                                     ></textarea>
-                                                    <button
-                                                        onClick={submitFeedback}
-                                                        disabled={submitting || !feedbackMsg.trim()}
-                                                        className="btn btn-dark btn-sm w-100 rounded-pill"
-                                                    >
-                                                        {submitting ? 'Sending...' : 'Submit Feedback'}
-                                                    </button>
+                                                    <div className="d-flex gap-2">
+                                                        <button
+                                                            onClick={() => submitFeedback('Accept')}
+                                                            disabled={submitting}
+                                                            className="btn btn-success btn-sm w-50 rounded-pill fw-bold"
+                                                        >
+                                                            {submitting ? 'Processing...' : 'Accept Resolution'}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => submitFeedback('Reopen')}
+                                                            disabled={submitting || !feedbackMsg.trim()}
+                                                            className="btn btn-warning btn-sm w-50 rounded-pill fw-bold text-dark"
+                                                        >
+                                                            {submitting ? '...' : 'Reopen Issue'}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {complaint.complaintStatus === 'Closed' && (
+                                                <div className="text-center p-3 bg-success-subtle rounded-custom border border-success-subtle mt-2">
+                                                    <FaCheckCircle className="text-success mb-2" size={24} />
+                                                    <h6 className="fw-bold text-success mb-0">Ticket Closed</h6>
+                                                    <small className="text-muted">The citizen has accepted the resolution.</small>
                                                 </div>
                                             )}
                                         </div>

@@ -52,6 +52,10 @@ const Register = () => {
     });
 
     const [isLoading, setIsLoading] = useState(false);
+    const [isVerifying, setIsVerifying] = useState(false);
+    const [showOtp, setShowOtp] = useState(false);
+    const [otp, setOtp] = useState('');
+
     const navigate = useNavigate();
     const [touched, setTouched] = useState({});
 
@@ -86,10 +90,8 @@ const Register = () => {
         try {
             const response = await axios.post(`${BASE_URL}/user/register`, userDetails);
             if (response.status === 200) {
-                notify("success", "Registration successful! Redirecting to login...");
-                setTimeout(() => {
-                    navigate('/');
-                }, 2000);
+                notify("success", "Registration successful! Please check your email for the OTP.");
+                setShowOtp(true);
             } else {
                 notify("error", response.data.message);
             }
@@ -100,6 +102,33 @@ const Register = () => {
             setIsLoading(false);
         }
     }
+
+    const handleVerifyOtp = async (e) => {
+        e.preventDefault();
+        if (!otp || otp.length !== 6) {
+            notify("error", "Please enter a valid 6-digit OTP.");
+            return;
+        }
+
+        setIsVerifying(true);
+        try {
+            const response = await axios.post(`${BASE_URL}/user/verify-email`, {
+                userEmail: userDetails.userEmail,
+                otp: otp
+            });
+
+            if (response.status === 200) {
+                notify("success", "Email verified successfully! Redirecting to login...");
+                setTimeout(() => {
+                    navigate('/');
+                }, 2000);
+            }
+        } catch (err) {
+            notify("error", err.response?.data?.message || "Failed to verify OTP. Please try again.");
+        } finally {
+            setIsVerifying(false);
+        }
+    };
 
     return (
         <div className="container-fluid min-vh-100 p-0 position-relative overflow-hidden">
@@ -181,115 +210,160 @@ const Register = () => {
                             <img src={civicLogo} alt="Civic Sense Logo" height="150" />
                         </div> */}
                             <h1 className="display-6 fw-bold text-dark mb-2">Create Account</h1>
-                            <p className="text-muted">Fill in your details to get started with Civic Sense.</p>
+                            <p className="text-muted">Fill in your details to get started with Civic Connect.</p>
                         </div>
 
-                        <form>
-                            <div className="mb-4">
-                                <label htmlFor="nameInput" className="form-label fw-semibold text-secondary small text-uppercase ls-1">Full Name</label>
-                                <input
-                                    type="text"
-                                    className="form-control input-modern"
-                                    id="nameInput"
-                                    placeholder="John Doe"
-                                    onChange={(e) => setUserDetails({ ...userDetails, userName: e.target.value })}
-                                />
-                            </div>
-
-                            <div className="mb-4">
-                                <label htmlFor="emailInput" className="form-label fw-semibold text-secondary small text-uppercase ls-1">Email Address</label>
-                                <input
-                                    type="email"
-                                    className={`form-control input-modern ${touched.userEmail && !isEmailValid ? 'is-invalid' : ''}`}
-                                    id="emailInput"
-                                    placeholder="name@example.com"
-                                    autoComplete="username"
-                                    onBlur={() => handleBlur('userEmail')}
-                                    onChange={(e) => setUserDetails({ ...userDetails, userEmail: e.target.value })}
-                                />
-                                {touched.userEmail && !isEmailValid && (
-                                    <div className="invalid-feedback">
-                                        Please enter a valid email address.
+                        <form onSubmit={!showOtp ? handleRegister : handleVerifyOtp}>
+                            {!showOtp ? (
+                                <>
+                                    <div className="mb-4">
+                                        <label htmlFor="nameInput" className="form-label fw-semibold text-secondary small text-uppercase ls-1">Full Name</label>
+                                        <input
+                                            type="text"
+                                            className="form-control input-modern"
+                                            id="nameInput"
+                                            placeholder="John Doe"
+                                            onChange={(e) => setUserDetails({ ...userDetails, userName: e.target.value })}
+                                        />
                                     </div>
-                                )}
-                            </div>
 
-                            <div className="mb-4">
-                                <label htmlFor="emailInput" className="form-label fw-semibold text-secondary small text-uppercase ls-1">Address</label>
-                                <textarea
-                                    type="textarea"
-                                    className="form-control input-modern"
-                                    id="address"
-                                    placeholder="St. 123, City, State, Zip"
-                                    onChange={(e) => setUserDetails({ ...userDetails, userAddress: e.target.value })}
-                                />
-                            </div>
+                                    <div className="mb-4">
+                                        <label htmlFor="emailInput" className="form-label fw-semibold text-secondary small text-uppercase ls-1">Email Address</label>
+                                        <input
+                                            type="email"
+                                            className={`form-control input-modern ${touched.userEmail && !isEmailValid ? 'is-invalid' : ''}`}
+                                            id="emailInput"
+                                            placeholder="name@example.com"
+                                            autoComplete="username"
+                                            onBlur={() => handleBlur('userEmail')}
+                                            onChange={(e) => setUserDetails({ ...userDetails, userEmail: e.target.value })}
+                                        />
+                                        {touched.userEmail && !isEmailValid && (
+                                            <div className="invalid-feedback">
+                                                Please enter a valid email address.
+                                            </div>
+                                        )}
+                                    </div>
 
-                            <div className="row">
-                                <div className="col-md-6 mb-4">
-                                    <label htmlFor="passwordInput" className="form-label fw-semibold text-secondary small text-uppercase ls-1">Password</label>
-                                    <input
-                                        type="password"
-                                        className={`form-control input-modern ${touched.userPassword && !isPasswordValid ? 'is-invalid' : ''}`}
-                                        id="passwordInput"
-                                        placeholder="••••••••"
-                                        autoComplete="new-password"
-                                        onBlur={() => handleBlur('userPassword')}
-                                        onChange={(e) => setUserDetails({ ...userDetails, userPassword: e.target.value })}
-                                    />
-                                    {touched.userPassword && !isPasswordValid && (
-                                        <div className="invalid-feedback" style={{ fontSize: '0.75rem' }}>
-                                            Must contain: 1 Upper, 1 Lower, 1 Number, 1 Special
+                                    <div className="mb-4">
+                                        <label htmlFor="addressInput" className="form-label fw-semibold text-secondary small text-uppercase ls-1">Address</label>
+                                        <textarea
+                                            className="form-control input-modern"
+                                            id="address"
+                                            placeholder="St. 123, City, State, Zip"
+                                            onChange={(e) => setUserDetails({ ...userDetails, userAddress: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div className="row">
+                                        <div className="col-md-6 mb-4">
+                                            <label htmlFor="passwordInput" className="form-label fw-semibold text-secondary small text-uppercase ls-1">Password</label>
+                                            <input
+                                                type="password"
+                                                className={`form-control input-modern ${touched.userPassword && !isPasswordValid ? 'is-invalid' : ''}`}
+                                                id="passwordInput"
+                                                placeholder="••••••••"
+                                                autoComplete="new-password"
+                                                onBlur={() => handleBlur('userPassword')}
+                                                onChange={(e) => setUserDetails({ ...userDetails, userPassword: e.target.value })}
+                                            />
+                                            {touched.userPassword && !isPasswordValid && (
+                                                <div className="invalid-feedback" style={{ fontSize: '0.75rem' }}>
+                                                    Must contain: 1 Upper, 1 Lower, 1 Number, 1 Special
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
-                                </div>
-                                <div className="col-md-6 mb-4">
-                                    <label htmlFor="confirmPasswordInput" className="form-label fw-semibold text-secondary small text-uppercase ls-1">Confirm</label>
-                                    <input
-                                        type="password"
-                                        className={`form-control input-modern ${touched.userConfirmPassword && !doPasswordsMatch ? 'is-invalid' : ''}`}
-                                        id="confirmPasswordInput"
-                                        placeholder="••••••••"
-                                        autoComplete="new-password"
-                                        onBlur={() => handleBlur('userConfirmPassword')}
-                                        onChange={(e) => setUserDetails({ ...userDetails, userConfirmPassword: e.target.value })}
-                                    />
-                                    {touched.userConfirmPassword && !doPasswordsMatch && (
-                                        <div className="invalid-feedback">
-                                            Passwords do not match.
+                                        <div className="col-md-6 mb-4">
+                                            <label htmlFor="confirmPasswordInput" className="form-label fw-semibold text-secondary small text-uppercase ls-1">Confirm</label>
+                                            <input
+                                                type="password"
+                                                className={`form-control input-modern ${touched.userConfirmPassword && !doPasswordsMatch ? 'is-invalid' : ''}`}
+                                                id="confirmPasswordInput"
+                                                placeholder="••••••••"
+                                                autoComplete="new-password"
+                                                onBlur={() => handleBlur('userConfirmPassword')}
+                                                onChange={(e) => setUserDetails({ ...userDetails, userConfirmPassword: e.target.value })}
+                                            />
+                                            {touched.userConfirmPassword && !doPasswordsMatch && (
+                                                <div className="invalid-feedback">
+                                                    Passwords do not match.
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
-                                </div>
-                            </div>
+                                    </div>
 
-                            <div className="mb-4 form-check">
-                                <input type="checkbox" className="form-check-input" id="termsCheck"
-                                    onChange={(e) => setUserDetails({ ...userDetails, termsChecked: e.target.checked })}
-                                />
-                                <label className="form-check-label text-muted small" htmlFor="termsCheck">
-                                    I agree to the <a href="#" className="text-decoration-none">Terms of Service</a> & <a href="#" className="text-decoration-none">Privacy Policy</a>
-                                </label>
-                            </div>
+                                    <div className="mb-4 form-check">
+                                        <input type="checkbox" className="form-check-input" id="termsCheck"
+                                            onChange={(e) => setUserDetails({ ...userDetails, termsChecked: e.target.checked })}
+                                        />
+                                        <label className="form-check-label text-muted small" htmlFor="termsCheck">
+                                            I agree to the <a href="#" className="text-decoration-none">Terms of Service</a> & <a href="#" className="text-decoration-none">Privacy Policy</a>
+                                        </label>
+                                    </div>
 
-                            <motion.button
-                                type="submit"
-                                className={`btn btn-primary w-100 btn-modern mb-4 text-white ${!isFormValid ? 'disabled' : ''}`}
-                                whileHover={isFormValid ? { scale: 1.02 } : {}}
-                                whileTap={isFormValid ? { scale: 0.98 } : {}}
-                                onClick={handleRegister}
-                                disabled={!isFormValid || isLoading}
-                            >
-                                {isLoading ? (
-                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                ) : null}
-                                {isLoading ? 'Creating Account...' : 'Sign Up'}
-                            </motion.button>
+                                    <motion.button
+                                        type="submit"
+                                        className={`btn btn-primary w-100 btn-modern mb-4 text-white ${!isFormValid ? 'disabled' : ''}`}
+                                        whileHover={isFormValid ? { scale: 1.02 } : {}}
+                                        whileTap={isFormValid ? { scale: 0.98 } : {}}
+                                        onClick={handleRegister}
+                                        disabled={!isFormValid || isLoading}
+                                    >
+                                        {isLoading ? (
+                                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                        ) : null}
+                                        {isLoading ? 'Creating Account...' : 'Sign Up'}
+                                    </motion.button>
 
-                            <div className="text-center">
-                                <p className="text-muted mb-0">
-                                    Already have an account? <Link to="/" className="text-primary fw-bold text-decoration-none">Log In</Link>
-                                </p>
-                            </div>
+                                    <div className="text-center">
+                                        <p className="text-muted mb-0">
+                                            Already have an account? <Link to="/" className="text-primary fw-bold text-decoration-none">Log In</Link>
+                                        </p>
+                                    </div>
+                                </>
+                            ) : (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="text-center"
+                                >
+                                    <div className="mb-4">
+                                        <div className="bg-primary-light d-inline-block p-3 rounded-circle text-primary-custom mb-3">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
+                                                <path d="M.05 3.555A2 2 0 0 1 2 2h12a2 2 0 0 1 1.95 1.555L8 8.414.05 3.555ZM0 4.697v7.104l5.803-3.558L0 4.697ZM6.761 8.83l-6.57 4.027A2 2 0 0 0 2 14h12a2 2 0 0 0 1.808-1.144l-6.57-4.027L8 9.586l-1.239-.757Zm3.436-.586L16 11.801V4.697l-5.803 3.546Z" />
+                                            </svg>
+                                        </div>
+                                        <h4 className="fw-bold">Verify Your Email</h4>
+                                        <p className="text-muted">We've sent a 6-digit OTP to <strong>{userDetails.userEmail}</strong>. Please enter it below.</p>
+                                    </div>
+
+                                    <div className="mb-4">
+                                        <input
+                                            type="text"
+                                            className="form-control form-control-lg text-center fw-bold rounded-custom border-2 text-dark focus-ring-primary"
+                                            placeholder="------"
+                                            maxLength="6"
+                                            value={otp}
+                                            onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                                            style={{ letterSpacing: '0.5rem', fontSize: '1.5rem' }}
+                                        />
+                                    </div>
+
+                                    <motion.button
+                                        type="submit"
+                                        className={`btn btn-primary w-100 btn-modern mb-3 text-white ${otp.length !== 6 ? 'disabled' : ''}`}
+                                        whileHover={otp.length === 6 ? { scale: 1.02 } : {}}
+                                        whileTap={otp.length === 6 ? { scale: 0.98 } : {}}
+                                        onClick={handleVerifyOtp}
+                                        disabled={otp.length !== 6 || isVerifying}
+                                    >
+                                        {isVerifying ? (
+                                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                        ) : null}
+                                        {isVerifying ? 'Verifying...' : 'Verify Email'}
+                                    </motion.button>
+                                </motion.div>
+                            )}
                         </form>
                     </motion.div>
                 </div>

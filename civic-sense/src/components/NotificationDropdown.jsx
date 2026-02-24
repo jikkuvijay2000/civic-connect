@@ -22,9 +22,9 @@ const NotificationDropdown = ({ notifications, unreadCount, onMarkRead, isOpen, 
             >
                 <FaBell size={20} className="text-secondary" />
                 {unreadCount > 0 && (
-                    <span className="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: '0.65rem' }}>
+                        {unreadCount > 99 ? '99+' : unreadCount}
                         <span className="visually-hidden">New alerts</span>
-                        <span className="badge badge-pill badge-danger" style={{ fontSize: '0.6rem', position: 'absolute', top: '-5px', right: '-5px' }}>{unreadCount}</span>
                     </span>
                 )}
             </div>
@@ -39,7 +39,7 @@ const NotificationDropdown = ({ notifications, unreadCount, onMarkRead, isOpen, 
                         className="position-absolute end-0 mt-3 bg-white rounded-custom shadow-lg border border-light overflow-hidden z-3"
                         style={{ width: '320px', maxHeight: '400px', overflowY: 'auto' }}
                     >
-                        <div className="p-3 border-bottom d-flex justify-content-between align-items-center bg-gray-50 sticky-top top-0">
+                        <div className="p-3 border-bottom d-flex justify-content-between align-items-center bg-light z-1">
                             <h6 className="fw-bold mb-0 text-dark">Notifications</h6>
                             {unreadCount > 0 && <span className="badge bg-primary-subtle text-primary rounded-pill">{unreadCount} new</span>}
                         </div>
