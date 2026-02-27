@@ -89,7 +89,19 @@ const complaintSchema = new mongoose.Schema({
     accepted: {
         type: Boolean,
         default: false
-    }
+    },
+    isEdited: {
+        type: Boolean,
+        default: false
+    },
+    activityLog: [{
+        action: { type: String, required: true },
+        performedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },
+        performedByName: { type: String, default: 'Unknown' },
+        performedByRole: { type: String, default: 'Citizen', enum: ['Citizen', 'Authority', 'System'] },
+        note: { type: String, default: '' },
+        timestamp: { type: Date, default: Date.now }
+    }]
 
 }, { timestamps: true })
 

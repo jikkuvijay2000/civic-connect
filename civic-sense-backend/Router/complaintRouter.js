@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { createComplaint, getUserContributions, predictComplaint, generateCaption, getAuthorityComplaints, getAuthorityStats, updateComplaintStatus, analyzeVideo, addFeedback, getResolvedComplaints } = require("../Controllers/ComplaintController");
+const { createComplaint, getUserContributions, predictComplaint, generateCaption, getAuthorityComplaints, getAuthorityStats, updateComplaintStatus, analyzeVideo, addFeedback, getResolvedComplaints, editComplaint } = require("../Controllers/ComplaintController");
 const { protect, verifyAuthority } = require("../Middlewares/authMiddleware");
 const multer = require("multer");
 const path = require("path");
@@ -36,6 +36,9 @@ router.put("/update-status/:id", protect, verifyAuthority, updateComplaintStatus
 
 // Feedback Route
 router.post("/feedback/:id", protect, addFeedback);
+
+// Edit Complaint Route (user can edit their own pending complaint)
+router.put("/edit/:id", protect, editComplaint);
 
 // Global Resolved Complaints Route
 router.get("/resolved", protect, getResolvedComplaints);

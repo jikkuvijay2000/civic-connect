@@ -425,6 +425,36 @@ const resendOtp = async (req, res) => {
     }
 };
 
+const changePassword = async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
+
+    if (!currentPassword || !newPassword)
+        return res.status(400).json({ message: 'Current and new password are required' });
+
+    if (!passwordRegex.test(newPassword))
+        return res.status(400).json({ message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character' });
+
+    try {
+        const user = await userModel.findById(req.user._id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        const isMatch = await bcrypt.compare(currentPassword, user.userPassword);
+        if (!isMatch) return res.status(401).json({ message: 'Current password is incorrect' });
+
+        if (currentPassword === newPassword)
+            return res.status(400).json({ message: 'New password must differ from current password' });
+
+        const salt = await bcrypt.genSalt(12);
+        user.userPassword = await bcrypt.hash(newPassword, salt);
+        await user.save();
+
+        res.status(200).json({ status: 'success', message: 'Password updated successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
 module.exports = {
     registerUser,
     loginUser,
@@ -437,5 +467,6 @@ module.exports = {
     getNotifications,
     markNotificationRead,
     verifyEmail,
-    resendOtp
+    resendOtp,
+    changePassword,
 };

@@ -3,123 +3,141 @@ import { motion } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
 import { notify } from '../utils/notify';
 import api from '../api/axios';
+import civicLogo from '../assets/civic_logo_dark.png';
+import { FaLock, FaEye, FaEyeSlash, FaCheckCircle, FaArrowRight } from 'react-icons/fa';
+
+const PwField = ({ label, name, value, onChange, placeholder }) => {
+    const [show, setShow] = useState(false);
+    return (
+        <div style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 600, color: '#64748b', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>{label}</label>
+            <div style={{ position: 'relative' }}>
+                <FaLock size={13} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }} />
+                <input type={show ? 'text' : 'password'} name={name} value={value} onChange={onChange}
+                    placeholder={placeholder}
+                    style={{
+                        width: '100%', background: '#f8fafc', border: '1.5px solid #e2e8f0',
+                        borderRadius: '12px', padding: '13px 44px 13px 42px', color: '#0f172a', fontSize: '0.9rem', outline: 'none',
+                    }}
+                    onFocus={e => e.currentTarget.style.borderColor = '#6366f1'}
+                    onBlur={e => e.currentTarget.style.borderColor = '#e2e8f0'}
+                />
+                <button type="button" onClick={() => setShow(s => !s)}
+                    style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 0 }}>
+                    {show ? <FaEyeSlash size={13} /> : <FaEye size={13} />}
+                </button>
+            </div>
+        </div>
+    );
+};
+
+const PwRulePills = ({ pw }) => {
+    const rules = [
+        { ok: pw.length >= 8, text: '8+ chars' },
+        { ok: /[A-Z]/.test(pw), text: 'Uppercase' },
+        { ok: /[0-9]/.test(pw), text: 'Number' },
+        { ok: /[@$!%*?&#]/.test(pw), text: 'Special' },
+    ];
+    if (!pw) return null;
+    return (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px', marginBottom: '16px' }}>
+            {rules.map((r, i) => (
+                <span key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', fontWeight: 600, color: r.ok ? '#6ee7b7' : 'rgba(255,255,255,0.3)', background: r.ok ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.05)', borderRadius: '20px', padding: '2px 8px', border: `1px solid ${r.ok ? 'rgba(16,185,129,0.3)' : 'transparent'}` }}>
+                    <FaCheckCircle size={8} /> {r.text}
+                </span>
+            ))}
+        </div>
+    );
+};
 
 const ResetPassword = () => {
     const { token } = useParams();
     const navigate = useNavigate();
-    const [formData, setFormData] = useState({
-        userPassword: '',
-        userConfirmPassword: ''
-    });
+    const [done, setDone] = useState(false);
+    const [formData, setFormData] = useState({ userPassword: '', userConfirmPassword: '' });
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
+    const handleChange = e => setFormData(p => ({ ...p, [e.target.name]: e.target.value }));
+
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
+    const isValid = passwordRegex.test(formData.userPassword) && formData.userPassword === formData.userConfirmPassword;
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        if (formData.userPassword !== formData.userConfirmPassword) {
-            notify("error", "Passwords do not match");
-            return;
-        }
-
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
-        if (!passwordRegex.test(formData.userPassword)) {
-            notify("error", "Password must contain at least one uppercase, lowercase, number and special char (@$!%*?&#)");
-            return;
-        }
-
+        if (formData.userPassword !== formData.userConfirmPassword) { notify('error', 'Passwords do not match'); return; }
+        if (!passwordRegex.test(formData.userPassword)) { notify('error', 'Password does not meet the requirements'); return; }
         setIsLoading(true);
-
         try {
-            const response = await api.put(`/user/reset-password/${token}`, {
-                userPassword: formData.userPassword,
-                userConfirmPassword: formData.userConfirmPassword
-            });
-
-            if (response.status === 200) {
-                notify("success", "Password reset successfully! Redirecting to login...");
-                setTimeout(() => {
-                    navigate('/');
-                }, 2000);
-            } else {
-                notify("error", response.data.message || "Failed to reset password");
-            }
-        } catch (error) {
-            notify("error", error.response?.data?.message || "Invalid or expired token");
-        } finally {
-            setIsLoading(false);
-        }
+            await api.put(`/user/reset-password/${token}`, formData);
+            notify('success', 'Password reset successfully!');
+            setDone(true);
+            setTimeout(() => navigate('/'), 2500);
+        } catch (err) {
+            notify('error', err.response?.data?.message || 'Invalid or expired link');
+        } finally { setIsLoading(false); }
     };
 
     return (
-        <div className="container-fluid min-vh-100 d-flex flex-column align-items-center justify-content-center bg-light position-relative overflow-hidden">
-            {/* Background Decoration */}
-            <div className="position-absolute top-0 start-0 w-100 h-100 opacity-10"
-                style={{ background: 'radial-gradient(circle at 10% 20%, rgb(37, 99, 235) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgb(236, 72, 153) 0%, transparent 40%)' }}>
-            </div>
+        <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', fontFamily: "'Inter', sans-serif", position: 'relative', overflow: 'hidden' }}>
+
+            {/* Blobs */}
+            <div style={{ position: 'absolute', top: '-100px', right: '-100px', width: '380px', height: '380px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.14) 0%, transparent 70%)', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', bottom: '-80px', left: '-80px', width: '300px', height: '300px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
             <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5 }}
-                className="card shadow-lg border-0 rounded-custom-xl p-4 p-md-5 position-relative z-1"
-                style={{ maxWidth: '500px', width: '100%', background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(10px)' }}
-            >
-                <div className="text-center mb-4">
-                    <h2 className="fw-bold text-dark">Reset Password</h2>
-                    <p className="text-muted">Enter your new password below.</p>
+                initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}
+                style={{ width: '100%', maxWidth: '420px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '24px', padding: '44px 40px', boxShadow: '0 8px 32px rgba(0,0,0,0.08)' }}>
+
+                {/* Logo */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '36px' }}>
+                    <img src={civicLogo} alt="" width="22" />
+                    <span style={{ color: '#94a3b8', fontSize: '0.82rem', fontWeight: 600, letterSpacing: '0.04em' }}>CIVIC CONNECT</span>
                 </div>
 
-                <form onSubmit={handleSubmit}>
-                    <div className="mb-4">
-                        <label className="form-label fw-semibold text-secondary small text-uppercase ls-1">New Password</label>
-                        <input
-                            type="password"
-                            name="userPassword"
-                            className="form-control form-control-lg bg-surface border-light shadow-sm"
-                            placeholder="••••••••"
-                            value={formData.userPassword}
-                            onChange={handleChange}
-                            required
-                        />
-                    </div>
+                {!done ? (
+                    <>
+                        <div style={{ marginBottom: '28px' }}>
+                            <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: '#eef2ff', border: '1px solid #a5b4fc', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                                <FaLock size={20} style={{ color: '#6366f1' }} />
+                            </div>
+                            <h1 style={{ color: '#0f172a', fontWeight: 800, fontSize: '1.6rem', marginBottom: '8px' }}>Set new password</h1>
+                            <p style={{ color: '#64748b', fontSize: '0.87rem', lineHeight: 1.6 }}>Choose a strong password you haven't used before.</p>
+                        </div>
 
-                    <div className="mb-4">
-                        <label className="form-label fw-semibold text-secondary small text-uppercase ls-1">Confirm Password</label>
-                        <input
-                            type="password"
-                            name="userConfirmPassword"
-                            className="form-control form-control-lg bg-surface border-light shadow-sm"
-                            placeholder="••••••••"
-                            value={formData.userConfirmPassword}
-                            onChange={handleChange}
-                            required
-                        />
-                    </div>
+                        <form onSubmit={handleSubmit}>
+                            <PwField label="New password" name="userPassword" value={formData.userPassword} onChange={handleChange} placeholder="••••••••" />
+                            <PwRulePills pw={formData.userPassword} />
+                            <PwField label="Confirm password" name="userConfirmPassword" value={formData.userConfirmPassword} onChange={handleChange} placeholder="••••••••" />
+                            {formData.userConfirmPassword && formData.userPassword !== formData.userConfirmPassword && (
+                                <p style={{ color: '#f87171', fontSize: '0.72rem', marginTop: '-10px', marginBottom: '16px' }}>Passwords do not match</p>
+                            )}
 
-                    <button
-                        type="submit"
-                        className="btn btn-primary w-100 btn-lg mb-3 shadow-sm hover-scale"
-                        disabled={isLoading}
-                    >
-                        {isLoading ? (
-                            <span><span className="spinner-border spinner-border-sm me-2"></span> Updating...</span>
-                        ) : 'Reset Password'}
-                    </button>
-
-                    <div className="text-center">
-                        <button
-                            type="button"
-                            onClick={() => navigate('/')}
-                            className="btn btn-link text-decoration-none text-muted fw-semibold"
-                        >
-                            Cancel
-                        </button>
-                    </div>
-                </form>
+                            <button type="submit" disabled={!isValid || isLoading}
+                                style={{
+                                    width: '100%', padding: '13px', borderRadius: '12px', border: 'none', marginTop: '8px',
+                                    background: isValid ? 'linear-gradient(135deg,#6366f1,#4f46e5)' : '#f1f5f9',
+                                    color: isValid ? 'white' : '#94a3b8',
+                                    fontWeight: 700, fontSize: '0.9rem', cursor: isValid ? 'pointer' : 'not-allowed',
+                                    boxShadow: isValid ? '0 8px 24px rgba(99,102,241,0.3)' : 'none',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                    transition: 'all 0.2s',
+                                }}>
+                                {isLoading ? <><span className="spinner-border spinner-border-sm" /> Saving…</> : <>Reset Password <FaArrowRight size={13} /></>}
+                            </button>
+                        </form>
+                    </>
+                ) : (
+                    <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3 }} style={{ textAlign: 'center' }}>
+                        <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#ecfdf5', border: '1px solid #6ee7b7', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                            <FaCheckCircle size={28} style={{ color: '#10b981' }} />
+                        </div>
+                        <h2 style={{ color: '#0f172a', fontWeight: 800, fontSize: '1.4rem', marginBottom: '10px' }}>Password updated!</h2>
+                        <p style={{ color: '#64748b', fontSize: '0.87rem', marginBottom: '28px', lineHeight: 1.6 }}>
+                            Your password has been changed.<br />Redirecting to login…
+                        </p>
+                        <div className="spinner-border text-primary" style={{ width: '24px', height: '24px', borderWidth: '2px' }} />
+                    </motion.div>
+                )}
             </motion.div>
         </div>
     );

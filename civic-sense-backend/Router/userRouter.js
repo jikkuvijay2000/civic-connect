@@ -1,9 +1,8 @@
-const { registerUser, loginUser, refreshToken, logoutUser, getLeaderboard, forgotPassword, resetPassword, getUserStats, getNotifications, markNotificationRead, verifyEmail, resendOtp } = require("../Controllers/UserController");
+const { registerUser, loginUser, refreshToken, logoutUser, getLeaderboard, forgotPassword, resetPassword, getUserStats, getNotifications, markNotificationRead, verifyEmail, resendOtp, changePassword } = require("../Controllers/UserController");
 const express = require("express");
 const { generateCSRFToken, verifyCsrfToken } = require("../Middlewares/csrfMiddleware");
 const { protect } = require("../Middlewares/authMiddleware");
 const router = express.Router();
-
 
 router.post("/register", registerUser);
 router.post("/verify-email", verifyEmail);
@@ -17,10 +16,11 @@ router.get("/leaderboard", protect, getLeaderboard);
 router.post("/forgot-password", forgotPassword);
 router.put("/reset-password/:token", resetPassword);
 
-// New Routes
+// Authenticated routes
 router.get("/stats", protect, getUserStats);
 router.get("/notifications", protect, getNotifications);
 router.put("/notifications/:id/read", protect, markNotificationRead);
+router.put("/change-password", protect, changePassword);
 
 router.get("/protected", protect, (req, res) => {
     res.json({ message: "Protected content", userId: req.userId });

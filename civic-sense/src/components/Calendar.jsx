@@ -1,180 +1,312 @@
 import React, { useState } from 'react';
-import { FaChevronLeft, FaChevronRight, FaPlus } from 'react-icons/fa';
+import { FaChevronLeft, FaChevronRight, FaPlus, FaTrash, FaStickyNote, FaCalendarDay, FaTimes } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/axios';
+
+/* ── Note color options ──────────────────────────────────────────── */
+const NOTE_COLORS = [
+    { bg: '#fef9c3', border: '#fef08a', text: '#713f12' },   // yellow
+    { bg: '#dbeafe', border: '#bfdbfe', text: '#1e3a5f' },   // blue
+    { bg: '#dcfce7', border: '#bbf7d0', text: '#14532d' },   // green
+    { bg: '#fce7f3', border: '#fbcfe8', text: '#831843' },   // pink
+    { bg: '#f3e8ff', border: '#e9d5ff', text: '#581c87' },   // purple
+];
 
 const Calendar = () => {
     const [date, setDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
-    const [note, setNote] = useState("");
-
+    const [noteText, setNoteText] = useState('');
     const [events, setEvents] = useState([]);
+    const [colorIdx, setColorIdx] = useState(0);
+    const [deletingId, setDeletingId] = useState(null);
+    const [showNoteInput, setShowNoteInput] = useState(false);
 
     const fetchNotes = async () => {
         try {
-            const response = await api.get('/note/usernotes');
-            if (response.data.status === "success") {
-                const fetchedNotes = response.data.data.map(note => {
-                    const noteDate = new Date(note.date);
+            const res = await api.get('/note/usernotes');
+            if (res.data.status === 'success') {
+                setEvents(res.data.data.map(note => {
+                    const d = new Date(note.date);
                     return {
                         ...note,
-                        date: noteDate.getDate(),
-                        month: noteDate.getMonth(),
-                        year: noteDate.getFullYear(),
+                        date: d.getDate(),
+                        month: d.getMonth(),
+                        year: d.getFullYear(),
                         title: note.content,
-                        type: "personal",
-                        color: "text-info"
+                        colorIdx: note.colorIdx ?? Math.floor(Math.random() * NOTE_COLORS.length),
                     };
-                });
-                setEvents(fetchedNotes);
+                }));
             }
-        } catch (error) {
-            console.error("Error fetching notes:", error);
-        }
+        } catch (e) { console.error('Error fetching notes:', e); }
     };
 
-    React.useEffect(() => {
-        fetchNotes();
-    }, []);
+    React.useEffect(() => { fetchNotes(); }, []);
 
     const handleAddNote = async () => {
-        if (!note.trim()) return;
+        if (!noteText.trim()) return;
         try {
-            const response = await api.post('/note/add', {
-                content: note,
-                date: selectedDate
+            const res = await api.post('/note/add', {
+                content: noteText,
+                date: selectedDate,
+                colorIdx,
             });
-            if (response.data.status === "success") {
-                setNote("");
-                fetchNotes(); // Refresh notes
+            if (res.data.status === 'success') {
+                setNoteText('');
+                setShowNoteInput(false);
+                fetchNotes();
             }
-        } catch (error) {
-            console.error("Error adding note:", error);
-        }
+        } catch (e) { console.error('Error adding note:', e); }
     };
-    const currentMonth = date.toLocaleString('default', { month: 'long' });
+
+    const handleDeleteNote = async (noteId) => {
+        setDeletingId(noteId);
+        try {
+            await api.delete(`/note/delete/${noteId}`);
+            setEvents(prev => prev.filter(e => e._id !== noteId));
+        } catch (e) { console.error('Error deleting note:', e); }
+        finally { setDeletingId(null); }
+    };
+
+    /* ── Calendar grid helpers ── */
     const currentYear = date.getFullYear();
     const daysInMonth = new Date(currentYear, date.getMonth() + 1, 0).getDate();
     const firstDay = new Date(currentYear, date.getMonth(), 1).getDay();
+    const currentMonth = date.toLocaleString('default', { month: 'long' });
 
     const handlePrevMonth = () => setDate(new Date(currentYear, date.getMonth() - 1, 1));
     const handleNextMonth = () => setDate(new Date(currentYear, date.getMonth() + 1, 1));
-
     const handleDateClick = (day) => {
         setSelectedDate(new Date(currentYear, date.getMonth(), day));
+        setShowNoteInput(false);
     };
 
-    const getEventsForDay = (day) => {
-        return events.filter(e => e.date === day && e.month === date.getMonth() && e.year === date.getFullYear());
-    };
+    const getEventsForDay = (day) =>
+        events.filter(e => e.date === day && e.month === date.getMonth() && e.year === currentYear);
+
+    const selectedDayEvents = getEventsForDay(selectedDate.getDate());
+    const today = new Date();
 
     const days = [];
-    for (let i = 0; i < firstDay; i++) {
-        days.push(<div key={`empty-${i}`} className="p-2"></div>);
-    }
-
+    for (let i = 0; i < firstDay; i++) days.push(<div key={`e${i}`} className="p-1" />);
     for (let i = 1; i <= daysInMonth; i++) {
-        const isToday = i === new Date().getDate() && date.getMonth() === new Date().getMonth() && date.getFullYear() === new Date().getFullYear();
-        const isSelected = i === selectedDate.getDate() && date.getMonth() === selectedDate.getMonth() && date.getFullYear() === selectedDate.getFullYear();
-        const dayEvents = getEventsForDay(i);
-        const hasEvents = dayEvents.length > 0;
+        const isToday = i === today.getDate() && date.getMonth() === today.getMonth() && currentYear === today.getFullYear();
+        const isSelected = i === selectedDate.getDate() && date.getMonth() === selectedDate.getMonth() && currentYear === selectedDate.getFullYear();
+        const hasEvents = getEventsForDay(i).length > 0;
 
         days.push(
-            <motion.div
+            <motion.button
                 key={i}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
+                whileTap={{ scale: 0.88 }}
                 onClick={() => handleDateClick(i)}
-                className={`position-relative p-2 text-center rounded-circle cursor-pointer transition-fast
-                    ${isSelected ? 'bg-primary-custom text-white shadow-custom-md' : 'text-main hover-bg-light'}
-                    ${isToday && !isSelected ? 'border border-2 border-primary text-primary-custom fw-bold' : ''}`}
-                style={{ width: '36px', height: '36px', lineHeight: '20px', fontSize: '14px', margin: '2px' }}
+                className="border-0 d-flex align-items-center justify-content-center position-relative"
+                style={{
+                    width: '32px', height: '32px',
+                    borderRadius: '50%',
+                    background: isSelected ? '#6366f1' : isToday ? 'transparent' : 'transparent',
+                    color: isSelected ? 'white' : isToday ? '#6366f1' : '#374151',
+                    fontWeight: isSelected || isToday ? 700 : 400,
+                    border: isToday && !isSelected ? '2px solid #6366f1' : 'none',
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                    outline: 'none',
+                    margin: '2px',
+                }}
+                onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = '#eef2ff'; }}
+                onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
             >
                 {i}
                 {hasEvents && !isSelected && (
-                    <div className="position-absolute bottom-0 start-50 translate-middle-x mb-1 d-flex gap-1 justify-content-center">
-                        <div className="rounded-circle bg-primary-custom" style={{ width: '4px', height: '4px' }}></div>
-                    </div>
+                    <span
+                        className="position-absolute"
+                        style={{ bottom: '3px', left: '50%', transform: 'translateX(-50%)', width: '4px', height: '4px', borderRadius: '50%', background: '#6366f1' }}
+                    />
                 )}
-            </motion.div>
+            </motion.button>
         );
     }
 
-    const selectedDayEvents = getEventsForDay(selectedDate.getDate());
+    const nc = NOTE_COLORS[colorIdx];
 
     return (
-        <div className="bg-surface rounded-custom-xl shadow-custom-sm p-4 sticky-top border border-light">
-            {/* Header */}
+        <div>
+            {/* ── Month navigation ── */}
             <div className="d-flex justify-content-between align-items-center mb-4">
-                <h5 className="fw-bold mb-0 text-dark text-capitalize ls-wide">{currentMonth} <span className="fw-light">{currentYear}</span></h5>
-                <div className="d-flex gap-2">
-                    <button onClick={handlePrevMonth} className="btn btn-light rounded-circle p-2 shadow-sm border-0 hover-scale"><FaChevronLeft size={12} /></button>
-                    <button onClick={handleNextMonth} className="btn btn-light rounded-circle p-2 shadow-sm border-0 hover-scale"><FaChevronRight size={12} /></button>
+                <div>
+                    <h6 className="fw-bold text-dark mb-0">{currentMonth}</h6>
+                    <small className="text-muted">{currentYear}</small>
+                </div>
+                <div className="d-flex gap-1">
+                    <button onClick={handlePrevMonth} className="btn btn-sm border d-flex align-items-center justify-content-center" style={{ width: '28px', height: '28px', borderRadius: '8px', padding: 0, background: 'white' }}>
+                        <FaChevronLeft size={10} className="text-muted" />
+                    </button>
+                    <button onClick={handleNextMonth} className="btn btn-sm border d-flex align-items-center justify-content-center" style={{ width: '28px', height: '28px', borderRadius: '8px', padding: 0, background: 'white' }}>
+                        <FaChevronRight size={10} className="text-muted" />
+                    </button>
                 </div>
             </div>
 
-            {/* Days Header */}
-            <div className="d-flex justify-content-between text-muted small mb-3 fw-bold text-uppercase opacity-50" style={{ fontSize: '0.75rem' }}>
+            {/* ── Day headers ── */}
+            <div className="d-flex justify-content-between mb-2">
                 {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-                    <div key={i} style={{ width: '36px', textAlign: 'center' }}>{d}</div>
+                    <div key={i} style={{ width: '32px', textAlign: 'center', fontSize: '0.68rem', fontWeight: 600, color: '#94a3b8', margin: '2px' }}>
+                        {d}
+                    </div>
                 ))}
             </div>
 
-            {/* Grid */}
-            <div className="d-flex flex-wrap justify-content-between align-items-center mb-4">
+            {/* ── Grid ── */}
+            <div className="d-flex flex-wrap mb-4">
                 {days}
             </div>
 
-            {/* Selected Date Details */}
+            {/* ── Selected date + notes ── */}
             <div className="border-top pt-4">
-                <h6 className="fw-bold text-dark mb-3 d-flex align-items-center justify-content-between">
-                    <span>{selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</span>
-                    {selectedDayEvents.length > 0 &&
-                        <span className="badge bg-primary-light text-primary-custom rounded-pill px-3 py-1 fw-medium" style={{ fontSize: '11px' }}>
-                            {selectedDayEvents.length} Events
+                <div className="d-flex align-items-center justify-content-between mb-3">
+                    <div className="d-flex align-items-center gap-2">
+                        <FaCalendarDay size={12} style={{ color: '#6366f1' }} />
+                        <span className="fw-bold text-dark" style={{ fontSize: '0.82rem' }}>
+                            {selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                         </span>
-                    }
-                </h6>
+                    </div>
+                    <button
+                        onClick={() => setShowNoteInput(!showNoteInput)}
+                        className="btn btn-sm d-flex align-items-center gap-1 fw-medium"
+                        style={{ borderRadius: '8px', background: showNoteInput ? '#eef2ff' : 'white', color: '#6366f1', border: '1px solid #a5b4fc', fontSize: '0.75rem', padding: '4px 10px' }}
+                    >
+                        {showNoteInput ? <><FaTimes size={10} /> Cancel</> : <><FaPlus size={10} /> Add</>}
+                    </button>
+                </div>
 
-                <div className="d-flex flex-column gap-3 mb-3 max-vh-20 overflow-auto custom-scrollbar">
-                    <AnimatePresence mode="wait">
+                {/* Note input */}
+                <AnimatePresence>
+                    {showNoteInput && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="overflow-hidden mb-3"
+                        >
+                            {/* Color picker */}
+                            <div className="d-flex gap-1 mb-2">
+                                {NOTE_COLORS.map((c, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => setColorIdx(i)}
+                                        className="border-0 rounded-circle"
+                                        style={{
+                                            width: '18px', height: '18px',
+                                            background: c.bg,
+                                            border: `2px solid ${i === colorIdx ? c.text : c.border}`,
+                                            cursor: 'pointer',
+                                            outline: i === colorIdx ? `2px solid ${c.text}` : 'none',
+                                            outlineOffset: '1px',
+                                        }}
+                                    />
+                                ))}
+                            </div>
+
+                            <div className="rounded-3 overflow-hidden border" style={{ background: nc.bg, borderColor: nc.border }}>
+                                <textarea
+                                    className="form-control border-0 shadow-none p-3"
+                                    rows={2}
+                                    placeholder="Write your note..."
+                                    value={noteText}
+                                    onChange={e => setNoteText(e.target.value)}
+                                    onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleAddNote()}
+                                    autoFocus
+                                    style={{ background: 'transparent', color: nc.text, fontSize: '0.82rem', resize: 'none' }}
+                                />
+                                <div className="d-flex justify-content-end px-3 pb-2">
+                                    <button
+                                        onClick={handleAddNote}
+                                        disabled={!noteText.trim()}
+                                        className="btn btn-sm fw-bold"
+                                        style={{ borderRadius: '8px', background: nc.text, color: 'white', border: 'none', fontSize: '0.75rem', padding: '4px 14px', opacity: noteText.trim() ? 1 : 0.5 }}
+                                    >
+                                        Save Note
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Notes list */}
+                <div className="d-flex flex-column gap-2" style={{ maxHeight: '220px', overflowY: 'auto', scrollbarWidth: 'none' }}>
+                    <AnimatePresence mode="popLayout">
                         {selectedDayEvents.length > 0 ? (
-                            selectedDayEvents.map((ev, index) => (
-                                <motion.div
-                                    key={index}
-                                    initial={{ opacity: 0, x: -10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: 10 }}
-                                    className="p-3 rounded-custom bg-body border-start border-4 border-primary shadow-sm hover-scale cursor-default"
-                                >
-                                    <div className={`fw-bold small mb-1 ${ev.color}`}>{ev.title}</div>
-                                    <div className="text-muted extra-small text-uppercase" style={{ fontSize: '10px', letterSpacing: '1px' }}>{ev.type}</div>
-                                </motion.div>
-                            ))
+                            selectedDayEvents.map((ev) => {
+                                const c = NOTE_COLORS[ev.colorIdx ?? 0];
+                                return (
+                                    <motion.div
+                                        key={ev._id}
+                                        initial={{ opacity: 0, y: 8 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, x: 24, scale: 0.94 }}
+                                        transition={{ duration: 0.18 }}
+                                        className="position-relative overflow-hidden rounded-3"
+                                        style={{
+                                            background: c.bg,
+                                            border: `1px solid ${c.border}`,
+                                            boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                                        }}
+                                    >
+                                        {/* Left accent bar */}
+                                        <div style={{
+                                            position: 'absolute', top: 0, left: 0, bottom: 0,
+                                            width: '3px', background: c.text, borderRadius: '3px 0 0 3px',
+                                        }} />
+
+                                        <div className="ps-4 pe-3 pt-3 pb-2 d-flex align-items-start gap-2">
+                                            {/* Note content */}
+                                            <p className="mb-0 flex-grow-1" style={{ fontSize: '0.82rem', color: c.text, lineHeight: 1.6, fontWeight: 500 }}>
+                                                {ev.title}
+                                            </p>
+                                            {/* Delete button */}
+                                            <button
+                                                onClick={() => handleDeleteNote(ev._id)}
+                                                disabled={deletingId === ev._id}
+                                                title="Delete note"
+                                                className="border-0 d-flex align-items-center justify-content-center flex-shrink-0"
+                                                style={{
+                                                    width: '24px', height: '24px', borderRadius: '8px',
+                                                    background: `${c.text}18`,
+                                                    color: c.text, cursor: 'pointer',
+                                                    transition: 'background 0.15s',
+                                                    marginTop: '1px',
+                                                }}
+                                                onMouseEnter={e => e.currentTarget.style.background = `${c.text}30`}
+                                                onMouseLeave={e => e.currentTarget.style.background = `${c.text}18`}
+                                            >
+                                                {deletingId === ev._id
+                                                    ? <span className="spinner-border" style={{ width: '10px', height: '10px', borderWidth: '1.5px' }} />
+                                                    : <FaTrash size={9} />}
+                                            </button>
+                                        </div>
+
+                                        {/* Faint timestamp */}
+                                        <div className="ps-4 pb-2" style={{ fontSize: '0.68rem', color: c.text, opacity: 0.5, fontWeight: 500 }}>
+                                            {selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                        </div>
+                                    </motion.div>
+                                );
+                            })
                         ) : (
                             <motion.div
-                                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                                className="text-center py-4 text-muted small bg-light rounded-custom border border-dashed"
+                                key="empty"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="text-center py-4 rounded-3"
+                                style={{ background: '#f8fafc', border: '1.5px dashed #e2e8f0' }}
                             >
-                                No events scheduled for this day.
+                                <FaStickyNote size={20} style={{ color: '#cbd5e1', marginBottom: '8px' }} />
+                                <p className="mb-0 fw-medium" style={{ fontSize: '0.75rem', color: '#94a3b8' }}>No notes for this day</p>
+                                <small style={{ fontSize: '0.68rem', color: '#cbd5e1' }}>Click + Add to create one</small>
                             </motion.div>
                         )}
                     </AnimatePresence>
-                </div>
-
-                {/* Quick Add */}
-                <div className="bg-body p-2 rounded-custom border">
-                    <div className="input-group input-group-sm">
-                        <input
-                            type="text"
-                            className="form-control border-0 bg-transparent shadow-none ps-3"
-                            placeholder="Add a quick note..."
-                            value={note}
-                            onChange={(e) => setNote(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleAddNote()}
-                        />
-                        <button onClick={handleAddNote} className="btn text-primary-custom shadow-none hover-scale"><FaPlus /></button>
-                    </div>
                 </div>
             </div>
         </div>

@@ -183,6 +183,10 @@ const createComplaint = async (req, res) => {
         if (priority === 'Emergency') finalAIScore = 100;
         else if (priority === 'High') finalAIScore = Math.max(finalAIScore, 90);
 
+        // Fetch user name for log
+        const creator = await userModel.findById(userId).select('userName');
+        const creatorName = creator ? creator.userName : 'Citizen';
+
         const newComplaint = new Complaint({
             complaintId: `CMP-${Date.now()}`,
             complaintDescription: description,
@@ -195,7 +199,15 @@ const createComplaint = async (req, res) => {
             complaintPriority: priority,
             complaintUser: userId,
             complaintAuthority: getDepartmentFromCategory(category),
-            complaintAIScore: finalAIScore
+            complaintAIScore: finalAIScore,
+            activityLog: [{
+                action: 'Complaint Filed',
+                performedBy: userId,
+                performedByName: creatorName,
+                performedByRole: 'Citizen',
+                note: `Complaint filed under category: ${category} | Priority: ${priority}`,
+                timestamp: new Date()
+            }]
         });
 
         // Re-mapping to match model
@@ -464,6 +476,19 @@ const updateComplaintStatus = async (req, res) => {
             }
         }
 
+        // Log the status change
+        const authorityUser = await userModel.findById(req.user._id).select('userName');
+        const authorityName = authorityUser ? authorityUser.userName : 'Authority';
+        if (!complaint.activityLog) complaint.activityLog = [];
+        complaint.activityLog.push({
+            action: `Status Changed to ${status}`,
+            performedBy: req.user._id,
+            performedByName: authorityName,
+            performedByRole: 'Authority',
+            note: notes || `Status updated to ${status}`,
+            timestamp: new Date()
+        });
+
         await complaint.save();
 
         // Create Notification for User
@@ -549,9 +574,24 @@ const addFeedback = async (req, res) => {
 
         const Notification = require('../Models/Notification');
 
+        // Fetch citizen name for log
+        const citizenUser = await userModel.findById(req.user._id).select('userName');
+        const citizenName = citizenUser ? citizenUser.userName : 'Citizen';
+
+        if (!complaint.activityLog) complaint.activityLog = [];
+
         if (action === 'Accept') {
             complaint.complaintStatus = "Closed";
             complaint.accepted = true;
+
+            complaint.activityLog.push({
+                action: 'Resolution Accepted',
+                performedBy: req.user._id,
+                performedByName: citizenName,
+                performedByRole: 'Citizen',
+                note: message || 'Citizen accepted the resolution.',
+                timestamp: new Date()
+            });
 
             const newNotification = new Notification({
                 recipientRole: 'Authority',
@@ -562,6 +602,15 @@ const addFeedback = async (req, res) => {
             await newNotification.save();
         } else {
             complaint.complaintStatus = "Pending";
+
+            complaint.activityLog.push({
+                action: 'Complaint Reopened',
+                performedBy: req.user._id,
+                performedByName: citizenName,
+                performedByRole: 'Citizen',
+                note: message || 'Citizen reopened the complaint.',
+                timestamp: new Date()
+            });
 
             const newNotification = new Notification({
                 recipientRole: 'Authority',
@@ -592,6 +641,71 @@ const addFeedback = async (req, res) => {
     }
 };
 
+
+const editComplaint = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { description } = req.body;
+        const userId = req.user._id;
+
+        if (!description || !description.trim()) {
+            return res.status(400).json({ message: "Description is required" });
+        }
+
+        let complaint = await Complaint.findOne({ complaintId: id });
+        if (!complaint && id.match(/^[0-9a-fA-F]{24}$/)) {
+            complaint = await Complaint.findById(id);
+        }
+
+        if (!complaint) {
+            return res.status(404).json({ message: "Complaint not found" });
+        }
+
+        // Only the owner can edit
+        if (complaint.complaintUser.toString() !== userId.toString()) {
+            return res.status(403).json({ message: "Not authorized to edit this complaint" });
+        }
+
+        // Only allow editing if not resolved/closed
+        if (['Resolved', 'Closed'].includes(complaint.complaintStatus)) {
+            return res.status(400).json({ message: "Cannot edit a resolved or closed complaint" });
+        }
+
+        // Snapshot the old clean description (strip title prefix) for the log
+        const titleMatch = complaint.complaintDescription.match(/^(\*\*.*?\*\*\n?)/);
+        const titlePrefix = titleMatch ? titleMatch[1] : '';
+        const oldDescription = complaint.complaintDescription.replace(/^\*\*(.*?)\*\*\n?/, '').trim();
+        const newDescription = description.trim();
+
+        complaint.complaintDescription = titlePrefix + newDescription;
+        complaint.isEdited = true;
+
+        // Fetch citizen name
+        const citizenUser = await userModel.findById(userId).select('userName');
+        const citizenName = citizenUser ? citizenUser.userName : 'Citizen';
+
+        // Build a readable before→after snippet (cap at 80 chars each)
+        const cap = (str) => str.length > 80 ? str.substring(0, 80) + '...' : str;
+        const editNote = `Edited description from "${cap(oldDescription)}" to "${cap(newDescription)}"`;
+
+        if (!complaint.activityLog) complaint.activityLog = [];
+        complaint.activityLog.push({
+            action: 'Complaint Edited',
+            performedBy: userId,
+            performedByName: citizenName,
+            performedByRole: 'Citizen',
+            note: editNote,
+            timestamp: new Date()
+        });
+
+        await complaint.save();
+
+        res.status(200).json({ message: "Complaint updated successfully", complaint });
+    } catch (error) {
+        console.error("Error editing complaint:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
 
 const analyzeVideo = async (req, res) => {
     try {
@@ -647,4 +761,4 @@ const analyzeVideo = async (req, res) => {
     }
 };
 
-module.exports = { createComplaint, getUserContributions, predictComplaint, generateCaption, getAuthorityComplaints, getAuthorityStats, updateComplaintStatus, addFeedback, getResolvedComplaints, analyzeVideo };
+module.exports = { createComplaint, getUserContributions, predictComplaint, generateCaption, getAuthorityComplaints, getAuthorityStats, updateComplaintStatus, addFeedback, getResolvedComplaints, analyzeVideo, editComplaint };

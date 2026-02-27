@@ -5,388 +5,305 @@ import civicCleaning from '../assets/realistic_cleaning.png';
 import civicRecycling from '../assets/realistic_recycling.png';
 import civicTraffic from '../assets/realistic_traffic.png';
 import civicCommunity from '../assets/realistic_community.png';
-import civicLogo from '../assets/civic_sense_symbolic_logo.png';
+import civicLogo from '../assets/civic_logo_dark.png';
 import { notify } from '../utils/notify';
 import api from '../api/axios';
-import { BASE_URL } from '../services/baseUrl';
-import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaEnvelope, FaLock, FaArrowRight, FaShieldAlt } from 'react-icons/fa';
+
+const SLIDES = [
+    { src: civicCleaning, caption: 'Community Clean-Up', description: 'Together we keep our city clean and vibrant' },
+    { src: civicRecycling, caption: 'Waste Segregation', description: 'Recycle today for a greener tomorrow' },
+    { src: civicTraffic, caption: 'Follow Traffic Rules', description: 'Safe streets create happy communities' },
+    { src: civicCommunity, caption: 'Help Each Other', description: 'Compassion is what builds strong communities' },
+];
+
+/* ── Shared input component ── */
+const Field = ({ icon: Icon, label, id, type, placeholder, value, onChange, extra, autoComplete }) => {
+    const [show, setShow] = useState(false);
+    const isPw = type === 'password';
+    return (
+        <div className="mb-4">
+            <label htmlFor={id} style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#64748b', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>
+                {label}
+            </label>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                {Icon && <Icon size={14} style={{ position: 'absolute', left: '14px', color: '#94a3b8', pointerEvents: 'none' }} />}
+                <input
+                    id={id}
+                    type={isPw ? (show ? 'text' : 'password') : type}
+                    placeholder={placeholder}
+                    value={value}
+                    onChange={onChange}
+                    autoComplete={autoComplete}
+                    style={{
+                        width: '100%',
+                        background: '#f8fafc',
+                        border: '1.5px solid #e2e8f0',
+                        borderRadius: '12px',
+                        padding: `13px ${isPw ? '44px' : '14px'} 13px ${Icon ? '42px' : '14px'}`,
+                        color: '#0f172a',
+                        fontSize: '0.9rem',
+                        outline: 'none',
+                        transition: 'border-color 0.2s',
+                    }}
+                    onFocus={e => e.currentTarget.style.borderColor = '#6366f1'}
+                    onBlur={e => e.currentTarget.style.borderColor = '#e2e8f0'}
+                />
+                {isPw && (
+                    <button type="button" onClick={() => setShow(s => !s)}
+                        style={{ position: 'absolute', right: '14px', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 0 }}>
+                        {show ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
+                    </button>
+                )}
+            </div>
+            {extra}
+        </div>
+    );
+};
+
+/* ── OTP Screen ── */
+const OtpScreen = ({ email, onVerify, onResend, onBack, isVerifying, isResending }) => {
+    const [otp, setOtp] = useState('');
+    return (
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} transition={{ duration: 0.25 }}>
+            <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+                <div style={{ width: '60px', height: '60px', borderRadius: '16px', background: '#eef2ff', border: '1px solid #a5b4fc', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                    <FaShieldAlt size={24} style={{ color: '#6366f1' }} />
+                </div>
+                <h2 style={{ color: '#0f172a', fontWeight: 700, fontSize: '1.5rem', marginBottom: '10px' }}>Check your email</h2>
+                <p style={{ color: '#64748b', fontSize: '0.88rem', lineHeight: 1.6 }}>
+                    We've sent a 6-digit OTP to<br /><strong style={{ color: '#334155' }}>{email}</strong>
+                </p>
+            </div>
+
+            <div style={{ marginBottom: '24px' }}>
+                <input
+                    type="text" maxLength="6" value={otp}
+                    onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
+                    placeholder="000000"
+                    style={{
+                        width: '100%', textAlign: 'center', letterSpacing: '0.5rem',
+                        fontSize: '1.6rem', fontWeight: 700,
+                        background: '#f8fafc', border: '1.5px solid #e2e8f0',
+                        borderRadius: '14px', padding: '16px', color: '#0f172a', outline: 'none',
+                    }}
+                    onFocus={e => e.currentTarget.style.borderColor = '#6366f1'}
+                    onBlur={e => e.currentTarget.style.borderColor = '#e2e8f0'}
+                />
+            </div>
+
+            <motion.button
+                type="button"
+                onClick={() => onVerify(otp)}
+                disabled={otp.length !== 6 || isVerifying}
+                whileTap={otp.length === 6 ? { scale: 0.98 } : {}}
+                style={{
+                    width: '100%', padding: '14px', borderRadius: '12px', border: 'none', cursor: otp.length === 6 ? 'pointer' : 'not-allowed',
+                    background: otp.length === 6 ? 'linear-gradient(135deg, #6366f1, #4f46e5)' : '#f1f5f9',
+                    color: otp.length === 6 ? 'white' : '#94a3b8',
+                    fontWeight: 700, fontSize: '0.9rem',
+                    boxShadow: otp.length === 6 ? '0 8px 24px rgba(99,102,241,0.3)' : 'none',
+                    marginBottom: '16px', transition: 'all 0.2s',
+                }}
+            >
+                {isVerifying ? <><span className="spinner-border spinner-border-sm me-2" />Verifying…</> : 'Verify Email'}
+            </motion.button>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <button type="button" onClick={onBack}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '0.82rem', padding: 0 }}>
+                    ← Back to login
+                </button>
+                <button type="button" onClick={onResend} disabled={isResending}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6366f1', fontWeight: 600, fontSize: '0.82rem', padding: 0 }}>
+                    {isResending ? 'Resending…' : 'Resend OTP'}
+                </button>
+            </div>
+        </motion.div>
+    );
+};
 
 const Login = () => {
-    // Carousel images with captions
-    const carouselImages = [
-        { src: civicCleaning, caption: 'Community Clean-Up', description: 'Together we keep our city clean' },
-        { src: civicRecycling, caption: 'Waste Segregation', description: 'Recycle for a greener tomorrow' },
-        { src: civicTraffic, caption: 'Follow Traffic Rules', description: 'Safe streets, happy community' },
-        { src: civicCommunity, caption: 'Help Each Other', description: 'Compassion builds strong communities' }
-    ];
-
-    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [currentSlide, setCurrentSlide] = useState(0);
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
-
-    // OTP State
     const [showOtp, setShowOtp] = useState(false);
-    const [otp, setOtp] = useState('');
     const [unverifiedEmail, setUnverifiedEmail] = useState('');
     const [isVerifying, setIsVerifying] = useState(false);
     const [isResending, setIsResending] = useState(false);
-
-    // UI State
-    const [showPassword, setShowPassword] = useState(false);
-
-    // Auto-rotate carousel every 4 seconds
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setCurrentImageIndex((prevIndex) => (prevIndex + 1) % carouselImages.length);
-        }, 4000);
-        return () => clearInterval(interval);
-    }, [carouselImages.length]);
+    const [loginDetails, setLoginDetails] = useState({ userEmail: '', userPassword: '' });
 
     useEffect(() => {
-        api.get('/user/csrf-token');
+        const t = setInterval(() => setCurrentSlide(p => (p + 1) % SLIDES.length), 4000);
+        return () => clearInterval(t);
     }, []);
 
-    // Animation variants
-    const fadeIn = {
-        hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
-    };
-
-    const [loginDetails, setLoginDetails] = useState({
-        userEmail: '',
-        userPassword: ''
-    });
+    useEffect(() => { api.get('/user/csrf-token'); }, []);
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    const isFormValid = loginDetails.userEmail && loginDetails.userPassword && emailRegex.test(loginDetails.userEmail);
 
-    const isFormValid = loginDetails.userEmail &&
-        loginDetails.userPassword &&
-        emailRegex.test(loginDetails.userEmail);
+    const getCsrfToken = () =>
+        document.cookie.split('; ').find(r => r.startsWith('csrfToken='))?.split('=')[1];
 
-    const getCsrfToken = () => {
-        return document.cookie
-            .split('; ')
-            .find(row => row.startsWith('csrfToken='))
-            ?.split('=')[1];
-    }
     const handleLogin = async (e) => {
         e.preventDefault();
-
-        if (!loginDetails.userEmail || !loginDetails.userPassword) {
-            notify("error", "All fields are required");
-            return;
-        }
-
-        if (!emailRegex.test(loginDetails.userEmail)) {
-            notify("error", "Invalid email address");
-            return;
-        }
-
+        if (!isFormValid) return;
         setIsLoading(true);
-
         try {
-            const response = await api.post('user/login', {
-                userEmail: loginDetails.userEmail,
-                userPassword: loginDetails.userPassword
-            }, {
-                headers: {
-                    'x-csrf-token': getCsrfToken()
-                }
-            });
-
-            if (response.status === 200) {
-                const { user, accessToken } = response.data;
+            const res = await api.post('user/login', loginDetails, { headers: { 'x-csrf-token': getCsrfToken() } });
+            if (res.status === 200) {
+                const { user, accessToken } = res.data;
                 localStorage.setItem('user', JSON.stringify(user));
-                if (accessToken) {
-                    localStorage.setItem('accessToken', accessToken);
-                }
-
-                notify("success", "Login successful!");
-                setTimeout(() => {
-                    if (user.role === 'Authority') {
-                        navigate('/authority');
-                    } else {
-                        navigate('/dashboard');
-                    }
-                }, 1000);
-            } else {
-                notify("error", response.data.message || "Login failed");
+                if (accessToken) localStorage.setItem('accessToken', accessToken);
+                notify('success', 'Login successful!');
+                setTimeout(() => navigate(user.role === 'Authority' ? '/authority' : '/dashboard'), 800);
             }
         } catch (err) {
             if (err.response?.status === 403 && err.response?.data?.unverified) {
                 setUnverifiedEmail(loginDetails.userEmail);
                 setShowOtp(true);
-                notify("warning", err.response.data.message);
+                notify('warning', err.response.data.message);
             } else {
-                notify("error", err.response?.data?.message || "Something went wrong");
+                notify('error', err.response?.data?.message || 'Something went wrong');
             }
-        } finally {
-            setIsLoading(false);
-        }
-    }
+        } finally { setIsLoading(false); }
+    };
 
-    const handleVerifyOtp = async (e) => {
-        e.preventDefault();
-        if (!otp || otp.length !== 6) {
-            notify("error", "Please enter a valid 6-digit OTP.");
-            return;
-        }
-
+    const handleVerifyOtp = async (otp) => {
         setIsVerifying(true);
         try {
-            const response = await api.post('/user/verify-email', {
-                userEmail: unverifiedEmail,
-                otp: otp
-            });
-
-            if (response.status === 200) {
-                notify("success", "Email verified successfully! Please log in again.");
-                setShowOtp(false);
-                setOtp('');
-                setLoginDetails({ ...loginDetails, userPassword: '' }); // Clear password for security
-            }
+            await api.post('/user/verify-email', { userEmail: unverifiedEmail, otp });
+            notify('success', 'Email verified! Please log in.');
+            setShowOtp(false);
         } catch (err) {
-            notify("error", err.response?.data?.message || "Failed to verify OTP. Please try again.");
-        } finally {
-            setIsVerifying(false);
-        }
+            notify('error', err.response?.data?.message || 'Invalid OTP');
+        } finally { setIsVerifying(false); }
     };
 
     const handleResendOtp = async () => {
         setIsResending(true);
         try {
-            const response = await api.post('/user/resend-otp', {
-                userEmail: unverifiedEmail
-            });
-            if (response.status === 200) {
-                notify("success", "A new OTP has been sent to your email.");
-            }
+            await api.post('/user/resend-otp', { userEmail: unverifiedEmail });
+            notify('success', 'New OTP sent!');
         } catch (err) {
-            notify("error", err.response?.data?.message || "Failed to resend OTP.");
-        } finally {
-            setIsResending(false);
-        }
+            notify('error', err.response?.data?.message || 'Failed to resend');
+        } finally { setIsResending(false); }
     };
 
-
-
     return (
-        <div className="container-fluid min-vh-100 p-0 position-relative overflow-hidden">
-            <div className="row g-0 min-vh-100 position-relative" style={{ zIndex: 1 }}>
-                {/* Left Column: Full-Height Image Carousel */}
-                <div className="col-lg-6 d-none d-lg-block position-relative overflow-hidden p-0">
+        <div style={{ display: 'flex', minHeight: '100vh', background: 'white', fontFamily: "'Inter', sans-serif" }}>
+
+            {/* ── Left panel: image carousel ── */}
+            <div className="d-none d-lg-block" style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+                <AnimatePresence mode="wait">
+                    <motion.img key={currentSlide}
+                        src={SLIDES[currentSlide].src}
+                        initial={{ opacity: 0, scale: 1.04 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.04 }}
+                        transition={{ duration: 1.2 }}
+                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                </AnimatePresence>
+                {/* Gradient overlay */}
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(15,23,42,0.3) 0%, rgba(15,23,42,0.85) 100%)' }} />
+
+                {/* Top logo */}
+                <div style={{ position: 'absolute', top: '32px', left: '36px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <img src={civicLogo} alt="Civic Connect" width="28" style={{ opacity: 0.9 }} />
+                    <span style={{ color: 'white', fontWeight: 700, fontSize: '1rem', letterSpacing: '0.5px' }}>Civic Connect</span>
+                </div>
+
+                {/* Bottom caption */}
+                <div style={{ position: 'absolute', bottom: '48px', left: '36px', right: '36px' }}>
                     <AnimatePresence mode="wait">
-                        <motion.div
-                            key={currentImageIndex}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 1 }}
-                            className="position-absolute w-100 h-100 top-0 start-0"
-                        >
-                            <img
-                                src={carouselImages[currentImageIndex].src}
-                                className="w-100 h-100"
-                                alt={carouselImages[currentImageIndex].caption}
-                                style={{ objectFit: 'cover', objectPosition: 'center' }}
-                            />
-                            {/* Dark Overlay Gradient */}
-                            <div className="position-absolute top-0 start-0 w-100 h-100"
-                                style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.7) 100%)' }}>
-                            </div>
+                        <motion.div key={currentSlide + '-txt'}
+                            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                            transition={{ duration: 0.5, delay: 0.2 }}>
+                            <h2 style={{ color: 'white', fontWeight: 800, fontSize: '1.8rem', marginBottom: '8px' }}>{SLIDES[currentSlide].caption}</h2>
+                            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.95rem', marginBottom: '20px' }}>{SLIDES[currentSlide].description}</p>
                         </motion.div>
                     </AnimatePresence>
-
-                    {/* Content Overlay */}
-                    <div className="position-absolute bottom-0 start-0 w-100 p-5 text-white z-2">
-                        <motion.div
-                            key={currentImageIndex + "-text"}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.6, delay: 0.2 }}
-                        >
-                            <h2 className="display-5 fw-bold mb-3">{carouselImages[currentImageIndex].caption}</h2>
-                            <p className="lead fw-light mb-4 text-white-50">{carouselImages[currentImageIndex].description}</p>
-                        </motion.div>
-
-                        {/* Carousel Indicators */}
-                        <div className="d-flex gap-2">
-                            {carouselImages.map((_, index) => (
-                                <button
-                                    key={index}
-                                    onClick={() => setCurrentImageIndex(index)}
-                                    className="border-0 rounded-pill p-0"
-                                    style={{
-                                        width: index === currentImageIndex ? '30px' : '10px',
-                                        height: '4px',
-                                        backgroundColor: index === currentImageIndex ? '#fff' : 'rgba(255,255,255,0.4)',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.3s ease'
-                                    }}
-                                    aria-label={`Go to slide ${index + 1}`}
-                                />
-                            ))}
-                        </div>
+                    {/* Dots */}
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                        {SLIDES.map((_, i) => (
+                            <button key={i} onClick={() => setCurrentSlide(i)}
+                                style={{ border: 'none', borderRadius: '4px', cursor: 'pointer', padding: 0, height: '4px', width: i === currentSlide ? '28px' : '8px', background: i === currentSlide ? 'white' : 'rgba(255,255,255,0.35)', transition: 'all 0.3s' }} />
+                        ))}
                     </div>
-                </div>
-
-                {/* Right Column: Form */}
-                <div className="col-lg-6 d-flex flex-column justify-content-center position-relative" style={{ background: 'rgba(255, 255, 255, 0.85)', backdropFilter: 'blur(10px)' }}>
-                    {/* Decorative Circle */}
-                    <div className="position-absolute top-0 end-0 p-5 d-none d-lg-block">
-                        <div className="rounded-circle bg-primary opacity-10" style={{ width: '200px', height: '200px', transform: 'translate(50%, -50%)' }}></div>
-                    </div>
-
-                    <motion.div
-                        className="mx-auto w-100"
-                        style={{ maxWidth: '600px', padding: '3rem' }}
-                        initial="hidden"
-                        animate="visible"
-                        variants={fadeIn}
-                    >
-                        <div className="mb-4">
-                            {/* <div className="mb-4">
-                                <img src={civicLogo} alt="Civic Sense Logo" height="150" />
-                            </div> */}
-                            <h1 className="display-6 fw-bold text-dark mb-2">Welcome Back</h1>
-                            <p className="text-muted">Log in to continue your journey with Civic Connect.</p>
-                        </div>
-
-                        <form>
-                            {!showOtp ? (
-                                <>
-                                    <div className="mb-4">
-                                        <label htmlFor="emailInput" className="form-label fw-semibold text-secondary small text-uppercase ls-1">Email Address</label>
-                                        <input
-                                            type="email"
-                                            className="form-control input-modern"
-                                            id="emailInput"
-                                            placeholder="name@example.com"
-                                            autoComplete="username"
-                                            value={loginDetails.userEmail}
-                                            onChange={(e) => setLoginDetails({ ...loginDetails, userEmail: e.target.value })}
-                                        />
-                                    </div>
-
-                                    <div className="mb-4">
-                                        <div className="d-flex justify-content-between align-items-center mb-2">
-                                            <label htmlFor="passwordInput" className="form-label fw-semibold text-secondary small text-uppercase ls-1 mb-0">Password</label>
-                                            <a href="/forgot-password" className="small text-primary text-decoration-none fw-semibold">Forgot Password?</a>
-                                        </div>
-                                        <div className="position-relative">
-                                            <input
-                                                type={showPassword ? "text" : "password"}
-                                                className="form-control input-modern pe-5"
-                                                id="passwordInput"
-                                                placeholder="••••••••"
-                                                autoComplete="current-password"
-                                                value={loginDetails.userPassword}
-                                                onChange={(e) => setLoginDetails({ ...loginDetails, userPassword: e.target.value })}
-                                            />
-                                            <button
-                                                type="button"
-                                                className="btn border-0 position-absolute end-0 top-50 translate-middle-y text-muted"
-                                                onClick={() => setShowPassword(!showPassword)}
-                                                tabIndex="-1"
-                                            >
-                                                {showPassword ? <FaEyeSlash /> : <FaEye />}
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <motion.button
-                                        type="submit"
-                                        className={`btn btn-primary w-100 btn-modern mb-4 text-white ${!isFormValid ? 'disabled' : ''}`}
-                                        whileHover={isFormValid ? { scale: 1.02 } : {}}
-                                        whileTap={isFormValid ? { scale: 0.98 } : {}}
-                                        onClick={handleLogin}
-                                        disabled={!isFormValid || isLoading}
-                                    >
-                                        {isLoading ? (
-                                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                        ) : null}
-                                        {isLoading ? 'Logging In...' : 'Log In'}
-                                    </motion.button>
-
-                                    <div className="text-center">
-                                        <p className="text-muted mb-3">
-                                            Don't have an account? <a href="/register" className="text-primary fw-bold text-decoration-none">Sign Up</a>
-                                        </p>
-                                        <div className="d-flex justify-content-center gap-3 small">
-                                            <a href="/documentation" className="text-muted text-decoration-none hover-underline">Terms of Service</a>
-                                            <span className="text-muted">•</span>
-                                            <a href="/documentation" className="text-muted text-decoration-none hover-underline">Privacy Policy</a>
-                                        </div>
-                                    </div>
-                                </>
-                            ) : (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="text-center"
-                                >
-                                    <div className="mb-4">
-                                        <div className="bg-warning-subtle d-inline-block p-3 rounded-circle text-warning mb-3">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
-                                                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
-                                                <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z" />
-                                            </svg>
-                                        </div>
-                                        <h4 className="fw-bold">Email Not Verified</h4>
-                                        <p className="text-muted">Please enter the 6-digit OTP sent to <strong>{unverifiedEmail}</strong>.</p>
-                                    </div>
-
-                                    <div className="mb-4">
-                                        <input
-                                            type="text"
-                                            className="form-control form-control-lg text-center fw-bold rounded-custom border-2 text-dark focus-ring-primary"
-                                            placeholder="------"
-                                            maxLength="6"
-                                            value={otp}
-                                            onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                                            style={{ letterSpacing: '0.5rem', fontSize: '1.5rem' }}
-                                        />
-                                    </div>
-
-                                    <motion.button
-                                        type="button"
-                                        className={`btn btn-primary w-100 btn-modern mb-3 text-white ${otp.length !== 6 ? 'disabled' : ''}`}
-                                        whileHover={otp.length === 6 ? { scale: 1.02 } : {}}
-                                        whileTap={otp.length === 6 ? { scale: 0.98 } : {}}
-                                        onClick={handleVerifyOtp}
-                                        disabled={otp.length !== 6 || isVerifying}
-                                    >
-                                        {isVerifying ? (
-                                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                        ) : null}
-                                        {isVerifying ? 'Verifying...' : 'Verify Email'}
-                                    </motion.button>
-
-                                    <div className="d-flex justify-content-between align-items-center mt-3">
-                                        <button
-                                            type="button"
-                                            className="btn btn-link text-decoration-none text-muted p-0"
-                                            onClick={() => setShowOtp(false)}
-                                        >
-                                            &larr; Back to Login
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="btn btn-link text-decoration-none text-primary p-0 fw-semibold"
-                                            onClick={handleResendOtp}
-                                            disabled={isResending}
-                                        >
-                                            {isResending ? 'Resending...' : 'Resend OTP'}
-                                        </button>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </form>
-                    </motion.div>
                 </div>
             </div>
+
+            {/* ── Right panel: form ── */}
+            <div style={{ flex: '0 0 480px', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '48px 48px', overflowY: 'auto', maxWidth: '100%', background: 'white' }}>
+                {/* Mobile logo */}
+                <div className="d-lg-none mb-5 d-flex align-items-center gap-2">
+                    <img src={civicLogo} alt="Civic Connect" width="24" />
+                    <span style={{ color: '#0f172a', fontWeight: 700, fontSize: '0.95rem' }}>Civic Connect</span>
+                </div>
+
+                <AnimatePresence mode="wait">
+                    {!showOtp ? (
+                        <motion.div key="login" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} transition={{ duration: 0.25 }}>
+                            <div style={{ marginBottom: '36px' }}>
+                                <h1 style={{ color: '#0f172a', fontWeight: 800, fontSize: '1.9rem', marginBottom: '8px' }}>Welcome back</h1>
+                                <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Sign in to your Civic Connect account</p>
+                            </div>
+
+                            <form onSubmit={handleLogin}>
+                                <Field icon={FaEnvelope} label="Email address" id="email" type="email" placeholder="name@example.com"
+                                    value={loginDetails.userEmail} autoComplete="username"
+                                    onChange={e => setLoginDetails({ ...loginDetails, userEmail: e.target.value })} />
+
+                                <Field icon={FaLock} label="Password" id="password" type="password" placeholder="••••••••"
+                                    value={loginDetails.userPassword} autoComplete="current-password"
+                                    onChange={e => setLoginDetails({ ...loginDetails, userPassword: e.target.value })}
+                                    extra={
+                                        <div style={{ textAlign: 'right', marginTop: '6px' }}>
+                                            <a href="/forgot-password" style={{ color: '#6366f1', fontSize: '0.8rem', textDecoration: 'none', fontWeight: 600 }}>Forgot password?</a>
+                                        </div>
+                                    }
+                                />
+
+                                <motion.button type="submit" disabled={!isFormValid || isLoading}
+                                    whileTap={isFormValid ? { scale: 0.98 } : {}}
+                                    style={{
+                                        width: '100%', padding: '14px', borderRadius: '12px', border: 'none',
+                                        background: isFormValid ? 'linear-gradient(135deg, #6366f1, #4f46e5)' : '#f1f5f9',
+                                        color: isFormValid ? 'white' : '#94a3b8',
+                                        fontWeight: 700, fontSize: '0.9rem', cursor: isFormValid ? 'pointer' : 'not-allowed',
+                                        boxShadow: isFormValid ? '0 8px 24px rgba(99,102,241,0.3)' : 'none',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                        marginBottom: '24px', transition: 'all 0.2s',
+                                    }}>
+                                    {isLoading ? <><span className="spinner-border spinner-border-sm" />Signing in…</> : <>Sign In <FaArrowRight size={13} /></>}
+                                </motion.button>
+                            </form>
+
+                            <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: '0.85rem' }}>
+                                Don't have an account?{' '}
+                                <a href="/register" style={{ color: '#6366f1', fontWeight: 700, textDecoration: 'none' }}>Create one</a>
+                            </p>
+
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '20px' }}>
+                                <a href="/documentation" style={{ color: '#cbd5e1', fontSize: '0.75rem', textDecoration: 'none' }}>Terms</a>
+                                <span style={{ color: '#e2e8f0' }}>·</span>
+                                <a href="/documentation" style={{ color: '#cbd5e1', fontSize: '0.75rem', textDecoration: 'none' }}>Privacy Policy</a>
+                            </div>
+                        </motion.div>
+                    ) : (
+                        <OtpScreen key="otp"
+                            email={unverifiedEmail}
+                            onVerify={handleVerifyOtp}
+                            onResend={handleResendOtp}
+                            onBack={() => setShowOtp(false)}
+                            isVerifying={isVerifying}
+                            isResending={isResending}
+                        />
+                    )}
+                </AnimatePresence>
+            </div>
         </div>
-    )
+    );
 };
 
 export default Login;

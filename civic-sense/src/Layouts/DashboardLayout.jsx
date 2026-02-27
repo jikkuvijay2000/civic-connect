@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
+// import Chatbot from '../components/Chatbot'; // HIDDEN: Chat feature deferred
 import { initiateSocketConnection, subscribeToAlerts } from '../utils/socketService';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -87,6 +88,9 @@ const DashboardLayout = () => {
                     </div>
                 </div>
             )}
+
+            {/* AI Chatbot Widget — Hidden (feature deferred) */}
+            {/* <Chatbot /> */}
         </div>
     );
 };

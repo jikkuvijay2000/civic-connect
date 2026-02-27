@@ -1,0 +1,27 @@
+.newspaper-container {
+    font-family: 'Merriweather', 'Georgia', serif;
+}
+
+.font-sans-serif {
+    font-family: 'Inter', 'Roboto', sans-serif !important;
+}
+
+.hover-underline:hover {
+    text-decoration: underline;
+}
+
+.hover-text-primary:hover {
+    color: var(--primary-color) !important;
+}
+
+.hover-scale-img {
+    transition: transform 0.5s ease;
+}
+
+.hover-scale-img:hover {
+    transform: scale(1.05);
+}
+
+.letter-spacing-1 {
+    letter-spacing: 1px;
+}

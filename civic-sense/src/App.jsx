@@ -21,6 +21,8 @@ import ForgotPassword from './Pages/ForgotPassword'
 import ResetPassword from './Pages/ResetPassword'
 import Documentation from './Pages/Documentation'
 import ResolvedIssues from './Pages/ResolvedIssues'
+import Newspaper from './Pages/Newspaper'
+import SecurityPage from './Pages/SecurityPage'
 
 function App() {
 
@@ -53,6 +55,8 @@ function App() {
             <Route path="contributions" element={<Contributions />} />
             <Route path="resolved-issues" element={<ResolvedIssues />} />
             <Route path="leaderboard" element={<Leaderboard />} />
+            <Route path="newspaper" element={<Newspaper />} />
+            <Route path="security" element={<SecurityPage />} />
           </Route>
 
           {/* Authority Routes - Protected */}
@@ -61,6 +65,7 @@ function App() {
               <Route index element={<AuthorityDashboard />} />
               <Route path="complaints" element={<ComplaintManagement />} />
               <Route path="community-post" element={<CommunityPost />} />
+              <Route path="security" element={<SecurityPage />} />
             </Route>
           </Route>
 

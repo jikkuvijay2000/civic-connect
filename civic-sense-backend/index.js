@@ -13,6 +13,7 @@ const { userRouter } = require("./Router/userRouter");
 const { complaintRouter } = require("./Router/complaintRouter");
 const { noteRouter } = require("./Router/noteRouter");
 const { communityPostRouter } = require("./Router/communityPostRouter");
+const aiChatRouter = require("./Router/aiChatRouter"); // NEW: AI Chat Router
 
 const app = express();
 const server = http.createServer(app);
@@ -96,6 +97,7 @@ app.use('/user', authLimiter, userRouter);
 app.use('/complaint', complaintRouter);
 app.use('/note', noteRouter);
 app.use('/community-post', communityPostRouter);
+app.use('/api/chat', aiChatRouter); // NEW: AI Chat endpoint
 
 mongoose.connect(process.env.MONGO_URL)
     .then(() => {
