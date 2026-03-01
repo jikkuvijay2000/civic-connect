@@ -192,7 +192,7 @@ const Login = () => {
     };
 
     return (
-        <div style={{ display: 'flex', minHeight: '100vh', background: 'white', fontFamily: "'Inter', sans-serif" }}>
+        <div style={{ display: 'flex', minHeight: '100vh', background: 'white', fontFamily: "'Outfit', sans-serif" }}>
 
             {/* ── Left panel: image carousel ── */}
             <div className="d-none d-lg-block" style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>

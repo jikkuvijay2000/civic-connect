@@ -20,7 +20,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
     cors: {
-        origin: process.env.CLIENT_URL || "http://localhost:5173",
+        origin: (origin, callback) => callback(null, true),
         methods: ["GET", "POST"],
         credentials: true
     }
@@ -76,12 +76,15 @@ const limiter = rateLimit({
 });
 
 // Apply the rate limiting middleware to all requests
-app.use(limiter);
+// app.use(limiter); // Temporarily commented out to fix 'Too Many Requests'
 
 app.use(express.json());
+
 app.use(cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
-    credentials: true
+    origin: function (origin, callback) {
+        callback(null, true);
+    },
+    credentials: true,
 }));
 app.use(cookieParser());
 
@@ -93,7 +96,8 @@ const authLimiter = rateLimit({
     message: "Too many login attempts, please try again after an hour"
 });
 
-app.use('/user', authLimiter, userRouter);
+app.use('/user', userRouter); // Temporarily removing authLimiter for network testing
+// app.use('/user', authLimiter, userRouter); // ORIGINAL: Un-comment this and remove the line above when testing is done
 app.use('/complaint', complaintRouter);
 app.use('/note', noteRouter);
 app.use('/community-post', communityPostRouter);
@@ -107,6 +111,6 @@ mongoose.connect(process.env.MONGO_URL)
         console.log(error);
     });
 
-server.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}, http://localhost:${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server is running on port ${PORT}, http://0.0.0.0:${PORT}`);
 });
