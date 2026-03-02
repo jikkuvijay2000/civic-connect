@@ -1,0 +1,5 @@
+--- Evaluating test_image.jpg ---
+
+Results for prithivMLmods/Deep-Fake-Detector-Model:
+  Real: 0.5969
+  Fake: 0.4031

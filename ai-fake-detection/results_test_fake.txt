@@ -1,0 +1,15 @@
+--- Evaluating test_fake.jpg ---
+
+Results for umm-maybe/AI-image-detector:
+  artificial: 0.8045
+  human: 0.1955
+
+Results for dima806/deepfake_vs_real_image_detection:
+  Real: 0.8990
+  Fake: 0.1010
+
+Results for Organika/sdxl-detector:
+  human: 0.9976
+  artificial: 0.0024
+Error loading/running Nahrawy/AI-Image-Detector: Nahrawy/AI-Image-Detector is not a local folder and is not a valid model identifier listed on 'https://huggingface.co/models'
+If this is a private repository, make sure to pass a token having permission to this repo either by logging in with `hf auth login` or by passing `token=<your_token>`

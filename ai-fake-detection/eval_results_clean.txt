@@ -1,0 +1,24 @@
+
+--- Evaluating test_fake.jpg ---
+UMM-MAYBE model:
+  artificial: 0.8045
+  human: 0.1955
+DIMA806 model:
+  Real: 0.8990
+  Fake: 0.1010
+
+--- Evaluating test_image.jpg ---
+UMM-MAYBE model:
+  artificial: 0.6880
+  human: 0.3120
+DIMA806 model:
+  Real: 0.9896
+  Fake: 0.0104
+
+--- Evaluating picsum.jpg ---
+UMM-MAYBE model:
+  human: 0.9598
+  artificial: 0.0402
+DIMA806 model:
+  Real: 0.9965
+  Fake: 0.0035

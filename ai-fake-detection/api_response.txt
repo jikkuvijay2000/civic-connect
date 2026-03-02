@@ -1,0 +1,34 @@
+test_fake.jpg response:
+{
+  "confidence": 0.8045212030410767,
+  "details": [
+    {
+      "label": "artificial",
+      "score": 0.8045212030410767
+    },
+    {
+      "label": "human",
+      "score": 0.19547879695892334
+    }
+  ],
+  "error_type": "ai",
+  "is_fake": true,
+  "message": "AI-generated or heavily manipulated content detected. Please upload real evidence."
+}
+test_image.jpg response:
+{
+  "confidence": 0.0,
+  "details": [
+    {
+      "label": "artificial",
+      "score": 0.6879938244819641
+    },
+    {
+      "label": "human",
+      "score": 0.3120061457157135
+    }
+  ],
+  "error_type": null,
+  "is_fake": false,
+  "message": "Real image"
+}
