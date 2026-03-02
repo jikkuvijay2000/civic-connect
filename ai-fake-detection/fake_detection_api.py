@@ -1,6 +1,7 @@
 import cv2
 import os
 import torch
+import numpy as np
 from flask import Flask, request, jsonify
 from transformers import pipeline
 from PIL import Image
@@ -11,8 +12,18 @@ app = Flask(__name__)
 device = 0 if torch.cuda.is_available() else -1
 print(f"Using device: {device}")
 
-# Load fake detection model
+# Load general AI image detection model (covers Midjourney/DALL-E etc.)
+print("Loading model umm-maybe/AI-image-detector...")
 fake_detector = pipeline("image-classification", model="umm-maybe/AI-image-detector", device=device)
+
+def is_blurry(image_pil, threshold=50.0):
+    # Convert PIL Image to cv2 format (numpy array)
+    image_cv = np.array(image_pil)
+    # Convert RGB to BGR
+    image_cv = image_cv[:, :, ::-1].copy()
+    gray = cv2.cvtColor(image_cv, cv2.COLOR_BGR2GRAY)
+    variance = cv2.Laplacian(gray, cv2.CV_64F).var()
+    return variance < threshold, variance
 
 @app.route("/detect_fake_image", methods=["POST"])
 def detect_fake_image():
@@ -23,20 +34,35 @@ def detect_fake_image():
         image_file = request.files["image"]
         image = Image.open(image_file).convert("RGB")
 
-        # Detect fake
+        # 1. Check for Blur/Low Clarity first
+        blurry, variance = is_blurry(image)
+        if blurry:
+            return jsonify({
+                "is_fake": True,
+                "error_type": "blur",
+                "message": f"Image is too blurry or has low clarity (score: {variance:.1f}). Please capture a clear photo.",
+                "confidence": 1.0,
+                "details": {"variance": variance}
+            })
+
+        # 2. Detect Deepfake/AI
         results = fake_detector(image)
+        print(f"DEBUG Image Results: {results}")
         
         is_fake = False
         confidence = 0.0
         
         for result in results:
-            if result['label'] in ['artificial', 'fake'] and result['score'] > 0.9:
+            # umm-maybe model returns 'artificial', 'fake', etc.
+            if result['label'].lower() in ['artificial', 'fake', 'ai'] and result['score'] > 0.75:
                 is_fake = True
                 confidence = result['score']
                 break
 
         return jsonify({
             "is_fake": is_fake,
+            "error_type": "ai" if is_fake else None,
+            "message": "AI-generated or heavily manipulated content detected. Please upload real evidence." if is_fake else "Real image",
             "confidence": confidence,
             "details": results
         })
@@ -84,20 +110,34 @@ def detect_fake_video():
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         image = Image.fromarray(rgb_frame)
 
-        # Detect fake
+        # 1. Check for Blur/Low Clarity first
+        blurry, variance = is_blurry(image)
+        if blurry:
+            return jsonify({
+                "is_fake": True,
+                "error_type": "blur",
+                "message": f"Video frame is too blurry or low clarity (score: {variance:.1f}). Please upload clear video.",
+                "confidence": 1.0,
+                "details": {"variance": variance}
+            })
+
+        # 2. Detect Deepfake/AI
         results = fake_detector(image)
+        print(f"DEBUG Video Results: {results}")
         
         is_fake = False
         confidence = 0.0
         
         for result in results:
-            if result['label'] in ['artificial', 'fake'] and result['score'] > 0.9:
+            if result['label'].lower() in ['artificial', 'fake', 'ai'] and result['score'] > 0.75:
                 is_fake = True
                 confidence = result['score']
                 break
 
         return jsonify({
             "is_fake": is_fake,
+            "error_type": "ai" if is_fake else None,
+            "message": "AI-generated video content detected. Please upload real evidence." if is_fake else "Real video",
             "confidence": confidence,
             "details": results
         })

@@ -62,6 +62,11 @@ const complaintSchema = new mongoose.Schema({
         required: false,
         default: null
     },
+    complaintNotes: {
+        type: String,
+        required: false,
+        default: ''
+    },
     complaintAIScore: {
         type: Number,
         required: false,

@@ -24,10 +24,13 @@ import ResolvedIssues from './Pages/ResolvedIssues'
 import Newspaper from './Pages/Newspaper'
 import SecurityPage from './Pages/SecurityPage'
 
+import SessionOverlay from './components/SessionOverlay'
+
 function App() {
 
   return (
     <>
+      <SessionOverlay />
       <ToastContainer
         position="top-right"
         autoClose={3000}

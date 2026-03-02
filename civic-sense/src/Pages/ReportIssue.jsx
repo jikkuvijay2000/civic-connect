@@ -29,6 +29,7 @@ const PRIORITY_META = {
 
 const departmentMapping = {
     'Cleaning Department': 'Cleaning Department',
+    'Sanitation Department': 'Cleaning Department',
     'Electricity Department': 'Public Works Department',
     'Public Works Department': 'Public Works Department',
     'Water Department': 'Water Department',
@@ -71,7 +72,7 @@ const ReportIssue = () => {
             await minDelay;
             if (res.data) {
                 const cat = departmentMapping[res.data.department] || 'Others';
-                setFormData(prev => ({ ...prev, category: cat, priority: res.data.priority, aiScore: res.data.confidence }));
+                setFormData(prev => ({ ...prev, category: cat, priority: res.data.priority, aiScore: res.data.severity_score }));
             }
         } catch (e) {
             console.error('Prediction failed', e);

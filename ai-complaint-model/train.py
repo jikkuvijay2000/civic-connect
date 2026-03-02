@@ -33,7 +33,7 @@ dataset = dataset.train_test_split(test_size=0.2)
 tokenizer = DistilBertTokenizerFast.from_pretrained("distilbert-base-uncased")
 
 def tokenize(batch):
-    return tokenizer(batch["text"], padding=True, truncation=True)
+    return tokenizer(batch["text"], padding="max_length", truncation=True, max_length=128)
 
 dataset = dataset.map(tokenize, batched=True)
 
@@ -71,7 +71,7 @@ def compute_metrics(eval_pred):
 # Training args
 training_args = TrainingArguments(
     output_dir="model",
-    num_train_epochs=4,
+    num_train_epochs=2,
     per_device_train_batch_size=8,
     per_device_eval_batch_size=8,
     logging_dir="./logs",

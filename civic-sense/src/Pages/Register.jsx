@@ -34,17 +34,35 @@ const Field = ({ icon: Icon, label, id, type = 'text', placeholder, value, onCha
         <div style={{ marginBottom: '16px' }}>
             <label htmlFor={id} style={{ display: 'block', fontSize: '0.72rem', fontWeight: 600, color: '#64748b', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '7px' }}>{label}</label>
             <div style={{ position: 'relative' }}>
-                {Icon && <Icon size={13} style={{ position: 'absolute', left: '14px', top: rows ? '14px' : '50%', transform: rows ? 'none' : 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }} />}
+                {Icon && <Icon size={13} style={{ position: 'absolute', left: '14px', top: rows ? '14px' : '50%', transform: rows ? 'none' : 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none', transition: 'color 0.3s' }} />}
                 {rows
-                    ? <textarea id={id} rows={rows} placeholder={placeholder} value={value} onChange={onChange} onBlur={onBlur} style={{ ...inputStyle, padding: `12px ${Icon ? '42px' : '14px'}` }} onFocus={e => e.currentTarget.style.borderColor = '#6366f1'} />
-                    : <input id={id} type={isPw ? (show ? 'text' : 'password') : type} placeholder={placeholder} value={value} onChange={onChange} onBlur={onBlur} autoComplete={autoComplete} style={inputStyle}
-                        onFocus={e => e.currentTarget.style.borderColor = '#6366f1'}
-                        onBlur2={e => e.currentTarget.style.borderColor = error ? 'rgba(239,68,68,0.6)' : '#e2e8f0'}
+                    ? <textarea id={id} rows={rows} placeholder={placeholder} value={value} onChange={onChange} onBlur={onBlur} style={{ ...inputStyle, padding: `12px ${Icon ? '42px' : '14px'}`, transition: 'border-color 0.3s, box-shadow 0.3s' }}
+                        onFocus={e => {
+                            e.currentTarget.style.borderColor = '#6366f1';
+                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.2)';
+                        }}
+                        onBlurCapture={e => {
+                            e.currentTarget.style.boxShadow = 'none';
+                            if (!error) e.currentTarget.style.borderColor = '#e2e8f0';
+                        }}
+                    />
+                    : <input id={id} type={isPw ? (show ? 'text' : 'password') : type} placeholder={placeholder} value={value} onChange={onChange} onBlur={onBlur} autoComplete={autoComplete} style={{ ...inputStyle, transition: 'border-color 0.3s, box-shadow 0.3s' }}
+                        onFocus={e => {
+                            e.currentTarget.style.borderColor = '#6366f1';
+                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.2)';
+                        }}
+                        onBlurCapture={e => {
+                            e.currentTarget.style.boxShadow = 'none';
+                            e.currentTarget.style.borderColor = error ? 'rgba(239,68,68,0.6)' : '#e2e8f0';
+                        }}
                     />
                 }
                 {isPw && (
                     <button type="button" onClick={() => setShow(s => !s)}
-                        style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 0 }}>
+                        style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 0, transition: 'color 0.3s' }}
+                        onMouseOver={e => e.currentTarget.style.color = '#6366f1'}
+                        onMouseOut={e => e.currentTarget.style.color = '#94a3b8'}
+                    >
                         {show ? <FaEyeSlash size={13} /> : <FaEye size={13} />}
                     </button>
                 )}
@@ -63,13 +81,33 @@ const PwRules = ({ pw }) => {
         { ok: /[@$!%*?&#]/.test(pw), text: 'Special' },
     ];
     if (!pw) return null;
+
+    const strengthCount = rules.filter(r => r.ok).length;
+    let strengthColor = '#ef4444'; // default red
+    if (strengthCount === 4) strengthColor = '#22c55e'; // green
+    else if (strengthCount >= 2) strengthColor = '#eab308'; // yellow
+
     return (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
-            {rules.map((r, i) => (
-                <span key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', fontWeight: 600, color: r.ok ? '#6ee7b7' : 'rgba(255,255,255,0.3)', background: r.ok ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.05)', borderRadius: '20px', padding: '2px 8px', border: `1px solid ${r.ok ? 'rgba(16,185,129,0.3)' : 'transparent'}` }}>
-                    <FaCheckCircle size={8} /> {r.text}
-                </span>
-            ))}
+        <div style={{ marginTop: '8px' }}>
+            {/* Strength Bar */}
+            <div style={{ display: 'flex', gap: '4px', marginBottom: '8px', height: '4px' }}>
+                {[1, 2, 3, 4].map(level => (
+                    <div key={level} style={{
+                        flex: 1,
+                        borderRadius: '2px',
+                        background: strengthCount >= level ? strengthColor : '#e2e8f0',
+                        transition: 'background 0.3s ease-in-out'
+                    }} />
+                ))}
+            </div>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {rules.map((r, i) => (
+                    <span key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', fontWeight: 600, color: r.ok ? '#10b981' : '#94a3b8', background: r.ok ? 'rgba(16,185,129,0.12)' : '#f1f5f9', borderRadius: '20px', padding: '2px 8px', border: `1px solid ${r.ok ? 'rgba(16,185,129,0.3)' : '#e2e8f0'}`, transition: 'all 0.3s' }}>
+                        <FaCheckCircle size={8} /> {r.text}
+                    </span>
+                ))}
+            </div>
         </div>
     );
 };
@@ -160,7 +198,7 @@ const Register = () => {
     };
 
     return (
-        <div style={{ display: 'flex', minHeight: '100vh', background: 'white', fontFamily: "'Outfit', sans-serif" }}>
+        <div style={{ display: 'flex', minHeight: '100vh', background: 'white' }}>
 
             {/* ── Left carousel ── */}
             <div className="d-none d-lg-block" style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>

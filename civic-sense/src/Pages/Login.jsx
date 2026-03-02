@@ -27,7 +27,7 @@ const Field = ({ icon: Icon, label, id, type, placeholder, value, onChange, extr
                 {label}
             </label>
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                {Icon && <Icon size={14} style={{ position: 'absolute', left: '14px', color: '#94a3b8', pointerEvents: 'none' }} />}
+                {Icon && <Icon size={14} style={{ position: 'absolute', left: '14px', color: show ? '#6366f1' : '#94a3b8', pointerEvents: 'none', transition: 'color 0.3s' }} />}
                 <input
                     id={id}
                     type={isPw ? (show ? 'text' : 'password') : type}
@@ -44,14 +44,23 @@ const Field = ({ icon: Icon, label, id, type, placeholder, value, onChange, extr
                         color: '#0f172a',
                         fontSize: '0.9rem',
                         outline: 'none',
-                        transition: 'border-color 0.2s',
+                        transition: 'border-color 0.3s, box-shadow 0.3s',
                     }}
-                    onFocus={e => e.currentTarget.style.borderColor = '#6366f1'}
-                    onBlur={e => e.currentTarget.style.borderColor = '#e2e8f0'}
+                    onFocus={e => {
+                        e.currentTarget.style.borderColor = '#6366f1';
+                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.2)';
+                    }}
+                    onBlur={e => {
+                        e.currentTarget.style.borderColor = '#e2e8f0';
+                        e.currentTarget.style.boxShadow = 'none';
+                    }}
                 />
                 {isPw && (
                     <button type="button" onClick={() => setShow(s => !s)}
-                        style={{ position: 'absolute', right: '14px', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 0 }}>
+                        style={{ position: 'absolute', right: '14px', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 0, transition: 'color 0.3s' }}
+                        onMouseOver={e => e.currentTarget.style.color = '#6366f1'}
+                        onMouseOut={e => e.currentTarget.style.color = '#94a3b8'}
+                    >
                         {show ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
                     </button>
                 )}
@@ -192,7 +201,7 @@ const Login = () => {
     };
 
     return (
-        <div style={{ display: 'flex', minHeight: '100vh', background: 'white', fontFamily: "'Outfit', sans-serif" }}>
+        <div style={{ display: 'flex', minHeight: '100vh', background: 'white' }}>
 
             {/* ── Left panel: image carousel ── */}
             <div className="d-none d-lg-block" style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>

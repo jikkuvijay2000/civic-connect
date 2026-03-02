@@ -78,10 +78,11 @@ const ComplaintManagement = () => {
         .sort((a, b) => sortBy === 'ai_priority' ? b.aiScore - a.aiScore : new Date(b.date) - new Date(a.date));
 
     const handleSave = async (draft) => {
-        const payload = { status: draft.status, notes: draft.adminNotes };
-        if (draft.status === 'Resolved' || (draft.expenses && draft.expenses.length > 0)) {
-            payload.expenses = draft.expenses;
-        }
+        const payload = {
+            status: draft.status,
+            notes: draft.adminNotes,
+            expenses: draft.expenses || []
+        };
         await api.put(`/complaint/update-status/${draft.id}`, payload);
         notify('success', 'Ticket updated successfully');
         setComplaints(prev =>

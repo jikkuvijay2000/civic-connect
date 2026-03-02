@@ -18,21 +18,8 @@ const calculateFileHash = (filePath) => {
 };
 
 const getDepartmentFromCategory = (category) => {
-    // If the category is already a full department name, return it
-    if (category.includes('Department')) {
-        return category;
-    }
-
-    switch (category) {
-        case 'Roads': return 'Roads Department';
-        case 'Garbage': return 'Sanitation Department';
-        case 'Water': return 'Water Department';
-        case 'Electricity': return 'Power Department';
-        case 'Traffic': return 'Traffic Department';
-        case 'Fire': return 'Fire Department';
-        case 'Medical': return 'Health Department';
-        default: return 'General Administration';
-    }
+    // We now trust the AI's department output directly
+    return category;
 };
 
 const createComplaint = async (req, res) => {
@@ -76,10 +63,13 @@ const createComplaint = async (req, res) => {
                 if (fakeResponse.data.is_fake) {
                     if (fs.existsSync(req.files.image[0].path)) fs.unlinkSync(req.files.image[0].path);
                     if (req.files.video && fs.existsSync(req.files.video[0].path)) fs.unlinkSync(req.files.video[0].path);
-                    return res.status(400).json({ message: "AI-generated content detected. Please upload real evidence." });
+                    return res.status(400).json({ message: fakeResponse.data.message || "AI-generated content detected. Please upload real evidence." });
                 }
             } catch (fakeError) {
                 console.error("Fake Image Detection Failed:", fakeError.message);
+                if (fs.existsSync(req.files.image[0].path)) fs.unlinkSync(req.files.image[0].path);
+                if (req.files.video && fs.existsSync(req.files.video[0].path)) fs.unlinkSync(req.files.video[0].path);
+                return res.status(503).json({ message: "Verification service is currently unavailable. Please try again later." });
             }
 
             // Upload image to Cloudinary
@@ -132,10 +122,12 @@ const createComplaint = async (req, res) => {
                         // Ideally we should do all checks before uploads. 
                         // But for now, we just fail the request.
                     }
-                    return res.status(400).json({ message: "AI-generated video content detected. Please upload real evidence." });
+                    return res.status(400).json({ message: fakeVideoResponse.data.message || "AI-generated video content detected. Please upload real evidence." });
                 }
             } catch (fakeVideoError) {
                 console.error("Fake Video Detection Failed:", fakeVideoError.message);
+                if (fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
+                return res.status(503).json({ message: "Video verification service is currently unavailable. Please try again later." });
             }
 
             // 1. Analyze Video with AI Service (local file)
@@ -180,8 +172,6 @@ const createComplaint = async (req, res) => {
         }
 
         let finalAIScore = (aiScore && !isNaN(parseFloat(aiScore))) ? parseFloat(aiScore) : 45;
-        if (priority === 'Emergency') finalAIScore = 100;
-        else if (priority === 'High') finalAIScore = Math.max(finalAIScore, 90);
 
         // Fetch user name for log
         const creator = await userModel.findById(userId).select('userName');
@@ -322,13 +312,12 @@ const generateCaption = async (req, res) => {
 
             if (fakeResponse.data.is_fake) {
                 if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
-                return res.status(400).json({ message: "AI-generated content detected. Please upload real evidence." });
+                return res.status(400).json({ message: fakeResponse.data.message || "AI-generated content detected. Please upload real evidence." });
             }
         } catch (fakeError) {
             console.error("Fake Image Detection Failed (Captioning):", fakeError.message);
-            // Verify if we should block or continue. Safe to continue? 
-            // Maybe better to block if service is critical? 
-            // Let's log and continue for now to avoid breaking feature if service down.
+            if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+            return res.status(503).json({ message: "Verification service is currently unavailable. Please try again later." });
         }
 
         // 2. Call Python Image Captioning Service
@@ -466,14 +455,15 @@ const updateComplaintStatus = async (req, res) => {
         if (notes !== undefined) {
             complaint.complaintNotes = notes;
         }
+
+        // Handle Expenses for any status update
+        if (req.body.expenses && Array.isArray(req.body.expenses)) {
+            complaint.expenses = req.body.expenses;
+        }
+
         if (status === 'Resolved') {
             complaint.complaintResolvedDate = Date.now();
             complaint.complaintResolvedBy = req.user._id;
-
-            // Handle Expenses
-            if (req.body.expenses && Array.isArray(req.body.expenses)) {
-                complaint.expenses = req.body.expenses;
-            }
         }
 
         // Log the status change
@@ -731,10 +721,12 @@ const analyzeVideo = async (req, res) => {
 
             if (fakeResponse.data.is_fake) {
                 if (fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
-                return res.status(400).json({ message: "AI-generated video content detected. Please upload real evidence." });
+                return res.status(400).json({ message: fakeResponse.data.message || "AI-generated video content detected. Please upload real evidence." });
             }
         } catch (fakeError) {
             console.error("Fake Video Detection Failed (Analysis):", fakeError.message);
+            if (fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
+            return res.status(503).json({ message: "Video verification service is currently unavailable. Please try again later." });
         }
 
         // 2. Analyze Video

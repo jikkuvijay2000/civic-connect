@@ -183,10 +183,26 @@ const ComplaintDetailsModal = ({ isOpen, onClose, complaint, onUpdate }) => {
         const descLines = doc.splitTextToSize(desc, pageW - 28);
         doc.text(descLines, 14, afterTable + 6);
 
-        /* ── Section 2: Expense Breakdown ── */
-        const expenseStartY = afterTable + 6 + descLines.length * 5 + 12;
+        /* ── Section 2: Official Notes ── */
+        let notesStartY = afterTable + 6 + descLines.length * 5 + 12;
+        let notesLines = [];
+        if (complaint.complaintNotes) {
+            doc.setFontSize(12); doc.setFont(undefined, 'bold'); doc.setTextColor(40, 40, 40);
+            doc.text('2. Official Notes', 14, notesStartY);
+            doc.setDrawColor(220, 220, 220); doc.line(14, notesStartY + 3, pageW - 14, notesStartY + 3);
+
+            doc.setFontSize(9); doc.setFont(undefined, 'normal');
+            notesLines = doc.splitTextToSize(complaint.complaintNotes, pageW - 28);
+            doc.text(notesLines, 14, notesStartY + 10);
+        }
+
+        /* ── Section 3: Expense Breakdown ── */
+        const expenseStartY = complaint.complaintNotes
+            ? notesStartY + 10 + notesLines.length * 5 + 12
+            : afterTable + 6 + descLines.length * 5 + 12;
+
         doc.setFontSize(12); doc.setFont(undefined, 'bold'); doc.setTextColor(40, 40, 40);
-        doc.text('2. Expense Breakdown', 14, expenseStartY);
+        doc.text(complaint.complaintNotes ? '3. Expense Breakdown' : '2. Expense Breakdown', 14, expenseStartY);
         doc.setDrawColor(220, 220, 220); doc.line(14, expenseStartY + 3, pageW - 14, expenseStartY + 3);
 
         if (complaint.expenses?.length > 0) {
@@ -508,7 +524,7 @@ const ComplaintDetailsModal = ({ isOpen, onClose, complaint, onUpdate }) => {
                                 </div>
 
                                 {/* Authority Notes */}
-                                {complaint.complaintNotes && (
+                                {complaint.complaintStatus !== 'Pending' && complaint.complaintNotes && (
                                     <div className="mb-4">
                                         <label className="fw-bold text-muted text-uppercase mb-2 d-block" style={{ fontSize: '0.71rem', letterSpacing: '0.08em' }}>Official Notes</label>
                                         <div className="p-3 rounded-3 border bg-white" style={{ borderColor: '#e2e8f0' }}>
@@ -520,7 +536,7 @@ const ComplaintDetailsModal = ({ isOpen, onClose, complaint, onUpdate }) => {
                                 )}
 
                                 {/* Expense Report */}
-                                {complaint.expenses?.length > 0 && (
+                                {complaint.complaintStatus !== 'Pending' && complaint.expenses?.length > 0 && (
                                     <div className="mb-4">
                                         <label className="fw-bold text-muted text-uppercase mb-2 d-block" style={{ fontSize: '0.71rem', letterSpacing: '0.08em' }}>Expenses</label>
                                         <div className="bg-white rounded-3 border overflow-hidden mb-3">
