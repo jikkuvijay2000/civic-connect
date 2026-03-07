@@ -1,92 +1,115 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaExclamationTriangle, FaRedo } from 'react-icons/fa';
 
+/**
+ * SessionOverlay
+ *
+ * Shows a blocking overlay ONLY when the same browser profile (same localStorage)
+ * switches to a *different* logged-in user in another same-profile tab.
+ *
+ * Incognito / private windows have completely isolated storage and NEVER share
+ * storage events with normal windows, so two different users in
+ * normal + incognito will never interfere with each other.
+ */
 const SessionOverlay = () => {
     const [showOverlay, setShowOverlay] = useState(false);
-    const [originalUserId, setOriginalUserId] = useState(null);
+
+    // Use a ref so handlers always see the latest value without triggering re-renders
+    const originalUserIdRef = useRef(null);
+    const overlayShownRef = useRef(false);
 
     useEffect(() => {
-        const updateOriginalUser = () => {
-            const userStr = localStorage.getItem('user');
-            if (userStr) {
-                try {
-                    const user = JSON.parse(userStr);
-                    setOriginalUserId(user._id || user.userEmail);
-                } catch (e) {
-                    // Ignore parse errors
-                }
-            } else {
-                setOriginalUserId(null);
+        // --- Capture this tab's user on mount ---
+        const readCurrentUser = () => {
+            try {
+                const raw = localStorage.getItem('user');
+                if (!raw) return null;
+                const u = JSON.parse(raw);
+                return u._id || u.userEmail || null;
+            } catch {
+                return null;
             }
         };
 
-        // Capture initial user on mount
-        updateOriginalUser();
+        originalUserIdRef.current = readCurrentUser();
 
-        // Listen for storage events from OTHER tabs
+        /**
+         * The browser fires `window.storage` ONLY for changes made by OTHER
+         * tabs/windows in the SAME profile — never for this tab's own writes,
+         * and never across normal ↔ incognito boundaries.
+         */
         const handleStorageChange = (e) => {
-            if (e.key === 'user') {
-                const newUserStr = e.newValue;
+            // We only care about the 'user' key
+            if (e.key !== 'user') return;
 
-                // If user logged out from another tab
-                if (!newUserStr) {
+            // If the overlay is already up, nothing more to do
+            if (overlayShownRef.current) return;
+
+            const prevUserId = originalUserIdRef.current;
+
+            // Another tab cleared the session (logged out)
+            if (!e.newValue) {
+                // Only block if THIS tab was logged in as someone
+                if (prevUserId) {
+                    overlayShownRef.current = true;
                     setShowOverlay(true);
-                    return;
                 }
+                return;
+            }
 
+            // Another tab logged in as a *different* user
+            try {
+                const newUser = JSON.parse(e.newValue);
+                const newUserId = newUser._id || newUser.userEmail || null;
+
+                if (prevUserId && newUserId && newUserId !== prevUserId) {
+                    overlayShownRef.current = true;
+                    setShowOverlay(true);
+                }
+            } catch {
+                // Malformed value — ignore
+            }
+        };
+
+        /**
+         * Update our ref when THIS tab changes its own session (login/logout
+         * within this tab), so we always compare against the correct baseline.
+         * We patch localStorage.setItem instead of polling to avoid the stale-
+         * closure bug of setInterval + state.
+         */
+        const originalSetItem = localStorage.setItem.bind(localStorage);
+        localStorage.setItem = function (key, value) {
+            originalSetItem(key, value);
+
+            if (key === 'user' && !overlayShownRef.current) {
                 try {
-                    const newUser = JSON.parse(newUserStr);
-                    const newUserId = newUser._id || newUser.userEmail;
+                    const u = JSON.parse(value);
+                    originalUserIdRef.current = u._id || u.userEmail || null;
+                } catch { }
+            }
+        };
 
-                    console.log('SessionOverlay: Storage change detected', { originalUserId, newUserId });
+        const originalRemoveItem = localStorage.removeItem.bind(localStorage);
+        localStorage.removeItem = function (key) {
+            originalRemoveItem(key);
 
-                    // If the user changed to a different user completely
-                    if (originalUserId && newUserId !== originalUserId) {
-                        console.log('SessionOverlay: User mismatch! Showing overlay.');
-                        setShowOverlay(true);
-                    }
-                } catch (err) {
-                    console.error('SessionOverlay: Error parsing new user string', err);
-                }
+            if (key === 'user' && !overlayShownRef.current) {
+                originalUserIdRef.current = null;
             }
         };
 
         window.addEventListener('storage', handleStorageChange);
 
-        // Also, we need to know when THIS tab logs in so we set originalUserId correctly
-        // We can do this by listening to a custom event, or just polling periodically, 
-        // or patching localStorage.setItem.
-        // Let's just poll every 2 seconds to make sure originalUserId is up to date 
-        // with whatever THIS tab set it to.
-        const interval = setInterval(() => {
-            // Only update if we don't already have one, or to keep it fresh
-            // If the overlay is already showing, don't update originalUserId
-            if (!showOverlay) {
-                const userStr = localStorage.getItem('user');
-                if (userStr) {
-                    try {
-                        const user = JSON.parse(userStr);
-                        const currentId = user._id || user.userEmail;
-                        if (currentId !== originalUserId) {
-                            console.log('SessionOverlay: Polling updated originalUserId to', currentId);
-                            setOriginalUserId(currentId);
-                        }
-                    } catch (e) { }
-                }
-            }
-        }, 1000);
-
         return () => {
             window.removeEventListener('storage', handleStorageChange);
-            clearInterval(interval);
-        }
-    }, [originalUserId, showOverlay]);
+            // Restore original localStorage methods
+            localStorage.setItem = originalSetItem;
+            localStorage.removeItem = originalRemoveItem;
+        };
+    }, []); // Run once on mount — no deps needed because we use refs
 
     const handleReload = () => {
-        // Instead of a simple reload which might keep them on a forbidden route
-        // for the new user, redirect them to the home/login page to re-authenticate
-        // or let the app route them correctly.
         window.location.href = '/';
     };
 
@@ -100,9 +123,9 @@ const SessionOverlay = () => {
                     style={{
                         position: 'fixed',
                         inset: 0,
-                        backgroundColor: 'rgba(15, 23, 42, 0.85)',
-                        backdropFilter: 'blur(8px)',
-                        zIndex: 999999, // Super high z-index to cover everything
+                        backgroundColor: 'rgba(15, 23, 42, 0.88)',
+                        backdropFilter: 'blur(10px)',
+                        zIndex: 999999,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -151,7 +174,8 @@ const SessionOverlay = () => {
                             lineHeight: 1.6,
                             marginBottom: '32px'
                         }}>
-                            The logged-in user has changed in another tab. Please reload the page to continue with the current session.
+                            Another tab in this window logged in as a different user.
+                            Reload to continue with the current session.
                         </p>
 
                         <button

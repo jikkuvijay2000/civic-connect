@@ -8,6 +8,10 @@ from PIL import Image
 
 app = Flask(__name__)
 
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"status": "healthy"}), 200
+
 # Determine device
 device = 0 if torch.cuda.is_available() else -1
 print(f"Using device: {device}")

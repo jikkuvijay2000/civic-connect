@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
     FaChartLine, FaClipboardList, FaSignOutAlt, FaChevronDown,
-    FaUser, FaCog, FaBullhorn, FaChevronRight, FaShieldAlt, FaBars, FaTimes
+    FaUser, FaCog, FaBullhorn, FaChevronRight, FaShieldAlt, FaBars, FaTimes, FaGift
 } from 'react-icons/fa';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,7 +14,9 @@ const NAV_ITEMS = [
     { icon: FaChartLine, label: 'Dashboard', path: '/authority' },
     { icon: FaClipboardList, label: 'Complaints', path: '/authority/complaints' },
     { icon: FaBullhorn, label: 'Community Post', path: '/authority/community-post' },
+    { icon: FaGift, label: 'Rewards', path: '/authority/rewards' },
 ];
+
 
 const ACCENT = '#f59e0b';
 

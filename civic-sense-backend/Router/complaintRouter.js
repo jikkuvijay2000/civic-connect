@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { createComplaint, getUserContributions, predictComplaint, generateCaption, getAuthorityComplaints, getAuthorityStats, updateComplaintStatus, analyzeVideo, addFeedback, getResolvedComplaints, editComplaint } = require("../Controllers/ComplaintController");
+const { createComplaint, getUserContributions, predictComplaint, generateCaption, getAuthorityComplaints, getAuthorityStats, updateComplaintStatus, analyzeVideo, addFeedback, getResolvedComplaints, editComplaint, getAiHealth } = require("../Controllers/ComplaintController");
 const { protect, verifyAuthority } = require("../Middlewares/authMiddleware");
 const multer = require("multer");
 const path = require("path");
@@ -32,6 +32,7 @@ router.get("/my-contributions", protect, getUserContributions);
 // Authority Route
 router.get("/authority-complaints", protect, verifyAuthority, getAuthorityComplaints);
 router.get("/authority-stats", protect, verifyAuthority, getAuthorityStats);
+router.get("/ai-health", protect, verifyAuthority, getAiHealth);
 router.put("/update-status/:id", protect, verifyAuthority, updateComplaintStatus);
 
 // Feedback Route

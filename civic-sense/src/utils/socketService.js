@@ -70,3 +70,12 @@ export const subscribeToAuthorityNotifications = (cb) => {
     socket.on('authority_notification', listener);
     return () => socket.off('authority_notification', listener);
 };
+
+export const subscribeToAiHealth = (cb) => {
+    if (!socket) return () => { };
+    const listener = (data) => {
+        cb(data);
+    };
+    socket.on('ai_health_update', listener);
+    return () => socket.off('ai_health_update', listener);
+};

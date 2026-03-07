@@ -5,6 +5,10 @@ import json
 
 app = Flask(__name__)
 
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"status": "healthy"}), 200
+
 # Load model
 model = DistilBertForSequenceClassification.from_pretrained("model")
 tokenizer = DistilBertTokenizerFast.from_pretrained("model")

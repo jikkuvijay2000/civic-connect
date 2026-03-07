@@ -9,7 +9,7 @@ import {
     BarChart, PieChart, Pie, Cell, Legend
 } from 'recharts';
 import api from '../api/axios';
-import { initiateSocketConnection, subscribeToEmergency, subscribeToAuthorityNotifications } from '../utils/socketService';
+import { initiateSocketConnection, subscribeToEmergency, subscribeToAuthorityNotifications, subscribeToAiHealth } from '../utils/socketService';
 import AIAnimation from '../Components/AIAnimation';
 
 /* ── Stat card config ─────────────────────────────────────────────── */
@@ -25,6 +25,13 @@ const PIE_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b
 const AuthorityDashboard = () => {
     const [statsData, setStatsData] = useState({ total: 0, resolved: 0, pending: 0, avgConfidence: 0 });
     const [loading, setLoading] = useState(true);
+    const [aiHealth, setAiHealth] = useState({
+        classifier: { status: 'Checking...', latency: null, color: '#94a3b8' },
+        fakeDetection: { status: 'Checking...', latency: null, color: '#94a3b8' },
+        captioning: { status: 'Checking...', latency: null, color: '#94a3b8' },
+        avgLatency: null,
+        allOnline: true
+    });
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -32,15 +39,57 @@ const AuthorityDashboard = () => {
     const user = JSON.parse(localStorage.getItem('user'));
 
     useEffect(() => {
-        const fetchStats = async () => {
+        const fetchData = async () => {
             try {
-                const res = await api.get('/complaint/authority-stats');
-                if (res.data.status === 'success') setStatsData(res.data.data);
-            } catch (e) { console.error('Error fetching stats:', e); }
-            finally { setLoading(false); }
+                const [statsRes, notifsRes] = await Promise.allSettled([
+                    api.get('/complaint/authority-stats'),
+                    api.get('/user/notifications')
+                ]);
+
+                if (statsRes.status === 'fulfilled' && statsRes.value.data.status === 'success') {
+                    setStatsData(statsRes.value.data.data);
+                }
+
+                if (notifsRes.status === 'fulfilled' && notifsRes.value.data.status === 'success') {
+                    setNotifications(notifsRes.value.data.data.notifications);
+                    setUnreadCount(notifsRes.value.data.data.unreadCount);
+                }
+            } catch (e) {
+                console.error('Error fetching dashboard data:', e);
+            } finally {
+                setLoading(false);
+            }
         };
-        fetchStats();
+
+        fetchData();
         initiateSocketConnection();
+
+        const unsubAi = subscribeToAiHealth((data) => {
+            if (data && Array.isArray(data)) {
+                const c = data.find(s => s.name === 'Complaint Classifier');
+                const f = data.find(s => s.name === 'Fake Detection');
+                const i = data.find(s => s.name === 'Image Captioning');
+
+                const onlineCount = data.filter(s => s.status === 'Online').length;
+                const avgLat = onlineCount > 0 ? Math.round(data.filter(s => s.latency !== null).reduce((acc, curr) => acc + curr.latency, 0) / onlineCount) : null;
+
+                setAiHealth({
+                    classifier: { status: c?.status || 'Unknown', latency: c?.latency, color: c?.status === 'Online' ? '#10b981' : '#ef4444' },
+                    fakeDetection: { status: f?.status || 'Unknown', latency: f?.latency, color: f?.status === 'Online' ? '#10b981' : '#ef4444' },
+                    captioning: { status: i?.status || 'Unknown', latency: i?.latency, color: i?.status === 'Online' ? '#10b981' : '#ef4444' },
+                    avgLatency: avgLat,
+                    allOnline: onlineCount === data.length
+                });
+            } else {
+                setAiHealth({
+                    classifier: { status: 'Offline', latency: null, color: '#ef4444' },
+                    fakeDetection: { status: 'Offline', latency: null, color: '#ef4444' },
+                    captioning: { status: 'Offline', latency: null, color: '#ef4444' },
+                    avgLatency: null,
+                    allOnline: false
+                });
+            }
+        });
 
         const unsubA = subscribeToAuthorityNotifications((err, data) => {
             if (data) {
@@ -63,6 +112,7 @@ const AuthorityDashboard = () => {
         return () => {
             if (unsubA) unsubA();
             if (unsubE) unsubE();
+            if (unsubAi) unsubAi();
             document.removeEventListener('mousedown', handleOutside);
         };
     }, []);
@@ -149,9 +199,12 @@ const AuthorityDashboard = () => {
                     </div>
 
                     {/* System Operational */}
-                    <div className="d-flex align-items-center gap-2 px-3 py-2 rounded-3" style={{ background: '#ecfdf5', border: '1px solid #6ee7b7' }}>
-                        <FaCheckCircle size={13} style={{ color: '#10b981' }} />
-                        <small className="fw-bold" style={{ color: '#065f46' }}>System Operational</small>
+                    <div className="d-flex align-items-center gap-2 px-3 py-2 rounded-3"
+                        style={{ background: aiHealth.allOnline ? '#ecfdf5' : '#fef2f2', border: `1px solid ${aiHealth.allOnline ? '#6ee7b7' : '#fca5a5'}` }}>
+                        {aiHealth.allOnline ? <FaCheckCircle size={13} style={{ color: '#10b981' }} /> : <FaExclamationCircle size={13} style={{ color: '#ef4444' }} />}
+                        <small className="fw-bold" style={{ color: aiHealth.allOnline ? '#065f46' : '#991b1b' }}>
+                            {aiHealth.allOnline ? 'System Operational' : 'AI Service Disruption'}
+                        </small>
                     </div>
                 </div>
             </div>
@@ -287,20 +340,25 @@ const AuthorityDashboard = () => {
                             <AIAnimation size="small" />
                             <div>
                                 <h6 className="fw-bold text-dark mb-1">Civic AI System</h6>
-                                <small className="text-muted">Model v2.1 · All services operational</small>
+                                <small className={aiHealth.allOnline ? "text-muted" : "text-danger fw-medium"}>
+                                    Model v2.1 · {aiHealth.allOnline ? 'All services operational' : 'Some services offline'}
+                                </small>
                             </div>
                         </div>
                         <div style={{ height: '40px', width: '1px', background: '#e2e8f0' }} className="d-none d-md-block" />
                         {[
-                            { label: 'Complaint Classifier', status: 'Online', color: '#10b981' },
-                            { label: 'Fake Detection', status: 'Online', color: '#10b981' },
-                            { label: 'Image Captioning', status: 'Online', color: '#10b981' },
-                            { label: 'Avg Latency', status: '45ms', color: '#6366f1' },
+                            { label: 'Complaint Classifier', status: aiHealth.classifier.status, detail: aiHealth.classifier.latency ? `${aiHealth.classifier.latency}ms` : '', color: aiHealth.classifier.color },
+                            { label: 'Fake Detection', status: aiHealth.fakeDetection.status, detail: aiHealth.fakeDetection.latency ? `${aiHealth.fakeDetection.latency}ms` : '', color: aiHealth.fakeDetection.color },
+                            { label: 'Image Captioning', status: aiHealth.captioning.status, detail: aiHealth.captioning.latency ? `${aiHealth.captioning.latency}ms` : '', color: aiHealth.captioning.color },
+                            { label: 'Avg Latency', status: aiHealth.avgLatency ? `${aiHealth.avgLatency}ms` : 'N/A', detail: '', color: aiHealth.avgLatency ? '#6366f1' : '#94a3b8' },
                         ].map((s, i) => (
                             <div key={i} className="d-flex align-items-center gap-2">
                                 <FaCircle size={8} style={{ color: s.color }} />
                                 <div>
-                                    <p className="fw-bold text-dark mb-0" style={{ fontSize: '0.78rem' }}>{s.label}</p>
+                                    <p className="fw-bold text-dark mb-0 d-flex justify-content-between gap-3" style={{ fontSize: '0.78rem' }}>
+                                        {s.label}
+                                        {s.detail && <span className="text-muted fw-normal" style={{ fontSize: '0.7rem' }}>{s.detail}</span>}
+                                    </p>
                                     <small style={{ color: s.color, fontSize: '0.7rem', fontWeight: 600 }}>{s.status}</small>
                                 </div>
                             </div>

@@ -14,6 +14,8 @@ const { complaintRouter } = require("./Router/complaintRouter");
 const { noteRouter } = require("./Router/noteRouter");
 const { communityPostRouter } = require("./Router/communityPostRouter");
 const aiChatRouter = require("./Router/aiChatRouter"); // NEW: AI Chat Router
+const { rewardRouter } = require("./Router/rewardRouter"); // NEW: Rewards Router
+
 
 const app = express();
 const server = http.createServer(app);
@@ -54,8 +56,46 @@ io.use((socket, next) => {
 
 app.set('io', io);
 
+// --- Background AI Health Polling ---
+const axios = require('axios');
+let aiHealthCache = null;
+
+const checkAiHealth = async () => {
+    const services = [
+        { name: 'Complaint Classifier', url: 'http://127.0.0.1:5001/health' },
+        { name: 'Image Captioning', url: 'http://127.0.0.1:5002/health' },
+        { name: 'Fake Detection', url: 'http://127.0.0.1:5004/health' }
+    ];
+    try {
+        const results = await Promise.all(services.map(async (service) => {
+            const start = Date.now();
+            try {
+                const response = await axios.get(service.url, { timeout: 3000 });
+                return { name: service.name, status: response.status === 200 ? 'Online' : 'Offline', latency: Date.now() - start };
+            } catch (err) {
+                return { name: service.name, status: 'Offline', latency: null };
+            }
+        }));
+        aiHealthCache = results;
+        io.emit('ai_health_update', results);
+    } catch (e) {
+        console.error('Error in background AI health check:', e.message);
+    }
+};
+
+// Start the loop
+setInterval(checkAiHealth, 5000);
+// Initial check
+checkAiHealth();
+// ------------------------------------
+
 io.on('connection', (socket) => {
     console.log(`User connected: ${socket.user.userId}`);
+
+    // Send immediate cached status on connect so they don't wait for the next 5s cycle
+    if (aiHealthCache) {
+        socket.emit('ai_health_update', aiHealthCache);
+    }
 
     // Join a room specific to this user
     socket.join(socket.user.userId);
@@ -102,6 +142,8 @@ app.use('/complaint', complaintRouter);
 app.use('/note', noteRouter);
 app.use('/community-post', communityPostRouter);
 app.use('/api/chat', aiChatRouter); // NEW: AI Chat endpoint
+app.use('/reward', rewardRouter); // NEW: Rewards endpoint
+
 
 mongoose.connect(process.env.MONGO_URL)
     .then(() => {

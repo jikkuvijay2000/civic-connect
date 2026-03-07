@@ -44,7 +44,7 @@ const NotificationDropdown = ({ notifications, unreadCount, onMarkRead, isOpen, 
                             {unreadCount > 0 && <span className="badge bg-primary-subtle text-primary rounded-pill">{unreadCount} new</span>}
                         </div>
 
-                        <div className="list-group list-group-flush">
+                        <div className="list-group list-group-flush" style={{ maxHeight: '340px', overflowY: 'auto' }}>
                             {notifications.length === 0 ? (
                                 <div className="p-4 text-center text-muted">
                                     <small>No notifications yet</small>

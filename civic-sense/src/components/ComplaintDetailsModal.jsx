@@ -95,7 +95,11 @@ const ComplaintDetailsModal = ({ isOpen, onClose, complaint, onUpdate }) => {
 
     const currentUser = JSON.parse(localStorage.getItem('user') || 'null');
     const isOwner = currentUser && complaint && (
+        // Populated: complaintUser is an object with _id
         (complaint.complaintUser && complaint.complaintUser._id === currentUser._id) ||
+        // Unpopulated: complaintUser is the raw ObjectId (object or string) — use toString()
+        (complaint.complaintUser && complaint.complaintUser.toString() === currentUser._id) ||
+        // Direct string match (fallback)
         complaint.complaintUser === currentUser._id
     );
     const canEdit = isOwner && !['Resolved', 'Closed'].includes(complaint.complaintStatus);
@@ -586,7 +590,7 @@ const ComplaintDetailsModal = ({ isOpen, onClose, complaint, onUpdate }) => {
                                                 </button>
                                                 <button
                                                     onClick={() => submitFeedback('Reopen')}
-                                                    disabled={submitting || !feedbackMsg.trim()}
+                                                    disabled={submitting}
                                                     className="btn btn-sm fw-bold flex-grow-1 py-2"
                                                     style={{ borderRadius: '10px', background: '#fffbeb', color: '#f59e0b', border: '1.5px solid #fcd34d' }}
                                                 >

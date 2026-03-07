@@ -6,6 +6,10 @@ import random
 
 app = Flask(__name__)
 
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"status": "healthy"}), 200
+
 # Determine device
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using device: {device}")

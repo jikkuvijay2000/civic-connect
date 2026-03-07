@@ -753,4 +753,39 @@ const analyzeVideo = async (req, res) => {
     }
 };
 
-module.exports = { createComplaint, getUserContributions, predictComplaint, generateCaption, getAuthorityComplaints, getAuthorityStats, updateComplaintStatus, addFeedback, getResolvedComplaints, analyzeVideo, editComplaint };
+/* ── AI Services Health Check ── */
+const getAiHealth = async (req, res) => {
+    const services = [
+        { name: 'Complaint Classifier', url: 'http://127.0.0.1:5001/health' },
+        { name: 'Image Captioning', url: 'http://127.0.0.1:5002/health' },
+        { name: 'Fake Detection', url: 'http://127.0.0.1:5004/health' }
+    ];
+
+    try {
+        const results = await Promise.all(services.map(async (service) => {
+            const start = Date.now();
+            try {
+                const response = await axios.get(service.url, { timeout: 3000 });
+                const latency = Date.now() - start;
+                return {
+                    name: service.name,
+                    status: response.status === 200 ? 'Online' : 'Offline',
+                    latency: latency
+                };
+            } catch (err) {
+                return {
+                    name: service.name,
+                    status: 'Offline',
+                    latency: null
+                };
+            }
+        }));
+
+        res.status(200).json({ status: 'success', data: results });
+    } catch (error) {
+        console.error('Error fetching AI health:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+module.exports = { createComplaint, getUserContributions, predictComplaint, generateCaption, getAuthorityComplaints, getAuthorityStats, updateComplaintStatus, addFeedback, getResolvedComplaints, analyzeVideo, editComplaint, getAiHealth };
