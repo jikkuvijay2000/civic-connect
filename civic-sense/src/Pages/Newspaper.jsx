@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     FaRegClock, FaGlobe, FaTimes, FaSearch, FaExternalLinkAlt,
-    FaUser, FaChevronRight, FaBookmark, FaRegBookmark
+    FaUser, FaChevronRight, FaBookmark, FaRegBookmark, FaMapMarkerAlt
 } from 'react-icons/fa';
 
 const CATEGORIES = ['All', 'Local', 'Politics', 'Environment', 'Infrastructure', 'Community'];
@@ -21,15 +21,16 @@ const FALLBACK_IMGS = [
     'https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=600&auto=format&fit=crop',
     'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=600&auto=format&fit=crop',
     'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1526470608268-f674ce90ebd4?q=80&w=600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1495020689067-958852a7765e?q=80&w=600&auto=format&fit=crop'
 ];
 
-const getMockNews = () => [
-    { id: 1, title: 'City Council Approves New Green Space Initiative', description: 'In a unanimous vote, the city council approved a $5 million initiative to transform abandoned lots into community gardens and parks over the next two years.', link: '#', pubDate: '09:00 AM', author: 'Sarah Jenkins', image: 'https://images.unsplash.com/photo-1542601906990-24ccd54b8606?q=80&w=800&auto=format&fit=crop', category: 'Local' },
-    { id: 2, title: 'Major Road Repairs to Begin Next Week Downtown', description: 'Commuters should expect delays as the public works department begins a comprehensive overhaul of main street infrastructure starting Monday.', link: '#', pubDate: '10:30 AM', author: 'Michael Chang', image: 'https://images.unsplash.com/photo-1584985429184-7a9159bf15cb?q=80&w=800&auto=format&fit=crop', category: 'Infrastructure' },
-    { id: 3, title: 'Local High School Wins National Science Competition', description: 'A team of seniors has taken home the grand prize at the National STEM challenge with their innovative water purification device.', link: '#', pubDate: '11:45 AM', author: 'Elena Rodriguez', image: 'https://images.unsplash.com/photo-1564069114553-7215e1ff1890?q=80&w=800&auto=format&fit=crop', category: 'Community' },
-    { id: 4, title: 'New Public Transit Routes Announced for Suburban Areas', description: 'The transit authority unveiled expanded bus routes aimed at connecting underserved suburban neighborhoods to the city center.', link: '#', pubDate: '01:15 PM', author: 'David Kim', image: FALLBACK_IMGS[2], category: 'Infrastructure' },
-    { id: 5, title: 'Environmental Report Shows 20% Drop in City Pollution', description: 'The annual environmental report shows air quality has improved significantly thanks to new clean energy policies adopted last year.', link: '#', pubDate: '02:00 PM', author: 'Priya Nair', image: FALLBACK_IMGS[1], category: 'Environment' },
-    { id: 6, title: 'New Community Health Clinic Opens in East Side', description: 'Residents now have access to affordable primary care as a new federally funded community health clinic opens its doors this week.', link: '#', pubDate: '03:30 PM', author: 'James Ford', image: FALLBACK_IMGS[0], category: 'Community' },
+const getMockNews = (city = 'Your City') => [
+    { id: 1, title: `City Council Approves New Green Space Initiative in ${city}`, description: 'In a unanimous vote, the city council approved a $5 million initiative to transform abandoned lots into community gardens and parks over the next two years.', link: '#', pubDate: '09:00 AM', author: 'Sarah Jenkins', image: FALLBACK_IMGS[0], category: 'Local' },
+    { id: 2, title: 'Major Road Repairs to Begin Next Week Downtown', description: 'Commuters should expect delays as the public works department begins a comprehensive overhaul of main street infrastructure starting Monday.', link: '#', pubDate: '10:30 AM', author: 'Michael Chang', image: FALLBACK_IMGS[1], category: 'Infrastructure' },
+    { id: 3, title: 'Local High School Wins National Science Competition', description: 'A team of seniors has taken home the grand prize at the National STEM challenge with their innovative water purification device.', link: '#', pubDate: '11:45 AM', author: 'Elena Rodriguez', image: FALLBACK_IMGS[2], category: 'Community' },
+    { id: 4, title: 'New Public Transit Routes Announced for Suburban Areas', description: 'The transit authority unveiled expanded bus routes aimed at connecting underserved suburban neighborhoods to the city center.', link: '#', pubDate: '01:15 PM', author: 'David Kim', image: FALLBACK_IMGS[3], category: 'Infrastructure' },
+    { id: 5, title: 'Environmental Report Shows 20% Drop in City Pollution', description: 'The annual environmental report shows air quality has improved significantly thanks to new clean energy policies adopted last year.', link: '#', pubDate: '02:00 PM', author: 'Priya Nair', image: FALLBACK_IMGS[4], category: 'Environment' },
 ];
 
 const Newspaper = () => {
@@ -40,32 +41,83 @@ const Newspaper = () => {
     const [search, setSearch] = useState('');
     const [saved, setSaved] = useState(new Set());
     const [currentDate, setCurrentDate] = useState('');
+    const [userLocation, setUserLocation] = useState('Detecting location...');
 
     useEffect(() => {
         setCurrentDate(new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
-        fetchNews();
+        getUserLocationAndNews();
     }, []);
 
-    const fetchNews = async () => {
+    const getUserLocationAndNews = () => {
+        if (!navigator.geolocation) {
+            setUserLocation('Global News');
+            fetchNews('Global');
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                try {
+                    const { latitude, longitude } = position.coords;
+                    const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
+                    const geoData = await geoRes.json();
+
+                    const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county || 'Local';
+                    setUserLocation(city);
+                    fetchNews(city);
+                } catch (err) {
+                    console.error("Geocoding failed:", err);
+                    setUserLocation('Global News');
+                    fetchNews('Global');
+                }
+            },
+            (err) => {
+                console.warn("Geolocation blocked or failed:", err.message);
+                setUserLocation('Global News');
+                fetchNews('Global');
+            },
+            { timeout: 10000 }
+        );
+    };
+
+    const fetchNews = async (locationQuery) => {
         setLoading(true);
         try {
-            const rssUrl = encodeURIComponent('https://www.theguardian.com/world/rss');
-            const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${rssUrl}`);
+            // Using The Guardian Open API ("test" key) for reliable, CORS-friendly, unmetered news fetching
+            const query = locationQuery === 'Global' ? 'civic OR community OR city' : locationQuery;
+
+            const res = await fetch(`https://content.guardianapis.com/search?q=${encodeURIComponent(query)}&show-fields=thumbnail,trailText,byline&api-key=test&page-size=12`);
             const data = await res.json();
-            if (data.status === 'ok') {
-                setNews(data.items.slice(0, 12).map((item, i) => ({
-                    id: i,
-                    title: item.title,
-                    description: item.description.replace(/<[^>]*>?/gm, '').substring(0, 220) + '…',
-                    link: item.link,
-                    pubDate: new Date(item.pubDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    author: item.author || 'Staff Reporter',
-                    image: item.enclosure?.link || item.thumbnail || FALLBACK_IMGS[i % FALLBACK_IMGS.length],
-                    category: data.feed.title || 'World News',
-                })));
-            } else throw new Error();
-        } catch {
-            setNews(getMockNews());
+
+            if (data.response && data.response.results && data.response.results.length > 0) {
+                setNews(data.response.results.map((item, i) => {
+                    let cat = item.sectionName || 'Local';
+                    const text = (item.webTitle + " " + (item.fields?.trailText || "")).toLowerCase();
+                    if (text.includes('politic') || text.includes('mayor') || text.includes('council') || text.includes('gov')) cat = 'Politics';
+                    else if (text.includes('environment') || text.includes('climate') || text.includes('green') || text.includes('park')) cat = 'Environment';
+                    else if (text.includes('road') || text.includes('infrastructure') || text.includes('transit') || text.includes('build')) cat = 'Infrastructure';
+                    else if (text.includes('school') || text.includes('community') || text.includes('health')) cat = 'Community';
+
+                    const rawDesc = item.fields?.trailText || 'Click to read full story on The Guardian.';
+                    const cleanDesc = rawDesc.replace(/<[^>]*>?/gm, '');
+
+                    return {
+                        id: item.id || i,
+                        title: item.webTitle,
+                        description: cleanDesc,
+                        link: item.webUrl,
+                        pubDate: new Date(item.webPublicationDate).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+                        author: item.fields?.byline || 'Guardian Staff',
+                        image: item.fields?.thumbnail || FALLBACK_IMGS[i % FALLBACK_IMGS.length],
+                        category: cat,
+                    };
+                }));
+            } else {
+                throw new Error("No articles returned");
+            }
+        } catch (err) {
+            console.error("News fetch failed, using fallback data:", err);
+            setNews(getMockNews(locationQuery === 'Global' ? 'Your City' : locationQuery));
         } finally {
             setLoading(false);
         }
@@ -99,7 +151,10 @@ const Newspaper = () => {
                     {/* Sub-header row */}
                     <div className="d-flex justify-content-between align-items-center mb-3" style={{ fontSize: '0.77rem', color: '#94a3b8' }}>
                         <span>{currentDate}</span>
-                        <span className="fw-medium">Digital Edition · The Civic Chronicle</span>
+                        <span className="fw-medium d-flex align-items-center gap-2">
+                            <FaMapMarkerAlt size={11} className="text-danger" />
+                            {userLocation === 'Detecting location...' ? userLocation : `Local News for ${userLocation}`}
+                        </span>
                     </div>
 
                     {/* Title + search row */}
@@ -156,7 +211,8 @@ const Newspaper = () => {
             <div className="px-5 py-5" style={{ maxWidth: '1140px', margin: '0 auto' }}>
                 {loading ? (
                     <div className="text-center py-5">
-                        <div className="spinner-border text-dark" role="status"><span className="visually-hidden">Loading...</span></div>
+                        <div className="spinner-border text-primary" role="status"><span className="visually-hidden">Loading...</span></div>
+                        <p className="text-muted mt-3 small">Curating local news for {userLocation}...</p>
                     </div>
                 ) : filtered.length === 0 ? (
                     <div className="text-center py-5 bg-white rounded-4 border">
@@ -178,8 +234,18 @@ const Newspaper = () => {
                                     style={{ cursor: 'pointer' }}
                                 >
                                     {hero.image && (
-                                        <div className="rounded-4 overflow-hidden mb-4 position-relative" style={{ height: '380px' }}>
-                                            <img src={hero.image} alt={hero.title} className="w-100 h-100 object-fit-cover" style={{ transition: 'transform 0.4s', }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.03)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
+                                        <div className="rounded-4 overflow-hidden mb-4 position-relative" style={{ height: '380px', backgroundColor: '#e2e8f0' }}>
+                                            <img
+                                                src={hero.image}
+                                                alt={hero.title}
+                                                className="w-100 h-100 object-fit-cover"
+                                                style={{ transition: 'transform 0.4s' }}
+                                                onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.03)'}
+                                                onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                                                onError={(e) => {
+                                                    if (e.currentTarget.src !== FALLBACK_IMGS[0]) e.currentTarget.src = FALLBACK_IMGS[0];
+                                                }}
+                                            />
                                             <div className="position-absolute top-0 start-0 m-3">
                                                 {(() => { const cm = getCM(hero.category); return <span className="badge rounded-pill fw-medium px-3 py-2" style={{ background: cm.bg, color: cm.color, border: `1px solid ${cm.border}`, fontSize: '0.75rem', backdropFilter: 'blur(4px)' }}>{hero.category}</span>; })()}
                                             </div>
@@ -197,7 +263,7 @@ const Newspaper = () => {
                                     </h2>
                                     <p className="text-secondary mb-3" style={{ fontSize: '0.98rem', lineHeight: 1.7 }}>{hero.description}</p>
                                     <div className="d-flex align-items-center gap-3 text-muted" style={{ fontSize: '0.79rem' }}>
-                                        <span className="d-flex align-items-center gap-1"><FaUser size={10} /> {hero.author}</span>
+                                        <span className="d-flex align-items-center gap-1"><FaGlobe size={10} /> {hero.author}</span>
                                         <span>·</span>
                                         <span className="d-flex align-items-center gap-1"><FaRegClock size={10} /> {hero.pubDate}</span>
                                         <span className="ms-auto d-flex align-items-center gap-1 fw-medium" style={{ color: '#6366f1' }}>
@@ -232,8 +298,17 @@ const Newspaper = () => {
                                                 onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)'; e.currentTarget.style.transform = 'translateY(0)'; }}
                                             >
                                                 {item.image && (
-                                                    <div style={{ height: '140px', overflow: 'hidden' }}>
-                                                        <img src={item.image} alt={item.title} className="w-100 h-100 object-fit-cover" />
+                                                    <div style={{ height: '140px', overflow: 'hidden', backgroundColor: '#e2e8f0' }}>
+                                                        <img
+                                                            src={item.image}
+                                                            alt={item.title}
+                                                            className="w-100 h-100 object-fit-cover"
+                                                            onError={(e) => {
+                                                                if (e.currentTarget.src !== FALLBACK_IMGS[(i + 1) % FALLBACK_IMGS.length]) {
+                                                                    e.currentTarget.src = FALLBACK_IMGS[(i + 1) % FALLBACK_IMGS.length];
+                                                                }
+                                                            }}
+                                                        />
                                                     </div>
                                                 )}
                                                 <div className="p-3 d-flex flex-column flex-grow-1">
@@ -273,8 +348,17 @@ const Newspaper = () => {
                                                 onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'}
                                             >
                                                 {item.image && (
-                                                    <div className="rounded-3 overflow-hidden flex-shrink-0" style={{ width: '64px', height: '64px' }}>
-                                                        <img src={item.image} alt="" className="w-100 h-100 object-fit-cover" />
+                                                    <div className="rounded-3 overflow-hidden flex-shrink-0" style={{ width: '64px', height: '64px', backgroundColor: '#e2e8f0' }}>
+                                                        <img
+                                                            src={item.image}
+                                                            alt=""
+                                                            className="w-100 h-100 object-fit-cover"
+                                                            onError={(e) => {
+                                                                if (e.currentTarget.src !== FALLBACK_IMGS[(i + 4) % FALLBACK_IMGS.length]) {
+                                                                    e.currentTarget.src = FALLBACK_IMGS[(i + 4) % FALLBACK_IMGS.length];
+                                                                }
+                                                            }}
+                                                        />
                                                     </div>
                                                 )}
                                                 <div className="flex-grow-1 min-width-0">
@@ -332,20 +416,26 @@ const Newspaper = () => {
                             {/* Modal body */}
                             <div className="overflow-auto px-5 py-4">
                                 {selectedArticle.image && (
-                                    <div className="rounded-3 overflow-hidden mb-4" style={{ maxHeight: '300px' }}>
-                                        <img src={selectedArticle.image} alt={selectedArticle.title} className="w-100 object-fit-cover" style={{ maxHeight: '300px' }} />
+                                    <div className="rounded-3 overflow-hidden mb-4" style={{ maxHeight: '300px', backgroundColor: '#e2e8f0' }}>
+                                        <img
+                                            src={selectedArticle.image}
+                                            alt={selectedArticle.title}
+                                            className="w-100 object-fit-cover"
+                                            style={{ maxHeight: '300px' }}
+                                            onError={(e) => {
+                                                if (e.currentTarget.src !== FALLBACK_IMGS[0]) e.currentTarget.src = FALLBACK_IMGS[0];
+                                            }}
+                                        />
                                     </div>
                                 )}
                                 <h3 className="fw-bold text-dark mb-3" style={{ fontFamily: "'Georgia', serif", lineHeight: 1.3 }}>{selectedArticle.title}</h3>
                                 <div className="d-flex align-items-center gap-3 text-muted mb-4 pb-4 border-bottom" style={{ fontSize: '0.8rem' }}>
-                                    <span className="d-flex align-items-center gap-1"><FaUser size={11} /> {selectedArticle.author}</span>
+                                    <span className="d-flex align-items-center gap-1"><FaGlobe size={11} /> {selectedArticle.author}</span>
                                     <span>·</span>
                                     <span className="d-flex align-items-center gap-1"><FaRegClock size={11} /> {selectedArticle.pubDate}</span>
                                 </div>
                                 <p className="text-secondary" style={{ fontSize: '1rem', lineHeight: 1.75 }}>{selectedArticle.description}</p>
-                                <p className="text-secondary" style={{ fontSize: '0.95rem', lineHeight: 1.75 }}>
-                                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
-                                </p>
+
                                 <div className="mt-5 p-4 rounded-3 border" style={{ background: '#f8fafc' }}>
                                     <p className="text-muted small mb-3">This is a snippet preview. Read the full original article on the source website.</p>
                                     <a
@@ -355,7 +445,7 @@ const Newspaper = () => {
                                         className="btn fw-bold d-inline-flex align-items-center gap-2"
                                         style={{ borderRadius: '10px', background: '#1e293b', color: 'white', border: 'none', padding: '10px 24px', fontSize: '0.88rem' }}
                                     >
-                                        <FaExternalLinkAlt size={12} /> Read Original Article
+                                        <FaExternalLinkAlt size={12} /> Read Full Original Article
                                     </a>
                                 </div>
                             </div>

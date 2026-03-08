@@ -183,6 +183,11 @@ const getLeaderboard = async (req, res) => {
                 $unwind: "$userDetails"
             },
             {
+                $match: {
+                    "userDetails.userRole": "Citizen"
+                }
+            },
+            {
                 $project: {
                     _id: 1,
                     userName: "$userDetails.userName",
