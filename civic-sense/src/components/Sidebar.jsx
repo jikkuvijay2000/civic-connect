@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
     FaHome, FaExclamationTriangle, FaHandsHelping, FaCheckDouble, FaTrophy,
-    FaUserCircle, FaSignOutAlt, FaUser, FaChevronDown, FaNewspaper,
+    FaUserCircle, FaSignOutAlt, FaUser, FaChevronDown, // FaNewspaper,
     FaChevronRight, FaShieldAlt, FaBars, FaTimes
 } from 'react-icons/fa';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -14,7 +14,7 @@ const NAV_ITEMS = [
     { icon: FaExclamationTriangle, label: 'Report Issue', path: '/dashboard/report-issue' },
     { icon: FaHandsHelping, label: 'Contributions', path: '/dashboard/contributions' },
     { icon: FaCheckDouble, label: 'Resolved Issues', path: '/dashboard/resolved-issues' },
-    { icon: FaNewspaper, label: 'Daily News', path: '/dashboard/newspaper' },
+    // { icon: FaNewspaper, label: 'Daily News', path: '/dashboard/newspaper' },
     { icon: FaTrophy, label: 'Leaderboard', path: '/dashboard/leaderboard' },
 ];
 
@@ -131,12 +131,12 @@ const SidebarContent = ({ user, initials, isActive, navigate, handleLogout, onCl
                             }}
                         >
                             <div className="p-2">
-                                <button className="w-100 border-0 d-flex align-items-center gap-3 px-3 py-2 rounded-2 mb-1"
+                                {/* <button className="w-100 border-0 d-flex align-items-center gap-3 px-3 py-2 rounded-2 mb-1"
                                     style={{ background: 'transparent', color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', cursor: 'pointer', textAlign: 'left' }}
                                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
                                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                                     <FaUser size={13} /> Profile
-                                </button>
+                                </button> */}
                                 <button onClick={() => { navigate('/dashboard/leaderboard'); onClose?.(); }}
                                     className="w-100 border-0 d-flex align-items-center gap-3 px-3 py-2 rounded-2 mb-1"
                                     style={{ background: 'transparent', color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', cursor: 'pointer', textAlign: 'left' }}

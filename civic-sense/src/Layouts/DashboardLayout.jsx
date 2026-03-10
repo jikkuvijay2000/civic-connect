@@ -6,10 +6,16 @@ import { initiateSocketConnection, subscribeToAlerts } from '../utils/socketServ
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { FaExclamationTriangle, FaTimes } from 'react-icons/fa';
+import AccessPopup from '../components/AccessPopup';
 
 const DashboardLayout = () => {
     const [alertModal, setAlertModal] = useState(false);
     const [alertData, setAlertData] = useState(null);
+
+    // Role Guard Check
+    const rawUser = localStorage.getItem('user');
+    const user = rawUser ? JSON.parse(rawUser) : null;
+    const isCitizen = user?.role?.toLowerCase() === 'citizen';
 
     useEffect(() => {
         initiateSocketConnection();
@@ -39,6 +45,14 @@ const DashboardLayout = () => {
 
     return (
         <div className="container-fluid min-vh-100 bg-light position-relative">
+            {/* Wrong Role Blocker */}
+            {!isCitizen && (
+                <AccessPopup
+                    message="You are logged in as an Authority. Please use the Authority Dashboard instead."
+                    targetUrl="/authority"
+                />
+            )}
+
             <div className="row">
                 <Sidebar />
                 <div className="col-lg-10 col-md-12 p-0">

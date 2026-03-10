@@ -38,25 +38,21 @@ def predict():
     if department == "Roads Department":
         department = "Public Works Department"
 
-    # Calculate a distinct Severity Score
-    # Base severity ranges: Low (10-40), Medium (41-70), High (71-90), Emergency (91-100)
-    base_score = 50
-    if priority == "Low":
-        base_score = 25
-    elif priority == "Medium":
-        base_score = 55
-    elif priority == "High":
-        base_score = 80
-    elif priority == "Emergency":
-        base_score = 95
-        
-    # Gently adjust severity using the confidence so it varies a bit
-    # If it's highly confident it's an emergency, it stays near 95. 
-    # If it's weakly confident it's an emergency, maybe it drops slightly.
-    severity_score = base_score * (0.8 + (confidence * 0.2))
-    
-    # Cap between 1 and 100
-    severity_score = max(1, min(100, int(severity_score)))
+    # Strict non-overlapping severity bands per priority level:
+    #   Low       →  1 – 25
+    #   Medium    → 26 – 50
+    #   High      → 51 – 80
+    #   Emergency → 81 – 100
+    # Confidence (0–1) slides the score within the band,
+    # so a Medium score can NEVER exceed a High score.
+    bands = {
+        "Low":       (1,  25),
+        "Medium":    (26, 50),
+        "High":      (51, 80),
+        "Emergency": (81, 100),
+    }
+    band_min, band_max = bands.get(priority, (26, 50))
+    severity_score = int(band_min + confidence * (band_max - band_min))
 
     return jsonify({
         "department": department,

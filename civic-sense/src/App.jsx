@@ -21,9 +21,9 @@ import ForgotPassword from './Pages/ForgotPassword'
 import ResetPassword from './Pages/ResetPassword'
 import Documentation from './Pages/Documentation'
 import ResolvedIssues from './Pages/ResolvedIssues'
-import Newspaper from './Pages/Newspaper'
+// import Newspaper from './Pages/Newspaper'
 import SecurityPage from './Pages/SecurityPage'
-import AuthorityRewards from './Pages/AuthorityRewards'
+// import AuthorityRewards from './Pages/AuthorityRewards'
 
 
 import SessionOverlay from './components/SessionOverlay'
@@ -60,7 +60,7 @@ function App() {
             <Route path="contributions" element={<Contributions />} />
             <Route path="resolved-issues" element={<ResolvedIssues />} />
             <Route path="leaderboard" element={<Leaderboard />} />
-            <Route path="newspaper" element={<Newspaper />} />
+            {/* <Route path="newspaper" element={<Newspaper />} /> */}
             <Route path="security" element={<SecurityPage />} />
           </Route>
 
@@ -71,7 +71,7 @@ function App() {
               <Route path="complaints" element={<ComplaintManagement />} />
               <Route path="community-post" element={<CommunityPost />} />
               <Route path="security" element={<SecurityPage />} />
-              <Route path="rewards" element={<AuthorityRewards />} />
+              {/* <Route path="rewards" element={<AuthorityRewards />} /> */}
             </Route>
           </Route>
 

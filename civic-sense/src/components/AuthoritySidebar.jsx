@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
     FaChartLine, FaClipboardList, FaSignOutAlt, FaChevronDown,
-    FaUser, FaCog, FaBullhorn, FaChevronRight, FaShieldAlt, FaBars, FaTimes, FaGift
+    FaUser, FaCog, FaBullhorn, FaChevronRight, FaShieldAlt, FaBars, FaTimes, // FaGift
 } from 'react-icons/fa';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,7 +14,7 @@ const NAV_ITEMS = [
     { icon: FaChartLine, label: 'Dashboard', path: '/authority' },
     { icon: FaClipboardList, label: 'Complaints', path: '/authority/complaints' },
     { icon: FaBullhorn, label: 'Community Post', path: '/authority/community-post' },
-    { icon: FaGift, label: 'Rewards', path: '/authority/rewards' },
+    // { icon: FaGift, label: 'Rewards', path: '/authority/rewards' },
 ];
 
 
@@ -127,12 +127,12 @@ const SidebarContent = ({ user, initials, isActive, navigate, handleLogout, onCl
                             }}
                         >
                             <div className="p-2">
-                                <button className="w-100 border-0 d-flex align-items-center gap-3 px-3 py-2 rounded-2 mb-1"
+                                {/* <button className="w-100 border-0 d-flex align-items-center gap-3 px-3 py-2 rounded-2 mb-1"
                                     style={{ background: 'transparent', color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', cursor: 'pointer', textAlign: 'left' }}
                                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
                                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                                     <FaUser size={13} /> Profile
-                                </button>
+                                </button> */}
                                 <button className="w-100 border-0 d-flex align-items-center gap-3 px-3 py-2 rounded-2 mb-1"
                                     style={{ background: 'transparent', color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', cursor: 'pointer', textAlign: 'left' }}
                                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}

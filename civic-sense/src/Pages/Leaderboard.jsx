@@ -266,8 +266,8 @@ const Leaderboard = () => {
     const myLeaderEntry = myRank >= 0 ? leaders[myRank] : null;
 
     const TABS = [
-        { id: 'rankings', label: 'Rankings', icon: FaTrophy },
-        { id: 'rewards', label: 'Rewards', icon: FaGift },
+        { id: 'leaderboard', label: 'Rankings', icon: FaTrophy },
+        // { id: 'rewards', label: 'Rewards', icon: FaGift },
     ];
 
     if (loading) return (
@@ -524,7 +524,7 @@ const Leaderboard = () => {
                 )}
 
                 {/* ── Rewards Tab ── */}
-                {activeTab === 'rewards' && (
+                {/* {activeTab === 'rewards' && (
                     <motion.div
                         key="rewards"
                         initial={{ opacity: 0, y: 12 }}
@@ -533,7 +533,6 @@ const Leaderboard = () => {
                         transition={{ duration: 0.2 }}
                         className="px-5 py-5"
                     >
-                        {/* My points banner */}
                         <motion.div
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -610,7 +609,7 @@ const Leaderboard = () => {
                             </div>
                         )}
                     </motion.div>
-                )}
+                )} */}
 
             </AnimatePresence>
         </div>
