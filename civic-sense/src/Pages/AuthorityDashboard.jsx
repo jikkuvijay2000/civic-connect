@@ -137,7 +137,7 @@ const AuthorityDashboard = () => {
 
             {/* ── Top bar ── */}
             <div className="d-flex justify-content-between align-items-center px-4 px-md-5 py-4 border-bottom"
-                style={{ background: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(12px)', position: 'sticky', top: 0, zIndex: 10, borderColor: 'rgba(255,255,255,0.1) !important' }}>
+                style={{ background: 'rgba(15,23,42,0.92)', position: 'sticky', top: 0, zIndex: 200, borderColor: 'rgba(255,255,255,0.1) !important' }}>
                 <div className="d-flex align-items-center gap-3">
                     <FaTerminal size={24} className="text-secondary d-none d-md-block" />
                     <div>
@@ -182,7 +182,7 @@ const AuthorityDashboard = () => {
                                     exit={{ opacity: 0, y: 6, scale: 0.97 }}
                                     transition={{ duration: 0.15 }}
                                     className="position-absolute top-100 end-0 mt-3 rounded overflow-hidden"
-                                    style={{ width: '320px', maxHeight: '380px', overflowY: 'auto', zIndex: 1000, background: 'rgba(15,23,42,0.95)', backdropFilter: 'blur(20px)', border: '1px solid var(--primary-color)', boxShadow: '0 0 30px rgba(170,0,255,0.2)' }}
+                                    style={{ width: '320px', maxHeight: '380px', overflowY: 'auto', zIndex: 9999, background: 'rgba(15,23,42,0.97)', backdropFilter: 'blur(20px)', border: '1px solid var(--primary-color)', boxShadow: '0 0 30px rgba(170,0,255,0.3)' }}
                                 >
                                     <div className="px-4 py-3 border-bottom d-flex justify-content-between align-items-center" style={{ borderColor: 'rgba(255,255,255,0.1) !important' }}>
                                         <small className="fw-bold tech-font text-uppercase tracking-widest text-primary" style={{ fontSize: '0.75rem', letterSpacing: '0.15em' }}>ALERTS</small>

@@ -11,7 +11,7 @@ const Field = ({ icon: Icon, label, id, type, placeholder, value, onChange, extr
     const isPw = type === 'password';
     return (
         <div className="mb-4">
-            <label htmlFor={id} className="tech-font d-block text-muted mb-2 text-uppercase" style={{ fontSize: '0.75rem', letterSpacing: '0.15em' }}>
+            <label htmlFor={id} className="tech-font d-block text-muted mb-2 text-uppercase" style={{ fontSize: '0.87rem', letterSpacing: '0.1em' }}>
                 {label}
             </label>
             <div className="position-relative d-flex align-items-center">
@@ -198,7 +198,7 @@ const Login = () => {
                 <div className="text-center mb-5">
                     <div className="d-flex align-items-center justify-content-center gap-2 mb-3 text-neon-purple">
                         <FaTerminal size={24} />
-                        <span className="tech-font fw-bold fs-5 tracking-widest" style={{ letterSpacing: '0.2em' }}>CIVIC SENSE</span>
+                        <span className="tech-font fw-bold fs-5 tracking-widest" style={{ letterSpacing: '0.12em' }}>CIVIC SENSE</span>
                     </div>
                     {!showOtp && (
                         <h4 className="tech-font text-white mb-2" style={{ letterSpacing: '0.1em' }}>SYSTEM ACCESS</h4>
@@ -218,7 +218,7 @@ const Login = () => {
                                     onChange={e => setLoginDetails({ ...loginDetails, userPassword: e.target.value })}
                                     extra={
                                         <div className="text-end mt-2">
-                                            <a href="/forgot-password" className="tech-font text-decoration-none text-muted hover-scale d-inline-block" style={{ fontSize: '0.7rem', letterSpacing: '0.1em' }}>RECOVER KEY?</a>
+                                            <a href="/forgot-password" className="tech-font text-decoration-none text-muted hover-scale d-inline-block" style={{ fontSize: '0.82rem', letterSpacing: '0.06em' }}>RECOVER KEY?</a>
                                         </div>
                                     }
                                 />
@@ -237,7 +237,7 @@ const Login = () => {
                                 </motion.button>
                             </form>
 
-                            <p className="text-center mt-4 mb-0 tech-font" style={{ color: 'var(--text-muted)', fontSize: '0.8rem', letterSpacing: '0.1em' }}>
+                            <p className="text-center mt-4 mb-0 tech-font" style={{ color: 'var(--text-muted)', fontSize: '0.92rem', letterSpacing: '0.06em' }}>
                                 NO ALIAS AUTHORIZATION?{' '}
                                 <a href="/register" className="text-neon-purple fw-bold text-decoration-none ms-1">REQUEST ACCESS</a>
                             </p>

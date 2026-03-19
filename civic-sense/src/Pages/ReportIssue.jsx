@@ -204,7 +204,7 @@ const ReportIssue = () => {
                         
                         {/* Title */}
                         <div className="mb-5">
-                            <label className="tech-font fw-bold text-white mb-2 d-block text-uppercase" style={{ letterSpacing: '0.15em' }}>
+                            <label className="tech-font fw-bold text-white mb-2 d-block text-uppercase" style={{ letterSpacing: '0.08em' }}>
                                 INCIDENT DESIGNATION <span className="text-neon-red">*</span>
                             </label>
                             <input type="text" name="title" value={formData.title} onChange={handleChange}
@@ -218,7 +218,7 @@ const ReportIssue = () => {
 
                         {/* Description */}
                         <div className="mb-5">
-                            <label className="tech-font fw-bold text-white mb-2 d-block text-uppercase" style={{ letterSpacing: '0.15em' }}>
+                            <label className="tech-font fw-bold text-white mb-2 d-block text-uppercase" style={{ letterSpacing: '0.08em' }}>
                                 SITUATION LOG <span className="text-neon-red">*</span>
                             </label>
                             <textarea name="description" value={formData.description} onChange={handleChange}
@@ -238,7 +238,7 @@ const ReportIssue = () => {
                                             <FaRobot size={26} className="text-neon-purple" />
                                         </motion.div>
                                         <div>
-                                            <p className="tech-font fw-bold mb-0 text-white text-uppercase" style={{ letterSpacing: '0.1em' }}>
+                                            <p className="tech-font fw-bold mb-0 text-white text-uppercase" style={{ letterSpacing: '0.08em', fontSize: '0.9rem' }}>
                                                 {isCaptioning ? 'ANALYZING VISUAL DATA...' : isVideoAnalyzing ? 'DECODING FEED...' : 'PROCESSING VECTORS...'}
                                             </p>
                                         </div>
@@ -255,7 +255,7 @@ const ReportIssue = () => {
 
                         {/* Location */}
                         <div className="mb-5">
-                            <label className="tech-font fw-bold text-white mb-2 d-block text-uppercase" style={{ letterSpacing: '0.15em' }}>
+                            <label className="tech-font fw-bold text-white mb-2 d-block text-uppercase" style={{ letterSpacing: '0.08em' }}>
                                 COORDINATES <span className="text-neon-red">*</span>
                             </label>
                             <div className="input-group mb-3">
@@ -275,7 +275,7 @@ const ReportIssue = () => {
 
                         {/* Photo Upload */}
                         <div className="mb-5">
-                            <label className="tech-font fw-bold text-white mb-2 d-block text-uppercase" style={{ letterSpacing: '0.15em' }}>
+                            <label className="tech-font fw-bold text-white mb-2 d-block text-uppercase" style={{ letterSpacing: '0.08em' }}>
                                 VISUAL INTEL <span className="text-neon-red">*</span>
                             </label>
                             <input type="file" ref={imageInputRef} onChange={handleImageChange} className="d-none" id="imageUpload" accept="image/*" />
@@ -309,7 +309,7 @@ const ReportIssue = () => {
                     {/* RIGHT: Validation Panel */}
                     <div className="px-4 py-5 d-flex flex-column gap-4 glass-card border-end-0 border-top-0 border-bottom-0" style={{ flex: '0 0 380px', width: '380px', position: 'sticky', top: '65px', height: 'calc(100vh - 65px)', overflowY: 'auto', borderRadius: 0, borderLeft: '1px solid rgba(255,255,255,0.1)' }}>
                         <div>
-                            <label className="tech-font fw-bold text-muted text-uppercase mb-3 d-flex align-items-center gap-2" style={{ fontSize: '0.72rem', letterSpacing: '0.15em' }}>
+                            <label className="label-sm text-muted mb-3 d-flex align-items-center gap-2">
                                 <FaTerminal className="text-neon-purple" /> AUTO-DIAGNOSTICS
                             </label>
 
@@ -368,7 +368,7 @@ const ReportIssue = () => {
                                     <span style={{ width: '16px', height: '16px', background: item.done ? 'rgba(163,230,53,0.2)' : 'rgba(255,255,255,0.1)', border: `1px solid ${item.done ? 'var(--secondary-color)' : 'transparent'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         {item.done && <FaCheckCircle size={8} className="text-neon-green" />}
                                     </span>
-                                    <small className={`tech-font fw-bold ${item.done ? 'text-white' : 'text-muted'} text-uppercase`} style={{ letterSpacing: '0.1em' }}>{item.label}</small>
+                                    <small className={`tech-font fw-bold ${item.done ? 'text-white' : 'text-muted'} text-uppercase`} style={{ letterSpacing: '0.08em', fontSize: '0.85rem' }}>{item.label}</small>
                                 </div>
                             ))}
                         </div>

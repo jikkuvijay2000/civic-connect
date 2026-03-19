@@ -40,12 +40,12 @@ const Sidebar = () => {
                     style={{ top: '100%', minWidth: '220px', zIndex: 9999 }}>
                     <div className="px-3 py-2 border-bottom border-secondary mb-2">
                         <p className="tech-font fw-bold text-white mb-0" style={{ letterSpacing: '0.1em' }}>{user?.userName || 'UNKNOWN ALIAS'}</p>
-                        <small className="tech-font text-neon-green" style={{ fontSize: '0.65rem', letterSpacing: '0.15em' }}>CIVILIAN SEC-LEVEL 1</small>
+                        <small className="tech-font text-neon-green fw-bold text-uppercase" style={{ fontSize: '0.75rem', letterSpacing: '0.1em' }}>CIVILIAN SEC-LEVEL 1</small>
                     </div>
-                    <button onClick={() => { navigate('/dashboard/security'); setShowProfile(false); }} className="btn w-100 text-start text-white tech-font p-2 hover-bg-light border-0 d-flex align-items-center gap-2 mb-1" style={{ fontSize: '0.8rem', letterSpacing: '0.1em' }}>
+                    <button onClick={() => { navigate('/dashboard/security'); setShowProfile(false); }} className="btn w-100 text-start text-white tech-font p-2 hover-bg-light border-0 d-flex align-items-center gap-2 mb-1" style={{ fontSize: '0.9rem', letterSpacing: '0.06em' }}>
                         <FaShieldAlt size={12} className="text-neon-purple" /> NETWORK PRIVACY
                     </button>
-                    <button onClick={handleLogout} className="btn w-100 text-start text-neon-red tech-font p-2 border-0 d-flex align-items-center gap-2" style={{ fontSize: '0.8rem', letterSpacing: '0.1em', background: 'rgba(239, 68, 68, 0.1)' }}>
+                    <button onClick={handleLogout} className="btn w-100 text-start text-neon-red tech-font p-2 border-0 d-flex align-items-center gap-2" style={{ fontSize: '0.9rem', letterSpacing: '0.06em', background: 'rgba(239, 68, 68, 0.1)' }}>
                         <FaSignOutAlt size={12} /> TERMINATE UPLINK
                     </button>
                 </motion.div>
@@ -74,7 +74,7 @@ const Sidebar = () => {
                                 border: isActive(path) ? '1px solid var(--secondary-color)' : '1px solid transparent',
                                 fontSize: '0.8rem', letterSpacing: '0.1em', borderRadius: '4px' 
                             }}>
-                            <Icon size={14} /> {label}
+                            <Icon size={14} /> <span style={{ fontSize: '0.9rem', letterSpacing: '0.08em' }}>{label}</span>
                         </button>
                     ))}
                 </div>
@@ -115,7 +115,7 @@ const Sidebar = () => {
                             }}>
                                 <Icon size={18} className={active ? 'text-white' : 'text-muted'} />
                             </div>
-                            {active && <span className="tech-font mt-1 text-neon-purple fw-bold d-block" style={{ fontSize: '0.55rem', letterSpacing: '0.1em' }}>{label}</span>}
+                            {active && <span className="tech-font mt-1 text-neon-purple fw-bold d-block text-uppercase" style={{ fontSize: '0.72rem', letterSpacing: '0.08em' }}>{label}</span>}
                         </button>
                     );
                 })}

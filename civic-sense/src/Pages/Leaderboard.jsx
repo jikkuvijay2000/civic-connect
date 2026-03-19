@@ -76,14 +76,14 @@ const RewardCard = ({ reward, myPoints, onClaim }) => {
             {/* Body */}
             <div className="p-4 d-flex flex-column flex-grow-1">
                 <h6 className="tech-font fw-bold text-white mb-2 text-uppercase tracking-widest">{title}</h6>
-                <p className="text-secondary font-monospace mb-4" style={{ fontSize: '0.8rem', lineHeight: 1.6 }}>
+                <p className="body-text mb-4">
                     {description.length > 90 ? description.slice(0, 90) + '…' : description}
                 </p>
 
                 {/* Progress bar */}
                 {!claimedByMe && (
                     <div className="mb-4 mt-auto">
-                        <div className="d-flex justify-content-between align-items-center mb-2 tech-font fw-bold text-uppercase" style={{ fontSize: '0.7rem' }}>
+                        <div className="d-flex justify-content-between align-items-center mb-2 tech-font fw-bold text-uppercase" style={{ fontSize: '0.78rem' }}>
                             <span className="text-muted">CREDIT ASSIGNMENT</span>
                             <span style={{ color: canClaim ? 'var(--primary-color)' : 'var(--text-muted)' }}>
                                 {Math.min(myPoints, pointsRequired).toLocaleString()} / {Number(pointsRequired).toLocaleString()} XP
@@ -99,7 +99,7 @@ const RewardCard = ({ reward, myPoints, onClaim }) => {
                 {/* Promo */}
                 {claimedByMe && promoCode && (
                     <div className="mb-4 mt-auto">
-                        <small className="tech-font text-neon-green d-block mb-2 fw-bold text-uppercase" style={{ fontSize: '0.7rem', letterSpacing: '0.1em' }}>DECRYPTION KEY</small>
+                        <small className="label-sm text-neon-green d-block mb-2">DECRYPTION KEY</small>
                         <PromoBadge code={promoCode} />
                     </div>
                 )}
@@ -204,7 +204,7 @@ const Leaderboard = () => {
                         <FaTerminal size={30} className="text-secondary d-none d-md-block" />
                         <div>
                             <h2 className="tech-font fw-bold text-white mb-1 text-uppercase tracking-widest" style={{ letterSpacing: '0.2em' }}>CIVIC LEADERBOARD</h2>
-                            <p className="tech-font text-muted mb-0 text-uppercase" style={{ fontSize: '0.8rem', letterSpacing: '0.1em' }}>TOP OPERATIVES LOGGED WITHIN THE NETWORK FRAMEWORK.</p>
+                            <p className="tech-font text-muted mb-0 text-uppercase" style={{ fontSize: '0.88rem', letterSpacing: '0.06em' }}>TOP OPERATIVES LOGGED WITHIN THE NETWORK FRAMEWORK.</p>
                         </div>
                     </div>
 
@@ -215,17 +215,17 @@ const Leaderboard = () => {
                             style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.1)' }}>
                             <div className="text-center">
                                 <div className="fw-bold tech-font" style={{ color: '#f59e0b', fontSize: '1.4rem' }}>#{myRank + 1}</div>
-                                <small className="tech-font text-muted fw-bold text-uppercase" style={{ fontSize: '0.6rem', letterSpacing: '0.15em' }}>RANK</small>
+                                <small className="label-sm text-muted fw-bold">RANK</small>
                             </div>
                             <div style={{ width: '1px', height: '32px', background: 'rgba(255,255,255,0.1)' }} />
                             <div className="text-center">
                                 <div className="fw-bold tech-font text-neon-green" style={{ fontSize: '1.4rem' }}>{(myLeaderEntry.impactPoints || 0).toLocaleString()}</div>
-                                <small className="tech-font text-muted fw-bold text-uppercase" style={{ fontSize: '0.6rem', letterSpacing: '0.15em' }}>CREDITS</small>
+                                <small className="label-sm text-muted fw-bold">CREDITS</small>
                             </div>
                             <div style={{ width: '1px', height: '32px', background: 'rgba(255,255,255,0.1)' }} />
                             <div className="text-center">
                                 <div className="fw-bold tech-font text-neon-purple" style={{ fontSize: '1.4rem' }}>{myLeaderEntry.resolvedComplaints || 0}</div>
-                                <small className="tech-font text-muted fw-bold text-uppercase" style={{ fontSize: '0.6rem', letterSpacing: '0.15em' }}>RESOLVED</small>
+                                <small className="label-sm text-muted fw-bold">RESOLVED</small>
                             </div>
                         </motion.div>
                     )}
@@ -298,7 +298,7 @@ const Leaderboard = () => {
                                     { label: 'SOLVED', style: { width: '90px', textAlign: 'center' } },
                                     { label: 'CREDITS', style: { width: '110px', textAlign: 'right' } },
                                 ].map((h, i) => (
-                                    <div key={i} className="text-muted tech-font fw-bold text-uppercase d-none d-md-block" style={{ fontSize: '0.7rem', letterSpacing: '0.15em', ...h.style }}>
+                                    <div key={i} className="text-muted tech-font fw-bold text-uppercase d-none d-md-block" style={{ fontSize: '0.78rem', letterSpacing: '0.1em', ...h.style }}>
                                         {h.label}
                                     </div>
                                 ))}

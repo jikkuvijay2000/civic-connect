@@ -13,7 +13,7 @@
   --bg-surface: #111116; /* HUD Surface */
   
   --text-main: #f8fafc; /* Near White */
-  --text-muted: #a1a1aa; /* Muted tech text */
+  --text-muted: #b8bcc8; /* Muted tech text – brighter for readability */
   --text-dark: #181920;
 
   --shadow-sm: 0 0 10px rgba(170,0,255,0.1);
@@ -42,9 +42,28 @@ body {
 .tech-font {
   font-family: 'Share Tech Mono', monospace !important;
 }
-.text-neon-purple { color: var(--primary-color) !important; text-shadow: 0 0 5px var(--primary-color); }
-.text-neon-green { color: var(--secondary-color) !important; text-shadow: 0 0 5px var(--secondary-color); }
-.text-neon-red { color: var(--accent-red) !important; text-shadow: 0 0 5px var(--accent-red); }
+/* Neon glows – kept for accent icons/headings, slightly softer */
+.text-neon-purple { color: var(--primary-color) !important; text-shadow: 0 0 8px rgba(170,0,255,0.6); }
+.text-neon-green { color: var(--secondary-color) !important; text-shadow: 0 0 8px rgba(163,230,53,0.5); }
+.text-neon-red { color: var(--accent-red) !important; text-shadow: 0 0 8px rgba(239,68,68,0.5); }
+
+/* ── Readability utilities ── */
+/* Readable paragraph / body copy – Rajdhani, normal case, comfortable size */
+.body-text {
+  font-family: 'Rajdhani', sans-serif !important;
+  font-size: 0.95rem !important;
+  line-height: 1.7 !important;
+  letter-spacing: 0.01em !important;
+  color: var(--text-muted);
+}
+/* Consistent small uppercase label – replaces scattered 0.55–0.65rem labels */
+.label-sm {
+  font-family: 'Share Tech Mono', monospace !important;
+  font-size: 0.78rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.1em !important;
+  font-weight: 700;
+}
 
 /* Backgrounds */
 .bg-primary-custom { background-color: var(--primary-color) !important; }
@@ -123,8 +142,8 @@ body {
   border-radius: var(--radius-md);
   text-transform: uppercase;
   font-family: 'Share Tech Mono', monospace;
-  font-size: 0.85rem;
-  letter-spacing: 0.1em;
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
 }
 .nav-link-custom:hover {
   background-color: var(--primary-light);

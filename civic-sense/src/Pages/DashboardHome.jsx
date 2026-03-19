@@ -157,7 +157,7 @@ const DashboardHome = () => {
                                         </div>
                                         <div>
                                             <h3 className="tech-font fw-bold mb-0 text-white" style={{ letterSpacing: '0.1em' }}>{s.value}</h3>
-                                            <small className="tech-font text-muted text-uppercase" style={{ fontSize: '0.65rem', letterSpacing: '0.15em' }}>{s.label}</small>
+                                            <small className="label-sm text-muted">{s.label}</small>
                                         </div>
                                     </motion.div>
                                 </div>
@@ -232,22 +232,22 @@ const DashboardHome = () => {
                                                         alt={post.author} className="rounded" width="40" height="40" style={{ flexShrink: 0, border: '1px solid rgba(255,255,255,0.1)' }} />
                                                     <div>
                                                         <div className="d-flex align-items-center gap-2 flex-wrap">
-                                                            <span className="tech-font fw-bold text-white text-uppercase" style={{ fontSize: '0.8rem', letterSpacing: '0.1em' }}>{post.author}</span>
-                                                            <span className="badge rounded tech-font text-uppercase" style={{ background: 'rgba(170,0,255,0.1)', color: 'var(--primary-color)', border: '1px solid var(--primary-color)', fontSize: '0.55rem', padding: '3px 6px', letterSpacing: '0.1em' }}>
+                                                            <span className="tech-font fw-bold text-white" style={{ fontSize: '0.9rem', letterSpacing: '0.05em' }}>{post.author}</span>
+                                                            <span className="badge rounded tech-font text-uppercase" style={{ background: 'rgba(170,0,255,0.1)', color: 'var(--primary-color)', border: '1px solid var(--primary-color)', fontSize: '0.65rem', padding: '3px 8px', letterSpacing: '0.08em' }}>
                                                                 {post.role}
                                                             </span>
                                                         </div>
-                                                        <span className="tech-font text-muted d-flex align-items-center gap-1 text-uppercase" style={{ fontSize: '0.65rem', letterSpacing: '0.15em' }}>
+                                                        <span className="tech-font text-muted d-flex align-items-center gap-1" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>
                                                             <FaRegClock size={10} /> {timeAgo(post.createdAt)}
                                                         </span>
                                                     </div>
                                                 </div>
-                                                <span className="badge rounded tech-font text-uppercase" style={{ background: tm.bg, color: tm.color, border: `1px solid ${tm.border}`, fontSize: '0.65rem', padding: '4px 8px', letterSpacing: '0.1em' }}>
+                                                <span className="badge rounded tech-font text-uppercase" style={{ background: tm.bg, color: tm.color, border: `1px solid ${tm.border}`, fontSize: '0.72rem', padding: '4px 10px', letterSpacing: '0.08em' }}>
                                                     {post.tag}
                                                 </span>
                                             </div>
                                             <h6 className="tech-font fw-bold text-white mb-2 text-uppercase tracking-widest">{post.title}</h6>
-                                            <p className="text-secondary mb-0 font-monospace" style={{ fontSize: '0.85rem', lineHeight: 1.6 }}>{post.content}</p>
+                                            <p className="body-text mb-0">{post.content}</p>
                                         </div>
                                     </motion.div>
                                 );
@@ -266,19 +266,19 @@ const DashboardHome = () => {
 
                 {/* AI Monitor Panel */}
                 <div className="p-4 border-bottom border-secondary" style={{ borderColor: 'rgba(255,255,255,0.05) !important' }}>
-                    <label className="tech-font fw-bold text-primary text-uppercase mb-3 d-flex align-items-center gap-2" style={{ fontSize: '0.7rem', letterSpacing: '0.2em' }}><FaTerminal size={10} /> AUTO-ANALYSIS MODULE</label>
+                    <label className="label-sm text-primary mb-3 d-flex align-items-center gap-2"><FaTerminal size={10} /> AUTO-ANALYSIS MODULE</label>
                     <div className="rounded p-3 d-flex align-items-center gap-3" style={{ background: 'rgba(170,0,255,0.05)', border: '1px solid var(--primary-color)' }}>
                         <div style={{ flexShrink: 0 }}><AIAnimation size="small" /></div>
                         <div>
-                            <p className="tech-font fw-bold text-neon-purple mb-0 text-uppercase" style={{ fontSize: '0.75rem', letterSpacing: '0.1em' }}>CIVIC AI SEER</p>
-                            <small className="tech-font text-muted text-uppercase d-block mt-1" style={{ fontSize: '0.6rem', letterSpacing: '0.1em' }}>PROCESSING LOCAL THREAT VECTORS...</small>
+                            <p className="tech-font fw-bold text-neon-purple mb-0 text-uppercase" style={{ fontSize: '0.82rem', letterSpacing: '0.08em' }}>CIVIC AI SEER</p>
+                            <small className="label-sm text-muted d-block mt-1">PROCESSING LOCAL THREAT VECTORS...</small>
                         </div>
                     </div>
                 </div>
 
                 {/* Sub-Networks Panel */}
                 <div className="p-4">
-                    <label className="tech-font fw-bold text-secondary text-uppercase mb-3 d-flex align-items-center gap-2" style={{ fontSize: '0.7rem', letterSpacing: '0.2em' }}><FaTerminal size={10} /> LOCALIZED COMM GROUPS</label>
+                    <label className="label-sm text-secondary mb-3 d-flex align-items-center gap-2"><FaTerminal size={10} /> LOCALIZED COMM GROUPS</label>
                     <div className="d-flex flex-column gap-3">
                         {[
                             { name: 'RESPONSE CORPS', sub: '942 ACTIVE UNITS', color: 'var(--primary-color)', icon: FaHandsHelping },
@@ -293,8 +293,8 @@ const DashboardHome = () => {
                                         <GIcon size={16} style={{ color: g.color }} />
                                     </div>
                                     <div className="flex-grow-1 min-width-0">
-                                        <p className="tech-font fw-bold text-white mb-0 text-uppercase" style={{ fontSize: '0.7rem', letterSpacing: '0.1em' }}>{g.name}</p>
-                                        <small className="tech-font text-muted text-uppercase" style={{ fontSize: '0.55rem', letterSpacing: '0.15em' }}>{g.sub}</small>
+                                        <p className="tech-font fw-bold text-white mb-0 text-uppercase" style={{ fontSize: '0.78rem', letterSpacing: '0.08em' }}>{g.name}</p>
+                                        <small className="label-sm text-muted d-block">{g.sub}</small>
                                     </div>
                                     <button className="btn p-1 px-2 text-uppercase tech-font fw-bold" style={{ borderRadius: '4px', background: `rgba(${rgb}, 0.1)`, color: g.color, border: `1px solid ${g.color}`, fontSize: '0.6rem', letterSpacing: '0.1em' }}>
                                         LINK

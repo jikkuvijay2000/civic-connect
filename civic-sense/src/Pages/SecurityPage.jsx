@@ -31,13 +31,13 @@ const PasswordField = ({ label, value, onChange, placeholder }) => {
     const [show, setShow] = useState(false);
     return (
         <div>
-            <label className="fw-bold text-secondary tech-font mb-2 d-flex align-items-center gap-2 tracking-widest text-uppercase" style={{ fontSize: '0.75rem', letterSpacing: '0.15em' }}>
+            <label className="fw-bold tech-font mb-2 d-flex align-items-center gap-2 tracking-widest text-uppercase" style={{ fontSize: '0.75rem', letterSpacing: '0.15em', color: '#c4c4d4' }}>
                 <FaTerminal size={10} /> {label}
             </label>
             <div className="d-flex align-items-center border px-3 transition-all" style={{ background: 'rgba(0,0,0,0.5)', borderColor: 'rgba(255,255,255,0.1) !important', gap: '8px' }}
                 onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--primary-color) !important'; e.currentTarget.style.boxShadow = '0 0 10px rgba(170,0,255,0.2)'; }}
                 onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1) !important'; e.currentTarget.style.boxShadow = 'none'; }}>
-                <FaKey size={13} className="text-secondary opacity-50 flex-shrink-0" />
+                <FaKey size={13} className="flex-shrink-0" style={{ color: '#7c7ca8' }} />
                 <input
                     type={show ? 'text' : 'password'}
                     className="form-control border-0 shadow-none bg-transparent py-3 text-white font-monospace"
@@ -47,7 +47,7 @@ const PasswordField = ({ label, value, onChange, placeholder }) => {
                     style={{ fontSize: '0.9rem', letterSpacing: show ? 'normal' : '0.2em' }}
                 />
                 <button type="button" className="border-0 bg-transparent p-0 hover-scale" onClick={() => setShow(s => !s)}>
-                    {show ? <FaEyeSlash size={14} className="text-secondary" /> : <FaEye size={14} className="text-secondary opacity-50" />}
+                    {show ? <FaEyeSlash size={14} style={{ color: '#9090b8' }} /> : <FaEye size={14} style={{ color: '#9090b8' }} />}
                 </button>
             </div>
         </div>
@@ -119,7 +119,7 @@ const SecurityPage = () => {
                     </div>
                     <div>
                         <h4 className="fw-bold text-white tech-font mb-1 text-uppercase tracking-widest">SECURITY PROTOCOLS</h4>
-                        <small className="tech-font text-muted font-monospace text-uppercase" style={{ fontSize: '0.75rem', letterSpacing: '0.1em' }}>
+                        <small className="tech-font font-monospace text-uppercase" style={{ fontSize: '0.75rem', letterSpacing: '0.1em', color: '#a0a0b8' }}>
                             // MANAGE ENCRYPTION KEYS & DATA PRIVACY
                         </small>
                     </div>
@@ -138,7 +138,7 @@ const SecurityPage = () => {
                         </div>
                         <div className="flex-grow-1">
                             <div className="fw-bold text-white font-monospace text-uppercase" style={{ fontSize: '1.2rem', letterSpacing: '0.05em' }}>{user.userName || 'UNKNOWN ALIAS'}</div>
-                            <small className="tech-font text-secondary text-uppercase tracking-widest" style={{ fontSize: '0.75rem' }}>{user.userEmail || '—'}</small>
+                            <small className="tech-font text-uppercase tracking-widest" style={{ fontSize: '0.75rem', color: '#c4c4d4' }}>{user.userEmail || '—'}</small>
                         </div>
                         <div className="d-flex align-items-center gap-2 px-3 py-2 border tech-font text-uppercase" style={{ background: 'rgba(16,185,129,0.1)', borderColor: 'var(--neon-green) !important', boxShadow: '0 0 10px rgba(16,185,129,0.2)' }}>
                             <FaCheckCircle size={14} className="text-neon-green" />
@@ -152,7 +152,7 @@ const SecurityPage = () => {
                             <FaLock size={16} className="text-primary" />
                             <div>
                                 <div className="fw-bold text-white tech-font text-uppercase tracking-widest" style={{ fontSize: '1rem' }}>ENCRYPTION KEY MANAGEMENT</div>
-                                <small className="tech-font text-muted font-monospace text-uppercase" style={{ fontSize: '0.7rem' }}>// RECYCLE KEYS PERIODICALLY TO MAINTAIN SECURITY CLEARANCE</small>
+                                <small className="tech-font font-monospace text-uppercase" style={{ fontSize: '0.7rem', color: '#a0a0b8' }}>// RECYCLE KEYS PERIODICALLY TO MAINTAIN SECURITY CLEARANCE</small>
                             </div>
                         </div>
                         <form onSubmit={handleChangePassword} className="p-4 p-md-5">
@@ -179,9 +179,9 @@ const SecurityPage = () => {
                                             { rule: /[@$!%*?&#]/.test(newPw), text: 'SYMBOLIC_CHAR' },
                                         ].map((r, i) => (
                                             <span key={i} className="d-flex align-items-center gap-2 tech-font text-uppercase"
-                                                style={{ fontSize: '0.7rem', color: r.rule ? 'var(--neon-green)' : 'var(--text-muted)', letterSpacing: '0.1em' }}>
-                                                {r.rule ? <FaCheckCircle size={10} /> : <div style={{ width: '4px', height: '4px', background: 'var(--text-muted)', borderRadius: '50%' }} />}
-                                                <span style={{ opacity: r.rule ? 1 : 0.6 }}>{r.text}</span>
+                                                style={{ fontSize: '0.7rem', color: r.rule ? 'var(--neon-green)' : '#8888aa', letterSpacing: '0.1em' }}>
+                                                {r.rule ? <FaCheckCircle size={10} /> : <div style={{ width: '4px', height: '4px', background: '#8888aa', borderRadius: '50%' }} />}
+                                                <span style={{ opacity: 1 }}>{r.text}</span>
                                             </span>
                                         ))}
                                     </div>
@@ -229,7 +229,7 @@ const SecurityPage = () => {
                             <FaDatabase size={16} className="text-secondary" />
                             <div>
                                 <div className="fw-bold text-white tech-font text-uppercase tracking-widest" style={{ fontSize: '1rem' }}>DATA CLASSIFICATION & PROTOCOLS</div>
-                                <small className="tech-font text-muted font-monospace text-uppercase" style={{ fontSize: '0.7rem' }}>// HOW YOUR INTEL IS STORED AND PROCESSED</small>
+                                <small className="tech-font font-monospace text-uppercase" style={{ fontSize: '0.7rem', color: '#a0a0b8' }}>// HOW YOUR INTEL IS STORED AND PROCESSED</small>
                             </div>
                         </div>
                         <div className="p-4 p-md-5">
@@ -241,13 +241,13 @@ const SecurityPage = () => {
                             ].map((item, i) => {
                                 const Icon = item.icon;
                                 return (
-                                    <div key={i} className="d-flex align-items-start gap-4 mb-4 pb-4 border-bottom" style={{ borderColor: i === 3 ? 'transparent' : 'rgba(255,255,255,0.1) !important', margin: i === 3 ? '0 0 -1rem 0' : '0' }}>
-                                        <div className="border d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '42px', height: '42px', background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1) !important', boxShadow: 'inset 0 0 10px rgba(0,0,0,0.8)' }}>
-                                            <Icon size={16} className="text-secondary" />
+                                    <div key={i} className="d-flex align-items-start gap-4 mb-4 pb-4 border-bottom" style={{ borderColor: i === 3 ? 'transparent' : 'rgba(255,255,255,0.12) !important', margin: i === 3 ? '0 0 -1rem 0' : '0' }}>
+                                        <div className="border d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '42px', height: '42px', background: 'rgba(100,80,160,0.15)', borderColor: 'rgba(170,0,255,0.25) !important', boxShadow: 'inset 0 0 10px rgba(0,0,0,0.6)' }}>
+                                            <Icon size={16} style={{ color: '#9a80d4' }} />
                                         </div>
                                         <div>
-                                            <div className="fw-bold text-secondary tech-font text-uppercase tracking-widest mb-2" style={{ fontSize: '0.8rem' }}>&gt; {item.title}</div>
-                                            <p className="text-white font-monospace mb-0" style={{ fontSize: '0.8rem', lineHeight: 1.6, opacity: 0.8 }}>{item.desc}</p>
+                                            <div className="fw-bold tech-font text-uppercase tracking-widest mb-2" style={{ fontSize: '0.8rem', color: '#c4b8e8' }}>&gt; {item.title}</div>
+                                            <p className="font-monospace mb-0" style={{ fontSize: '0.8rem', lineHeight: 1.7, color: '#d0cee0' }}>{item.desc}</p>
                                         </div>
                                     </div>
                                 );
@@ -261,7 +261,7 @@ const SecurityPage = () => {
                             <FaSignOutAlt size={16} className="text-neon-green" />
                             <div>
                                 <div className="fw-bold text-white tech-font text-uppercase tracking-widest" style={{ fontSize: '1rem' }}>COM-LINK STATUS</div>
-                                <small className="tech-font text-muted font-monospace text-uppercase" style={{ fontSize: '0.7rem' }}>// ACTIVE CONNECTIONS TO CENTRAL SERVER</small>
+                                <small className="tech-font font-monospace text-uppercase" style={{ fontSize: '0.7rem', color: '#a0a0b8' }}>// ACTIVE CONNECTIONS TO CENTRAL SERVER</small>
                             </div>
                         </div>
                         <div className="p-4 p-md-5">
@@ -273,10 +273,10 @@ const SecurityPage = () => {
                                     </div>
                                     <div>
                                         <div className="fw-bold text-neon-green tech-font text-uppercase tracking-widest mb-1" style={{ fontSize: '0.85rem' }}>LINK: SECURE / ACTIVE</div>
-                                        <small className="font-monospace text-muted d-block" style={{ fontSize: '0.75rem' }}>
+                                        <small className="font-monospace d-block" style={{ fontSize: '0.75rem', color: '#a0a0b8' }}>
                                             OPERATIVE: <span className="text-white">{user.userEmail}</span>
                                         </small>
-                                        <small className="font-monospace text-secondary d-block mt-1" style={{ fontSize: '0.7rem' }}>
+                                        <small className="font-monospace d-block mt-1" style={{ fontSize: '0.7rem', color: '#9090b8' }}>
                                             ESTABLISHED: {new Date().toLocaleDateString('en-US', { dateStyle: 'long' }).toUpperCase()}
                                         </small>
                                     </div>
@@ -296,14 +296,14 @@ const SecurityPage = () => {
                             <FaExclamationTriangle size={18} className="text-accent-red" />
                             <div>
                                 <div className="fw-bold tech-font text-uppercase tracking-widest blink-slow" style={{ color: 'var(--accent-red)', fontSize: '1rem' }}>RESTRICTED SECTOR [ DANGER ]</div>
-                                <small className="font-monospace text-uppercase" style={{ color: '#fca5a5', fontSize: '0.7rem' }}>// CRITICAL ACTIONS ARE IRREVERSIBLE</small>
+                                <small className="font-monospace text-uppercase" style={{ color: '#fcc5c5', fontSize: '0.7rem' }}>// CRITICAL ACTIONS ARE IRREVERSIBLE</small>
                             </div>
                         </div>
                         <div className="p-4 p-md-5">
                             <div className="d-flex align-items-start justify-content-between gap-4 flex-wrap">
                                 <div>
                                     <div className="fw-bold text-white tech-font text-uppercase tracking-widest mb-2" style={{ fontSize: '0.9rem' }}>&gt; PURGE OPERATIVE DATA</div>
-                                    <p className="text-muted font-monospace mb-0" style={{ fontSize: '0.8rem', lineHeight: 1.6, maxWidth: '400px' }}>
+                                    <p className="font-monospace mb-0" style={{ fontSize: '0.8rem', lineHeight: 1.7, maxWidth: '400px', color: '#c8c0d8' }}>
                                         Complete erasure of profile from Central Servers. Anomalies filed will be decoupled and permanently grouped as "ARCHIVED_ORPHAN". This data cannot be recovered.
                                     </p>
                                 </div>
