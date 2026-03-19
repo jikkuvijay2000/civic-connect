@@ -1,0 +1,1501 @@
+﻿diff --git a/civic-sense-backend/Controllers/ComplaintController.js b/civic-sense-backend/Controllers/ComplaintController.js
+index 085c7cb..d4dc55a 100644
+--- a/civic-sense-backend/Controllers/ComplaintController.js
++++ b/civic-sense-backend/Controllers/ComplaintController.js
+@@ -24,7 +24,7 @@ const getDepartmentFromCategory = (category) => {
+ 
+ const createComplaint = async (req, res) => {
+     try {
+-        const { title, description, category, location, priority, aiScore } = req.body;
++        const { title, description, category, location, priority, aiScore, lat, lng } = req.body;
+         console.log("Create Complaint Body:", req.body);
+         console.log("Received AI Score:", aiScore); // Debug log
+         const userId = req.user._id; // From authMiddleware (payload has userId)
+@@ -197,7 +197,9 @@ const createComplaint = async (req, res) => {
+                 performedByRole: 'Citizen',
+                 note: `Complaint filed under category: ${category} | Priority: ${priority}`,
+                 timestamp: new Date()
+-            }]
++            }],
++            complaintLat: (lat && !isNaN(parseFloat(lat))) ? parseFloat(lat) : null,
++            complaintLng: (lng && !isNaN(parseFloat(lng))) ? parseFloat(lng) : null,
+         });
+ 
+         // Re-mapping to match model
+@@ -209,6 +211,21 @@ const createComplaint = async (req, res) => {
+ 
+         await newComplaint.save();
+ 
++        // Emit live map update to all connected clients
++        const ioMap = req.app.get('io');
++        if (ioMap && newComplaint.complaintLat && newComplaint.complaintLng) {
++            ioMap.emit('map_update', {
++                _id: newComplaint._id,
++                complaintId: newComplaint.complaintId,
++                title: title,
++                category: newComplaint.complaintType,
++                lat: newComplaint.complaintLat,
++                lng: newComplaint.complaintLng,
++                status: newComplaint.complaintStatus,
++                priority: newComplaint.complaintPriority,
++            });
++        }
++
+         // Check for High Priority / Emergency
+         if (priority === 'High' || priority === 'Emergency') {
+             const Notification = require('../Models/Notification');
+@@ -497,6 +514,15 @@ const updateComplaintStatus = async (req, res) => {
+         if (io) {
+             io.to(complaint.complaintUser.toString()).emit('notification', newNotification);
+             console.log(`Notification emitted to user ${complaint.complaintUser}`);
++            // Emit global map update so all connected clients update the marker color
++            if (complaint.complaintLat && complaint.complaintLng) {
++                io.emit('map_status_update', {
++                    id: complaint.complaintId,
++                    status: complaint.complaintStatus,
++                    lat: complaint.complaintLat,
++                    lng: complaint.complaintLng,
++                });
++            }
+         }
+ 
+         res.status(200).json({ message: "Status updated successfully", complaint });
+@@ -788,4 +814,30 @@ const getAiHealth = async (req, res) => {
+     }
+ };
+ 
+-module.exports = { createComplaint, getUserContributions, predictComplaint, generateCaption, getAuthorityComplaints, getAuthorityStats, updateComplaintStatus, addFeedback, getResolvedComplaints, analyzeVideo, editComplaint, getAiHealth };
++/* ΓöÇΓöÇ Map Points: Returns geocoded complaint data for the live incident map ΓöÇΓöÇ */
++const getMapPoints = async (req, res) => {
++    try {
++        const complaints = await Complaint.find(
++            { complaintLat: { $ne: null }, complaintLng: { $ne: null } },
++            'complaintId complaintType complaintStatus complaintPriority complaintLat complaintLng complaintDescription complaintResolvedDate'
++        ).sort({ createdAt: -1 }).limit(500);
++
++        const points = complaints.map(c => ({
++            id: c.complaintId,
++            title: c.complaintDescription?.split('\n')[0]?.replace(/\*\*/g, '') || 'Incident',
++            category: c.complaintType,
++            status: c.complaintStatus,
++            priority: c.complaintPriority,
++            lat: c.complaintLat,
++            lng: c.complaintLng,
++            resolvedAt: c.complaintResolvedDate,
++        }));
++
++        res.status(200).json({ status: 'success', data: points });
++    } catch (error) {
++        console.error('Error fetching map points:', error);
++        res.status(500).json({ message: 'Server error', error: error.message });
++    }
++};
++
++module.exports = { createComplaint, getUserContributions, predictComplaint, generateCaption, getAuthorityComplaints, getAuthorityStats, updateComplaintStatus, addFeedback, getResolvedComplaints, analyzeVideo, editComplaint, getAiHealth, getMapPoints };
+diff --git a/civic-sense-backend/Models/Complaints.js b/civic-sense-backend/Models/Complaints.js
+index e058bc1..1b4b26c 100644
+--- a/civic-sense-backend/Models/Complaints.js
++++ b/civic-sense-backend/Models/Complaints.js
+@@ -33,6 +33,16 @@ const complaintSchema = new mongoose.Schema({
+         type: String,
+         required: true
+     },
++    complaintLat: {
++        type: Number,
++        required: false,
++        default: null
++    },
++    complaintLng: {
++        type: Number,
++        required: false,
++        default: null
++    },
+     complaintStatus: {
+         type: String,
+         required: true,
+diff --git a/civic-sense/src/Pages/DashboardHome.jsx b/civic-sense/src/Pages/DashboardHome.jsx
+index 9548925..848e4b0 100644
+--- a/civic-sense/src/Pages/DashboardHome.jsx
++++ b/civic-sense/src/Pages/DashboardHome.jsx
+@@ -1,38 +1,36 @@
+ import React, { useState, useEffect } from 'react';
+-import { motion, AnimatePresence } from 'framer-motion';
++import { motion } from 'framer-motion';
+ import {
+-    FaSearch, FaBell, FaHeart, FaExclamationCircle, FaCheckCircle,
+-    FaMapMarkerAlt, FaTag, FaRegClock, FaArrowUp, FaChartLine,
+-    FaHandsHelping
++    FaSearch, FaHeart, FaExclamationCircle, FaCheckCircle,
++    FaRegClock, FaChartLine, FaHandsHelping, FaTerminal
+ } from 'react-icons/fa';
+ import Calendar from '../Components/Calendar';
+ import NotificationDropdown from '../components/NotificationDropdown';
+ import ComplaintDetailsModal from '../components/ComplaintDetailsModal';
+ import { notify } from '../utils/notify';
+-import { initiateSocketConnection, subscribeToNotifications, subscribeToAlerts, disconnectSocket } from '../utils/socketService';
++import { initiateSocketConnection, subscribeToNotifications, subscribeToAlerts } from '../utils/socketService';
+ import AIAnimation from '../Components/AIAnimation';
+ import api from '../api/axios';
++import LiveIncidentMap from '../components/LiveIncidentMap';
+ 
+-/* ΓöÇΓöÇ Tag color map ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
+ const TAG_META = {
+-    Alert: { color: '#ef4444', bg: '#fef2f2', border: '#fca5a5' },
+-    Event: { color: '#10b981', bg: '#ecfdf5', border: '#6ee7b7' },
+-    News: { color: '#6366f1', bg: '#eef2ff', border: '#a5b4fc' },
+-    Update: { color: '#3b82f6', bg: '#eff6ff', border: '#93c5fd' },
+-    Notice: { color: '#f59e0b', bg: '#fffbeb', border: '#fcd34d' },
++    Alert: { color: 'var(--accent-red)', bg: 'rgba(239, 68, 68, 0.1)', border: 'var(--accent-red)' },
++    Event: { color: 'var(--secondary-color)', bg: 'rgba(163, 230, 53, 0.1)', border: 'var(--secondary-color)' },
++    News: { color: 'var(--primary-color)', bg: 'rgba(170, 0, 255, 0.1)', border: 'var(--primary-color)' },
++    Update: { color: '#00f0ff', bg: 'rgba(0, 240, 255, 0.1)', border: '#00f0ff' },
++    Notice: { color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)', border: '#f59e0b' },
+ };
+-const getTagMeta = (tag) => TAG_META[tag] || { color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb' };
++const getTagMeta = (tag) => TAG_META[tag] || { color: '#9ca3af', bg: 'rgba(255,255,255,0.05)', border: '#4b5563' };
+ 
+ const timeAgo = (dateString) => {
+     const s = Math.floor((new Date() - new Date(dateString)) / 1000);
+-    if (s < 60) return `${s}s ago`;
+-    if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+-    if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+-    if (s < 2592000) return `${Math.floor(s / 86400)}d ago`;
+-    return `${Math.floor(s / 2592000)}mo ago`;
++    if (s < 60) return `${s}s AGO`;
++    if (s < 3600) return `${Math.floor(s / 60)}M AGO`;
++    if (s < 86400) return `${Math.floor(s / 3600)}H AGO`;
++    if (s < 2592000) return `${Math.floor(s / 86400)}D AGO`;
++    return `${Math.floor(s / 2592000)}MO AGO`;
+ };
+ 
+-/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
+ const DashboardHome = () => {
+     const [feedPosts, setFeedPosts] = useState([]);
+     const [loadingPosts, setLoadingPosts] = useState(true);
+@@ -67,7 +65,7 @@ const DashboardHome = () => {
+                     setUserStats(statsRes.value.data.data);
+                 }
+             } catch (e) {
+-                console.error('Error fetching dashboard data:', e);
++                console.error('Data intercept failed:', e);
+             } finally {
+                 setLoadingPosts(false);
+             }
+@@ -80,7 +78,7 @@ const DashboardHome = () => {
+             if (data) {
+                 setNotifications(prev => [data, ...prev]);
+                 setUnreadCount(prev => prev + 1);
+-                notify('info', `New Notification: ${data.message}`);
++                notify('info', `INTEL: ${data.message}`);
+             }
+         });
+         const unsubAlerts = subscribeToAlerts((err, data) => {
+@@ -89,7 +87,6 @@ const DashboardHome = () => {
+                 const newNotification = { _id: Date.now(), message: `ALERT: ${data.title}`, type: 'warning', createdAt: new Date().toISOString(), isRead: false };
+                 setNotifications(prev => [newNotification, ...prev]);
+                 setUnreadCount(prev => prev + 1);
+-                notify('warning', `New Alert: ${data.title}`);
+             }
+         });
+         return () => { if (unsubNotifs) unsubNotifs(); if (unsubAlerts) unsubAlerts(); };
+@@ -100,42 +97,38 @@ const DashboardHome = () => {
+             await api.put(`/user/notifications/${id}/read`);
+             setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
+             setUnreadCount(prev => Math.max(0, prev - 1));
+-        } catch (e) { console.error('Error marking read:', e); }
++        } catch (e) { console.error('Status sync failed:', e); }
+     };
+ 
+     const FILTERS = ['All', 'Alert', 'Event', 'News', 'Update', 'Notice'];
+     const filtered = activeFilter === 'All' ? feedPosts : feedPosts.filter(p => p.tag === activeFilter);
+ 
+     const STATS = [
+-        { label: 'Impact Points', value: userStats.impactPoints, icon: FaHeart, color: '#6366f1', bg: '#eef2ff' },
+-        { label: 'Issues Reported', value: userStats.totalComplaints, icon: FaExclamationCircle, color: '#f59e0b', bg: '#fffbeb' },
+-        { label: 'Issues Resolved', value: userStats.resolvedComplaints, icon: FaCheckCircle, color: '#10b981', bg: '#ecfdf5' },
++        { label: 'IMPACT METRIC', value: userStats.impactPoints, icon: FaHeart, color: 'var(--primary-color)' },
++        { label: 'INCIDENTS LOGGED', value: userStats.totalComplaints, icon: FaExclamationCircle, color: '#f59e0b' },
++        { label: 'RESOLUTION COUNT', value: userStats.resolvedComplaints, icon: FaCheckCircle, color: 'var(--secondary-color)' },
+     ];
+ 
+     return (
+-        <div className="row m-0" style={{ minHeight: '100vh', background: '#f8fafc' }}>
++        <div className="row m-0 w-100" style={{ minHeight: '100vh', background: 'transparent' }}>
+             <ComplaintDetailsModal
+                 isOpen={isModalOpen}
+                 onClose={() => setIsModalOpen(false)}
+                 complaint={selectedComplaint}
+             />
+ 
+-            {/* ΓöÇΓöÇ Center column ΓöÇΓöÇ */}
++            {/* Center column */}
+             <div className="col-lg-9 col-md-12 p-0 position-relative">
+-
+-                {/* Sticky top bar */}
+-                <div
+-                    className="d-flex justify-content-between align-items-center px-5 py-3 border-bottom"
+-                    style={{ background: 'rgba(248,250,252,0.88)', backdropFilter: 'blur(14px)', position: 'sticky', top: 0, zIndex: 100 }}
+-                >
++                {/* Top bar */}
++                <div className="d-flex justify-content-between align-items-center px-4 py-3 glass-sticky">
+                     <div>
+-                        <h5 className="fw-bold mb-0 text-dark">Dashboard</h5>
+-                        <small className="text-muted">Welcome back, {user?.userName || 'Citizen'}</small>
++                        <h5 className="tech-font fw-bold mb-0 text-white" style={{ letterSpacing: '0.15em' }}>COMMAND GRID</h5>
++                        <small className="tech-font text-muted text-uppercase" style={{ letterSpacing: '0.1em' }}>ALIAS DETECTED: {user?.userName || 'UNKNOWN'}</small>
+                     </div>
+                     <div className="d-flex align-items-center gap-3">
+-                        <div className="d-none d-md-flex align-items-center bg-white rounded-3 border px-3 py-2" style={{ width: '260px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
++                        <div className="d-none d-md-flex align-items-center rounded bg-transparent px-3 py-2" style={{ border: '1px solid rgba(255,255,255,0.1)', width: '260px' }}>
+                             <FaSearch className="text-muted me-2" size={13} />
+-                            <input type="text" className="form-control border-0 p-0 shadow-none bg-transparent" placeholder="Search posts..." style={{ fontSize: '0.87rem' }} />
++                            <input type="text" className="form-control tech-font text-white border-0 p-0 shadow-none bg-transparent" placeholder="QUERY NETWORK..." style={{ fontSize: '0.8rem', letterSpacing: '0.1em' }} />
+                         </div>
+                         <NotificationDropdown
+                             notifications={notifications}
+@@ -147,27 +140,24 @@ const DashboardHome = () => {
+                     </div>
+                 </div>
+ 
+-                <div className="px-5 py-5">
+-
+-                    {/* ΓöÇΓöÇ Stat cards ΓöÇΓöÇ */}
++                <div className="px-4 px-md-5 py-4 py-md-5">
++                    {/* Stat Hub */}
+                     <div className="row g-4 mb-5">
+                         {STATS.map((s, i) => {
+                             const Icon = s.icon;
+                             return (
+                                 <div className="col-md-4" key={i}>
+                                     <motion.div
+-                                        initial={{ opacity: 0, y: 16 }}
+-                                        animate={{ opacity: 1, y: 0 }}
+-                                        transition={{ delay: i * 0.08 }}
+-                                        className="bg-white rounded-4 border p-4 d-flex align-items-center gap-4"
+-                                        style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}
++                                        initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
++                                        className="glass-card p-4 d-flex align-items-center gap-4 hover-scale"
++                                        style={{ borderTop: `2px solid ${s.color}` }}
+                                     >
+-                                        <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
++                                        <div style={{ width: '52px', height: '52px', borderRadius: '12px', background: `rgba(${s.color === 'var(--primary-color)' ? '170,0,255' : s.color === 'var(--secondary-color)' ? '163,230,53' : '245,158,11'}, 0.1)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: `1px solid ${s.color}` }}>
+                                             <Icon size={22} style={{ color: s.color }} />
+                                         </div>
+                                         <div>
+-                                            <h3 className="fw-bold mb-0 text-dark">{s.value}</h3>
+-                                            <small className="text-muted fw-medium">{s.label}</small>
++                                            <h3 className="tech-font fw-bold mb-0 text-white" style={{ letterSpacing: '0.1em' }}>{s.value}</h3>
++                                            <small className="label-sm text-muted">{s.label}</small>
+                                         </div>
+                                     </motion.div>
+                                 </div>
+@@ -175,28 +165,31 @@ const DashboardHome = () => {
+                         })}
+                     </div>
+ 
+-                    {/* ΓöÇΓöÇ Feed header + filter ΓöÇΓöÇ */}
++                    {/* Live Incident Map */}
++                    <div className="mb-5">
++                        <LiveIncidentMap height="380px" showTitle={true} />
++                    </div>
++
++                    {/* Feed Controls */}
+                     <div className="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+-                        <h6 className="fw-bold text-dark mb-0">Community Feed</h6>
+-                        <div className="d-flex gap-1 flex-wrap">
++                        <div className="d-flex align-items-center gap-2">
++                            <FaTerminal className="text-neon-purple" size={14} />
++                            <h6 className="tech-font fw-bold text-white mb-0 text-uppercase" style={{ letterSpacing: '0.15em' }}>GLOBAL COMM FEED</h6>
++                        </div>
++                        <div className="d-flex gap-2 flex-wrap">
+                             {FILTERS.map(f => {
+                                 const m = getTagMeta(f);
+                                 const active = activeFilter === f;
+                                 return (
+-                                    <button
+-                                        key={f}
+-                                        onClick={() => setActiveFilter(f)}
+-                                        className="btn btn-sm fw-medium"
++                                    <button key={f} onClick={() => setActiveFilter(f)}
++                                        className="btn tech-font fw-bold text-uppercase"
+                                         style={{
+-                                            borderRadius: '10px',
+-                                            padding: '5px 14px',
+-                                            background: active ? m.bg : 'white',
+-                                            color: active ? m.color : '#64748b',
+-                                            border: `1.5px solid ${active ? m.border : '#e2e8f0'}`,
+-                                            fontSize: '0.8rem',
+-                                            transition: 'all 0.15s',
+-                                        }}
+-                                    >
++                                            borderRadius: '4px', padding: '6px 14px',
++                                            background: active ? m.bg : 'transparent',
++                                            color: active ? m.color : 'var(--text-muted)',
++                                            border: `1px solid ${active ? m.border : 'rgba(255,255,255,0.1)'}`,
++                                            fontSize: '0.7rem', letterSpacing: '0.1em', transition: 'all 0.2s',
++                                        }}>
+                                         {f}
+                                     </button>
+                                 );
+@@ -204,89 +197,57 @@ const DashboardHome = () => {
+                         </div>
+                     </div>
+ 
+-                    {/* ΓöÇΓöÇ Feed posts ΓöÇΓöÇ */}
++                    {/* Feed List */}
+                     <div className="d-flex flex-column gap-4 pb-5">
+                         {loadingPosts ? (
+                             <div className="text-center py-5">
+-                                <div className="spinner-border text-primary" role="status">
+-                                    <span className="visually-hidden">Loading...</span>
+-                                </div>
++                                <span className="spinner-border text-neon-purple" role="status" />
++                                <p className="tech-font mt-3 text-muted text-uppercase" style={{ letterSpacing: '0.2em', fontSize: '0.8rem' }}>ESTABLISHING UPLINK...</p>
+                             </div>
+                         ) : filtered.length === 0 ? (
+-                            <div className="text-center py-5 bg-white rounded-4 border">
++                            <div className="text-center py-5 glass-card">
+                                 <FaChartLine size={36} className="text-muted mb-3" style={{ opacity: 0.3 }} />
+-                                <h6 className="fw-bold text-dark">No posts found</h6>
+-                                <p className="text-muted small mb-0">
+-                                    {activeFilter === 'All' ? 'No community updates yet.' : `No "${activeFilter}" posts yet.`}
++                                <h6 className="tech-font fw-bold text-white text-uppercase" style={{ letterSpacing: '0.15em' }}>NO TRANSMISSIONS DETECTED</h6>
++                                <p className="tech-font text-muted text-uppercase mb-0" style={{ fontSize: '0.7rem', letterSpacing: '0.1em' }}>
++                                    {activeFilter === 'All' ? 'NETWORK STATIC DETECTED.' : `NO "${activeFilter}" CATEGORY SIGNALS.`}
+                                 </p>
+                             </div>
+                         ) : (
+                             filtered.map((post, index) => {
+                                 const tm = getTagMeta(post.tag);
+                                 return (
+-                                    <motion.div
+-                                        key={post._id || index}
+-                                        initial={{ opacity: 0, y: 20 }}
+-                                        animate={{ opacity: 1, y: 0 }}
+-                                        transition={{ delay: Math.min(index * 0.07, 0.4) }}
+-                                        className="bg-white rounded-4 border overflow-hidden"
+-                                        style={{
+-                                            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+-                                            cursor: post.isComplaint ? 'pointer' : 'default',
+-                                            transition: 'all 0.18s',
+-                                        }}
+-                                        onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.09)'; }}
+-                                        onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)'; }}
+-                                        onClick={() => {
+-                                            if (post.isComplaint) {
+-                                                setSelectedComplaint(post.rawComplaint);
+-                                                setIsModalOpen(true);
+-                                            }
+-                                        }}
+-                                    >
+-                                        {/* Post image */}
++                                    <motion.div key={post._id || index} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(index * 0.07, 0.4) }}
++                                        className="glass-card overflow-hidden hover-bg-light"
++                                        style={{ cursor: post.isComplaint ? 'pointer' : 'default', borderLeft: `3px solid ${tm.border}` }}
++                                        onClick={() => { if (post.isComplaint) { setSelectedComplaint(post.rawComplaint); setIsModalOpen(true); } }}>
+                                         {post.image && (
+-                                            <div style={{ height: '220px', overflow: 'hidden' }}>
+-                                                <img src={post.image} alt={post.title} className="w-100 h-100 object-fit-cover" />
++                                            <div style={{ height: '220px', overflow: 'hidden', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
++                                                <img src={post.image} alt="Intel" className="w-100 h-100 object-fit-cover" style={{ filter: 'brightness(0.85) contrast(1.15)' }} />
+                                             </div>
+                                         )}
+-
+                                         <div className="p-4">
+-                                            {/* Author row */}
+                                             <div className="d-flex align-items-center justify-content-between mb-3">
+                                                 <div className="d-flex align-items-center gap-3">
+-                                                    <img
+-                                                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(post.author)}&background=random&color=fff&size=40`}
+-                                                        alt={post.author}
+-                                                        className="rounded-circle"
+-                                                        width="40" height="40"
+-                                                        style={{ flexShrink: 0 }}
+-                                                    />
++                                                    <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(post.author)}&background=101018&color=fff&size=40`}
++                                                        alt={post.author} className="rounded" width="40" height="40" style={{ flexShrink: 0, border: '1px solid rgba(255,255,255,0.1)' }} />
+                                                     <div>
+                                                         <div className="d-flex align-items-center gap-2 flex-wrap">
+-                                                            <span className="fw-bold text-dark small">{post.author}</span>
+-                                                            <span className="badge rounded-pill" style={{ background: '#eef2ff', color: '#6366f1', border: '1px solid #a5b4fc', fontSize: '0.65rem', padding: '2px 7px' }}>
++                                                            <span className="tech-font fw-bold text-white" style={{ fontSize: '0.9rem', letterSpacing: '0.05em' }}>{post.author}</span>
++                                                            <span className="badge rounded tech-font text-uppercase" style={{ background: 'rgba(170,0,255,0.1)', color: 'var(--primary-color)', border: '1px solid var(--primary-color)', fontSize: '0.65rem', padding: '3px 8px', letterSpacing: '0.08em' }}>
+                                                                 {post.role}
+                                                             </span>
+                                                         </div>
+-                                                        <span className="text-muted d-flex align-items-center gap-1" style={{ fontSize: '0.75rem' }}>
++                                                        <span className="tech-font text-muted d-flex align-items-center gap-1" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                                                             <FaRegClock size={10} /> {timeAgo(post.createdAt)}
+                                                         </span>
+                                                     </div>
+                                                 </div>
+-                                                <span
+-                                                    className="badge rounded-pill fw-medium px-3 py-1"
+-                                                    style={{ background: tm.bg, color: tm.color, border: `1px solid ${tm.border}`, fontSize: '0.75rem' }}
+-                                                >
++                                                <span className="badge rounded tech-font text-uppercase" style={{ background: tm.bg, color: tm.color, border: `1px solid ${tm.border}`, fontSize: '0.72rem', padding: '4px 10px', letterSpacing: '0.08em' }}>
+                                                     {post.tag}
+                                                 </span>
+                                             </div>
+-
+-                                            {/* Content */}
+-                                            <h6 className="fw-bold text-dark mb-2">{post.title}</h6>
+-                                            <p className="text-secondary mb-0" style={{ fontSize: '0.9rem', lineHeight: 1.65 }}>
+-                                                {post.content}
+-                                            </p>
++                                            <h6 className="tech-font fw-bold text-white mb-2 text-uppercase tracking-widest">{post.title}</h6>
++                                            <p className="body-text mb-0">{post.content}</p>
+                                         </div>
+                                     </motion.div>
+                                 );
+@@ -296,63 +257,47 @@ const DashboardHome = () => {
+                 </div>
+             </div>
+ 
+-            {/* ΓöÇΓöÇ Right sidebar ΓöÇΓöÇ */}
+-            <div
+-                className="col-lg-3 d-none d-lg-block border-start"
+-                style={{ background: 'white', position: 'sticky', top: 0, height: '100vh', overflowY: 'auto', zIndex: 1 }}
+-            >
+-                {/* Calendar section */}
+-                <div className="p-4 border-bottom">
++            {/* Right sidebar logic (Hidden on Mobile) */}
++            <div className="col-lg-3 d-none d-lg-block glass-card p-0" style={{ position: 'sticky', top: 0, height: '100vh', overflowY: 'auto', zIndex: 1, borderTop: 'none', borderRight: 'none', borderBottom: 'none', borderRadius: 0 }}>
++                {/* Calendar Panel */}
++                <div className="p-4 border-bottom border-secondary" style={{ borderColor: 'rgba(255,255,255,0.05) !important' }}>
+                     <Calendar />
+                 </div>
+ 
+-                {/* AI Monitor */}
+-                <div className="p-4 border-bottom">
+-                    <label className="fw-bold text-muted text-uppercase mb-3 d-block" style={{ fontSize: '0.68rem', letterSpacing: '0.09em' }}>AI Monitor</label>
+-                    <div
+-                        className="rounded-3 p-3 d-flex align-items-center gap-3"
+-                        style={{ background: 'linear-gradient(135deg, #eef2ff 0%, #f0fdf4 100%)', border: '1px solid #e0e7ff' }}
+-                    >
+-                        <div style={{ flexShrink: 0 }}>
+-                            <AIAnimation size="small" />
+-                        </div>
++                {/* AI Monitor Panel */}
++                <div className="p-4 border-bottom border-secondary" style={{ borderColor: 'rgba(255,255,255,0.05) !important' }}>
++                    <label className="label-sm text-primary mb-3 d-flex align-items-center gap-2"><FaTerminal size={10} /> AUTO-ANALYSIS MODULE</label>
++                    <div className="rounded p-3 d-flex align-items-center gap-3" style={{ background: 'rgba(170,0,255,0.05)', border: '1px solid var(--primary-color)' }}>
++                        <div style={{ flexShrink: 0 }}><AIAnimation size="small" /></div>
+                         <div>
+-                            <p className="fw-bold text-dark mb-0" style={{ fontSize: '0.82rem' }}>Civic AI Monitor</p>
+-                            <small className="text-muted" style={{ fontSize: '0.7rem' }}>Analyzing community trends locally</small>
++                            <p className="tech-font fw-bold text-neon-purple mb-0 text-uppercase" style={{ fontSize: '0.82rem', letterSpacing: '0.08em' }}>CIVIC AI SEER</p>
++                            <small className="label-sm text-muted d-block mt-1">PROCESSING LOCAL THREAT VECTORS...</small>
+                         </div>
+                     </div>
+                 </div>
+ 
+-                {/* Suggested Groups */}
++                {/* Sub-Networks Panel */}
+                 <div className="p-4">
+-                    <label className="fw-bold text-muted text-uppercase mb-3 d-block" style={{ fontSize: '0.68rem', letterSpacing: '0.09em' }}>Suggested Groups</label>
+-                    <div className="d-flex flex-column gap-2">
++                    <label className="label-sm text-secondary mb-3 d-flex align-items-center gap-2"><FaTerminal size={10} /> LOCALIZED COMM GROUPS</label>
++                    <div className="d-flex flex-column gap-3">
+                         {[
+-                            { name: 'Volunteer Corps', sub: 'Join 500+ locals', color: '#6366f1', bg: '#eef2ff', border: '#a5b4fc', icon: FaHandsHelping },
+-                            { name: 'Safety Watch', sub: 'Neighborhood patrol', color: '#10b981', bg: '#ecfdf5', border: '#6ee7b7', icon: FaSearch },
+-                            { name: 'Green Initiative', sub: 'Eco-drive community', color: '#f59e0b', bg: '#fffbeb', border: '#fcd34d', icon: FaChartLine },
++                            { name: 'RESPONSE CORPS', sub: '942 ACTIVE UNITS', color: 'var(--primary-color)', icon: FaHandsHelping },
++                            { name: 'SECTOR PATROL', sub: 'LOCALIZED SECURITY OVERSIGHT', color: 'var(--secondary-color)', icon: FaSearch },
++                            { name: 'TERRA INITIATIVE', sub: 'ECO-RECOVERY OPS', color: '#f59e0b', icon: FaChartLine },
+                         ].map((g, i) => {
+                             const GIcon = g.icon;
++                            let rgb = g.color === 'var(--primary-color)' ? '170,0,255' : g.color === 'var(--secondary-color)' ? '163,230,53' : '245,158,11';
+                             return (
+-                                <div
+-                                    key={i}
+-                                    className="d-flex align-items-center gap-3 p-3 rounded-3 border"
+-                                    style={{ background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', transition: 'box-shadow 0.15s' }}
+-                                    onMouseEnter={e => e.currentTarget.style.boxShadow = '0 3px 10px rgba(0,0,0,0.08)'}
+-                                    onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'}
+-                                >
+-                                    <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: g.bg, border: `1px solid ${g.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+-                                        <GIcon size={14} style={{ color: g.color }} />
++                                <div key={i} className="d-flex align-items-center gap-3 p-3 rounded glass-card hover-bg-light" style={{ transition: 'all 0.2s' }}>
++                                    <div style={{ width: '38px', height: '38px', borderRadius: '8px', background: `rgba(${rgb}, 0.1)`, border: `1px solid ${g.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
++                                        <GIcon size={16} style={{ color: g.color }} />
+                                     </div>
+                                     <div className="flex-grow-1 min-width-0">
+-                                        <p className="fw-bold text-dark mb-0" style={{ fontSize: '0.81rem' }}>{g.name}</p>
+-                                        <small className="text-muted" style={{ fontSize: '0.7rem' }}>{g.sub}</small>
++                                        <p className="tech-font fw-bold text-white mb-0 text-uppercase" style={{ fontSize: '0.78rem', letterSpacing: '0.08em' }}>{g.name}</p>
++                                        <small className="label-sm text-muted d-block">{g.sub}</small>
+                                     </div>
+-                                    <button
+-                                        className="btn btn-sm fw-semibold flex-shrink-0"
+-                                        style={{ borderRadius: '8px', background: g.bg, color: g.color, border: `1px solid ${g.border}`, fontSize: '0.73rem', padding: '4px 11px' }}
+-                                    >
+-                                        Join
++                                    <button className="btn p-1 px-2 text-uppercase tech-font fw-bold" style={{ borderRadius: '4px', background: `rgba(${rgb}, 0.1)`, color: g.color, border: `1px solid ${g.color}`, fontSize: '0.6rem', letterSpacing: '0.1em' }}>
++                                        LINK
+                                     </button>
+                                 </div>
+                             );
+diff --git a/civic-sense/src/Pages/ReportIssue.jsx b/civic-sense/src/Pages/ReportIssue.jsx
+index 1c3f315..7a0a604 100644
+--- a/civic-sense/src/Pages/ReportIssue.jsx
++++ b/civic-sense/src/Pages/ReportIssue.jsx
+@@ -3,28 +3,27 @@ import { motion, AnimatePresence } from 'framer-motion';
+ import {
+     FaArrowLeft, FaCamera, FaVideo, FaMapMarkerAlt, FaRobot,
+     FaCloudUploadAlt, FaTimes, FaCheckCircle, FaExclamationTriangle,
+-    FaFire, FaTint, FaBroom, FaHardHat, FaShieldAlt, FaEllipsisH
++    FaFire, FaTint, FaBroom, FaHardHat, FaShieldAlt, FaEllipsisH, FaTerminal
+ } from 'react-icons/fa';
+ import { useNavigate } from 'react-router-dom';
+ import { notify } from '../utils/notify';
+ import LocationPicker from '../components/LocationPicker';
+ import api from '../api/axios';
+ 
+-/* ΓöÇΓöÇ Department icon map ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
+ const DEPT_META = {
+-    'Fire Department': { icon: FaFire, color: '#ef4444', bg: '#fef2f2' },
+-    'Water Department': { icon: FaTint, color: '#3b82f6', bg: '#eff6ff' },
+-    'Cleaning Department': { icon: FaBroom, color: '#10b981', bg: '#ecfdf5' },
+-    'Public Works Department': { icon: FaHardHat, color: '#f59e0b', bg: '#fffbeb' },
+-    'Police Department': { icon: FaShieldAlt, color: '#6366f1', bg: '#eef2ff' },
+-    'Others': { icon: FaEllipsisH, color: '#6b7280', bg: '#f9fafb' },
++    'Fire Department': { icon: FaFire, color: 'var(--accent-red)', bg: 'rgba(239, 68, 68, 0.1)' },
++    'Water Department': { icon: FaTint, color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.1)' },
++    'Cleaning Department': { icon: FaBroom, color: 'var(--secondary-color)', bg: 'rgba(163, 230, 53, 0.1)' },
++    'Public Works Department': { icon: FaHardHat, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
++    'Police Department': { icon: FaShieldAlt, color: 'var(--primary-color)', bg: 'rgba(170, 0, 255, 0.1)' },
++    'Others': { icon: FaEllipsisH, color: '#6b7280', bg: 'rgba(107, 114, 128, 0.1)' },
+ };
+ 
+ const PRIORITY_META = {
+-    'Low': { color: '#10b981', bg: '#ecfdf5', border: '#6ee7b7', label: '≡ƒƒó Low' },
+-    'Medium': { color: '#f59e0b', bg: '#fffbeb', border: '#fcd34d', label: '≡ƒƒí Medium' },
+-    'High': { color: '#f97316', bg: '#fff7ed', border: '#fed7aa', label: '≡ƒƒá High' },
+-    'Emergency': { color: '#ef4444', bg: '#fef2f2', border: '#fca5a5', label: '≡ƒö┤ Emergency' },
++    'Low': { color: 'var(--secondary-color)', bg: 'rgba(163, 230, 53, 0.1)', border: 'var(--secondary-color)', label: 'LOW' },
++    'Medium': { color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)', border: '#f59e0b', label: 'ELEVATED' },
++    'High': { color: '#f97316', bg: 'rgba(249, 115, 22, 0.1)', border: '#f97316', label: 'CRITICAL' },
++    'Emergency': { color: 'var(--accent-red)', bg: 'rgba(239, 68, 68, 0.1)', border: 'var(--accent-red)', label: 'EMERGENCY' },
+ };
+ 
+ const departmentMapping = {
+@@ -36,9 +35,6 @@ const departmentMapping = {
+     'Fire Department': 'Fire Department',
+ };
+ 
+-/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+-   ReportIssue Page
+-ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
+ const ReportIssue = () => {
+     const navigate = useNavigate();
+     const imageInputRef = useRef(null);
+@@ -47,14 +43,13 @@ const ReportIssue = () => {
+     const [loading, setLoading] = useState(false);
+     const [formData, setFormData] = useState({
+         title: '', description: '', category: '', priority: '',
+-        location: '', image: null, video: null, aiScore: 0
++        location: '', lat: null, lng: null, image: null, video: null, aiScore: 0
+     });
+     const [imagePreview, setImagePreview] = useState(null);
+     const [isCaptioning, setIsCaptioning] = useState(false);
+     const [isVideoAnalyzing, setIsVideoAnalyzing] = useState(false);
+     const [isThinking, setIsThinking] = useState(false);
+ 
+-    /* ΓöÇΓöÇ AI text prediction (debounced) ΓöÇΓöÇ */
+     useEffect(() => {
+         const timer = setTimeout(() => {
+             if (formData.description.length > 10 && !isCaptioning) {
+@@ -83,7 +78,6 @@ const ReportIssue = () => {
+ 
+     const handleChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+ 
+-    /* ΓöÇΓöÇ Image upload + captioning ΓöÇΓöÇ */
+     const handleImageChange = async (e) => {
+         const file = e.target.files?.[0];
+         if (!file) return;
+@@ -101,7 +95,7 @@ const ReportIssue = () => {
+                 setFormData(prev => ({ ...prev, description: res.data.description }));
+             }
+         } catch (e) {
+-            notify('error', e.response?.data?.message || 'Could not analyze image');
++            notify('error', e.response?.data?.message || 'ANALYSIS FAILURE');
+         } finally {
+             setIsCaptioning(false);
+         }
+@@ -113,7 +107,6 @@ const ReportIssue = () => {
+         if (imageInputRef.current) imageInputRef.current.value = '';
+     };
+ 
+-    /* ΓöÇΓöÇ Video upload + analysis ΓöÇΓöÇ */
+     const handleVideoChange = async (e) => {
+         const file = e.target.files?.[0];
+         if (!file) return;
+@@ -126,13 +119,10 @@ const ReportIssue = () => {
+             const res = await api.post('/complaint/analyze-video', data, { headers: { 'Content-Type': 'multipart/form-data' } });
+             await minDelay;
+             if (res.data?.description) {
+-                setFormData(prev => ({
+-                    ...prev,
+-                    description: (prev.description ? prev.description + '\n\n' : '') + res.data.description
+-                }));
++                setFormData(prev => ({ ...prev, description: (prev.description ? prev.description + '\n\n' : '') + res.data.description }));
+             }
+         } catch (e) {
+-            notify('error', e.response?.data?.message || 'Could not analyze video');
++            notify('error', e.response?.data?.message || 'VIDEO ANALYSIS FAILURE');
+         } finally {
+             setIsVideoAnalyzing(false);
+         }
+@@ -143,13 +133,17 @@ const ReportIssue = () => {
+         if (videoInputRef.current) videoInputRef.current.value = '';
+     };
+ 
+-    const handleLocationSelect = ({ address }) => setFormData(prev => ({ ...prev, location: address }));
++    const handleLocationSelect = ({ address, lat, lng }) => setFormData(prev => ({
++        ...prev,
++        location: address,
++        lat: lat || null,
++        lng: lng || null,
++    }));
+ 
+-    /* ΓöÇΓöÇ Submit ΓöÇΓöÇ */
+     const handleSubmit = async (e) => {
+         e.preventDefault();
+         if (!formData.title || !formData.category || !formData.location || !formData.description || !formData.image || !formData.priority) {
+-            notify('error', 'Please fill in all required fields and upload an image.');
++            notify('error', 'AUTHORIZATION DENIED: MISSING PARAMETERS.');
+             return;
+         }
+         setLoading(true);
+@@ -162,16 +156,18 @@ const ReportIssue = () => {
+         data.append('aiScore', formData.aiScore);
+         data.append('image', formData.image);
+         if (formData.video) data.append('video', formData.video);
++        if (formData.lat != null) data.append('lat', formData.lat);
++        if (formData.lng != null) data.append('lng', formData.lng);
+         try {
+             const res = await api.post('/complaint/create', data, { headers: { 'Content-Type': 'multipart/form-data' } });
+             if (res.status === 201) {
+-                notify('success', 'Issue reported successfully!');
++                notify('success', 'INCIDENT TRANSMITTED');
+                 navigate('/dashboard');
+             } else {
+-                notify('error', res.data.message || 'Failed to report issue');
++                notify('error', res.data.message || 'TRANSMISSION FAILURE');
+             }
+         } catch (e) {
+-            notify('error', e.response?.data?.message || 'Something went wrong');
++            notify('error', e.response?.data?.message || 'NETWORK INTERRUPTION');
+         } finally {
+             setLoading(false);
+         }
+@@ -181,115 +177,75 @@ const ReportIssue = () => {
+     const deptMeta = formData.category ? DEPT_META[formData.category] : null;
+     const prioMeta = formData.priority ? PRIORITY_META[formData.priority] : null;
+ 
+-    /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
+     return (
+-        <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
+-
+-            {/* ΓöÇΓöÇ Top Bar ΓöÇΓöÇ */}
+-            <div
+-                className="d-flex align-items-center justify-content-between px-5 py-3 border-bottom"
+-                style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', position: 'sticky', top: 0, zIndex: 100 }}
+-            >
++        <div style={{ minHeight: '100vh', background: 'transparent' }}>
++            {/* Top Bar */}
++            <div className="d-flex align-items-center justify-content-between px-4 py-3 glass-sticky">
+                 <div className="d-flex align-items-center gap-3">
+-                    <button
+-                        onClick={() => navigate(-1)}
+-                        className="btn btn-sm rounded-circle d-flex align-items-center justify-content-center border"
+-                        style={{ width: '36px', height: '36px', background: 'white' }}
+-                    >
+-                        <FaArrowLeft size={13} className="text-secondary" />
++                    <button onClick={() => navigate(-1)} className="btn btn-sm rounded-circle d-flex align-items-center justify-content-center" style={{ width: '36px', height: '36px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)' }}>
++                        <FaArrowLeft size={13} className="text-white" />
+                     </button>
+                     <div>
+-                        <h5 className="fw-bold mb-0 text-dark">Report an Issue</h5>
+-                        <small className="text-muted">Help us keep your community clean and safe</small>
++                        <h5 className="tech-font fw-bold mb-0 text-white" style={{ letterSpacing: '0.15em' }}>REPORT INCIDENT</h5>
++                        <small className="tech-font text-muted text-uppercase" style={{ letterSpacing: '0.1em' }}>INITIATE CRISIS UPLINK</small>
+                     </div>
+                 </div>
+-                <button
+-                    type="button"
+-                    onClick={() => setFormData({ title: '', description: '', category: '', priority: '', location: '', image: null, video: null, aiScore: 0 })}
+-                    className="btn btn-sm btn-light border rounded-pill px-3 text-secondary"
+-                >
+-                    Clear Form
++                <button type="button" onClick={() => setFormData({ title: '', description: '', category: '', priority: '', location: '', lat: null, lng: null, image: null, video: null, aiScore: 0 })}
++                    className="btn btn-sm tech-font fw-bold text-uppercase" style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--accent-red)', border: '1px solid var(--accent-red)', letterSpacing: '0.1em' }}>
++                    ABORT
+                 </button>
+             </div>
+ 
+-            {/* ΓöÇΓöÇ Two-column layout ΓöÇΓöÇ */}
++            {/* Two-column layout */}
+             <form onSubmit={handleSubmit}>
+-                <div className="d-flex" style={{ minHeight: 'calc(100vh - 65px)' }}>
+-
+-                    {/* ΓöÇΓöÇΓöÇ LEFT: Form Fields (scrollable) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+-                    <div className="overflow-auto px-5 py-5" style={{ flex: '1 1 60%', maxHeight: 'calc(100vh - 65px)' }}>
+-
+-                        {/* Issue Title */}
++                <div className="d-flex flex-column flex-lg-row" style={{ minHeight: 'calc(100vh - 65px)' }}>
++                    {/* LEFT: Form Fields */}
++                    <div className="px-4 py-5 w-100" style={{ flex: '1 1 60%' }}>
++                        
++                        {/* Title */}
+                         <div className="mb-5">
+-                            <label className="fw-bold text-dark mb-2 d-block">
+-                                Issue Title <span className="text-danger">*</span>
++                            <label className="tech-font fw-bold text-white mb-2 d-block text-uppercase" style={{ letterSpacing: '0.08em' }}>
++                                INCIDENT DESIGNATION <span className="text-neon-red">*</span>
+                             </label>
+-                            <input
+-                                type="text"
+-                                name="title"
+-                                value={formData.title}
+-                                onChange={handleChange}
+-                                className="form-control form-control-lg shadow-none"
+-                                placeholder="e.g., Deep pothole on Main Street near the park"
+-                                required
+-                                style={{ borderRadius: '12px', border: '1.5px solid #e2e8f0', fontSize: '0.95rem', background: 'white' }}
++                            <input type="text" name="title" value={formData.title} onChange={handleChange}
++                                className="form-control form-control-lg tech-font bg-transparent text-white shadow-none"
++                                placeholder="e.g Sector 7 Power Failure" required
++                                style={{ borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', fontSize: '0.95rem' }}
++                                onFocus={e => { e.currentTarget.style.borderColor = 'var(--primary-color)'; e.currentTarget.style.boxShadow = '0 0 10px rgba(170,0,255,0.15)'; e.currentTarget.style.background = 'rgba(170,0,255,0.05)'; }}
++                                onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.background = 'transparent'; }}
+                             />
+                         </div>
+ 
+                         {/* Description */}
+                         <div className="mb-5">
+-                            <label className="fw-bold text-dark mb-2 d-block">
+-                                Description <span className="text-danger">*</span>
+-                                <span className="ms-2 text-muted fw-normal" style={{ fontSize: '0.8rem' }}>
+-                                    ΓÇö AI auto-fills this from your photo
+-                                </span>
++                            <label className="tech-font fw-bold text-white mb-2 d-block text-uppercase" style={{ letterSpacing: '0.08em' }}>
++                                SITUATION LOG <span className="text-neon-red">*</span>
+                             </label>
+-                            <textarea
+-                                name="description"
+-                                value={formData.description}
+-                                onChange={handleChange}
+-                                className="form-control shadow-none"
+-                                rows={5}
+-                                placeholder="Describe the issue in detail. What's wrong? Since when? Any safety risk?"
+-                                required
+-                                style={{ borderRadius: '12px', border: '1.5px solid #e2e8f0', fontSize: '0.9rem', resize: 'none', lineHeight: 1.7, background: 'white' }}
++                            <textarea name="description" value={formData.description} onChange={handleChange}
++                                className="form-control tech-font bg-transparent text-white shadow-none font-monospace" rows={5}
++                                placeholder="INPUT SYSTEM LOGS..." required
++                                style={{ borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', fontSize: '0.85rem', resize: 'none' }}
++                                onFocus={e => { e.currentTarget.style.borderColor = 'var(--primary-color)'; e.currentTarget.style.boxShadow = '0 0 10px rgba(170,0,255,0.15)'; e.currentTarget.style.background = 'rgba(170,0,255,0.05)'; }}
++                                onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.background = 'transparent'; }}
+                             />
+-                            <div className="d-flex justify-content-end mt-1">
+-                                <small className="text-muted">{formData.description.length} characters</small>
+-                            </div>
+-
+-                            {/* AI Thinking Banner */}
++                            
+                             <AnimatePresence>
+                                 {isAiActive && (
+-                                    <motion.div
+-                                        initial={{ opacity: 0, y: -8 }}
+-                                        animate={{ opacity: 1, y: 0 }}
+-                                        exit={{ opacity: 0, y: -8 }}
+-                                        className="mt-3 p-4 rounded-3 d-flex align-items-center gap-4"
+-                                        style={{ background: 'linear-gradient(135deg, #eef2ff, #f0fdf4)', border: '1px solid #c7d2fe' }}
+-                                    >
+-                                        <motion.div
+-                                            animate={{ rotate: 360 }}
+-                                            transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+-                                        >
+-                                            <FaRobot size={26} style={{ color: '#6366f1' }} />
++                                    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
++                                        className="mt-3 p-4 rounded d-flex align-items-center gap-4"
++                                        style={{ background: 'rgba(170,0,255,0.1)', border: '1px solid var(--primary-color)' }}>
++                                        <motion.div animate={{ rotate: 360 }} transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}>
++                                            <FaRobot size={26} className="text-neon-purple" />
+                                         </motion.div>
+                                         <div>
+-                                            <p className="fw-bold mb-0" style={{ background: 'linear-gradient(to right, #6366f1, #8b5cf6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+-                                                {isCaptioning ? 'Analyzing your photo...' : isVideoAnalyzing ? 'Analyzing video...' : 'AI is classifying your issue...'}
+-                                            </p>
+-                                            <p className="small text-muted mb-0 mt-1">
+-                                                {isCaptioning ? 'Generating description from image using AI vision...' : isVideoAnalyzing ? 'Extracting key frames and description...' : 'Detecting department and priority level...'}
++                                            <p className="tech-font fw-bold mb-0 text-white text-uppercase" style={{ letterSpacing: '0.08em', fontSize: '0.9rem' }}>
++                                                {isCaptioning ? 'ANALYZING VISUAL DATA...' : isVideoAnalyzing ? 'DECODING FEED...' : 'PROCESSING VECTORS...'}
+                                             </p>
+                                         </div>
+                                         <div className="ms-auto d-flex gap-1">
+                                             {[0, 0.3, 0.6].map((delay, i) => (
+-                                                <motion.span
+-                                                    key={i}
+-                                                    animate={{ opacity: [0.3, 1, 0.3] }}
+-                                                    transition={{ duration: 1.2, repeat: Infinity, delay }}
+-                                                    style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#6366f1', display: 'inline-block' }}
+-                                                />
++                                                <motion.span key={i} animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.2, repeat: Infinity, delay }}
++                                                    style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--primary-color)', display: 'inline-block' }} />
+                                             ))}
+                                         </div>
+                                     </motion.div>
+@@ -299,323 +255,136 @@ const ReportIssue = () => {
+ 
+                         {/* Location */}
+                         <div className="mb-5">
+-                            <label className="fw-bold text-dark mb-2 d-block">
+-                                Location <span className="text-danger">*</span>
++                            <label className="tech-font fw-bold text-white mb-2 d-block text-uppercase" style={{ letterSpacing: '0.08em' }}>
++                                COORDINATES <span className="text-neon-red">*</span>
+                             </label>
+                             <div className="input-group mb-3">
+-                                <span className="input-group-text bg-white" style={{ borderRadius: '12px 0 0 12px', border: '1.5px solid #e2e8f0', borderRight: 'none' }}>
+-                                    <FaMapMarkerAlt className="text-danger" />
++                                <span className="input-group-text bg-transparent" style={{ borderRadius: '8px 0 0 8px', border: '1px solid rgba(255,255,255,0.2)', borderRight: 'none' }}>
++                                    <FaMapMarkerAlt className="text-neon-red" />
+                                 </span>
+-                                <input
+-                                    type="text"
+-                                    name="location"
+-                                    value={formData.location}
+-                                    onChange={handleChange}
+-                                    className="form-control shadow-none border-start-0"
+-                                    placeholder="Enter address or pick on map below"
+-                                    required
+-                                    style={{ borderRadius: '0 12px 12px 0', border: '1.5px solid #e2e8f0', borderLeft: 'none', fontSize: '0.9rem' }}
++                                <input type="text" name="location" value={formData.location} onChange={handleChange}
++                                    className="form-control tech-font bg-transparent text-white shadow-none border-start-0"
++                                    placeholder="INPUT COORDS..." required
++                                    style={{ borderRadius: '0 8px 8px 0', border: '1px solid rgba(255,255,255,0.2)', borderLeft: 'none', fontSize: '0.9rem' }}
+                                 />
+                             </div>
+-                            <div className="rounded-3 overflow-hidden border shadow-sm">
++                            <div className="rounded overflow-hidden border" style={{ borderColor: 'rgba(255,255,255,0.2)' }}>
+                                 <LocationPicker onLocationSelect={handleLocationSelect} />
+                             </div>
+                         </div>
+ 
+                         {/* Photo Upload */}
+                         <div className="mb-5">
+-                            <label className="fw-bold text-dark mb-2 d-block">
+-                                Photo Evidence <span className="text-danger">*</span>
+-                                <span className="ms-2 text-muted fw-normal" style={{ fontSize: '0.8rem' }}>ΓÇö AI will auto-fill description from your photo</span>
++                            <label className="tech-font fw-bold text-white mb-2 d-block text-uppercase" style={{ letterSpacing: '0.08em' }}>
++                                VISUAL INTEL <span className="text-neon-red">*</span>
+                             </label>
+                             <input type="file" ref={imageInputRef} onChange={handleImageChange} className="d-none" id="imageUpload" accept="image/*" />
+                             {!formData.image ? (
+-                                <label
+-                                    htmlFor="imageUpload"
+-                                    className="d-flex flex-column align-items-center justify-content-center gap-3 cursor-pointer"
+-                                    style={{
+-                                        border: '2px dashed #c7d2fe',
+-                                        borderRadius: '16px',
+-                                        padding: '40px',
+-                                        background: '#fafbff',
+-                                        transition: 'all 0.2s',
+-                                        cursor: 'pointer'
+-                                    }}
+-                                    onMouseEnter={e => e.currentTarget.style.background = '#eef2ff'}
+-                                    onMouseLeave={e => e.currentTarget.style.background = '#fafbff'}
+-                                >
+-                                    <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+-                                        <FaCloudUploadAlt size={26} style={{ color: '#6366f1' }} />
++                                <label htmlFor="imageUpload" className="d-flex flex-column align-items-center justify-content-center gap-3 cursor-pointer hover-bg-light"
++                                    style={{ border: '1px dashed rgba(255,255,255,0.3)', borderRadius: '8px', padding: '40px', background: 'transparent' }}>
++                                    <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(170,0,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
++                                        <FaCloudUploadAlt size={26} className="text-neon-purple" />
+                                     </div>
+                                     <div className="text-center">
+-                                        <p className="fw-bold text-dark mb-1">Click to upload photo</p>
+-                                        <small className="text-muted">JPG, PNG up to 5MB ┬╖ AI will analyze it automatically</small>
++                                        <p className="tech-font fw-bold text-white mb-1 text-uppercase">UPLOAD FEED</p>
+                                     </div>
+                                 </label>
+                             ) : (
+-                                <motion.div
+-                                    initial={{ opacity: 0, scale: 0.98 }}
+-                                    animate={{ opacity: 1, scale: 1 }}
+-                                    className="position-relative rounded-3 overflow-hidden border shadow-sm"
+-                                    style={{ maxHeight: '340px' }}
+-                                >
+-                                    <img
+-                                        src={imagePreview}
+-                                        alt="Preview"
+-                                        className="w-100 object-fit-cover"
+-                                        style={{ maxHeight: '340px' }}
+-                                    />
+-                                    {/* Overlay with filename + remove button */}
+-                                    <div
+-                                        className="position-absolute bottom-0 start-0 end-0 d-flex align-items-center justify-content-between px-3 py-2"
+-                                        style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)' }}
+-                                    >
++                                <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="position-relative rounded overflow-hidden" style={{ maxHeight: '340px', border: '1px solid var(--primary-color)' }}>
++                                    <img src={imagePreview} alt="Intel" className="w-100 object-fit-cover" style={{ maxHeight: '340px', filter: 'brightness(0.85)' }} />
++                                    <div className="position-absolute bottom-0 start-0 end-0 d-flex align-items-center justify-content-between px-3 py-2" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.9), transparent)' }}>
+                                         <div className="d-flex align-items-center gap-2 text-white">
+-                                            <FaCamera size={13} />
+-                                            <small className="fw-medium text-truncate" style={{ maxWidth: '260px' }}>{formData.image.name}</small>
++                                            <FaCamera size={13} className="text-neon-purple" />
++                                            <small className="tech-font fw-bold text-truncate" style={{ maxWidth: '260px' }}>{formData.image.name}</small>
+                                         </div>
+-                                        <button
+-                                            type="button"
+-                                            onClick={removeImage}
+-                                            className="btn btn-sm rounded-circle d-flex align-items-center justify-content-center"
+-                                            style={{ width: '28px', height: '28px', background: 'rgba(239,68,68,0.9)', border: 'none', flexShrink: 0 }}
+-                                        >
+-                                            <FaTimes size={11} className="text-white" />
++                                        <button type="button" onClick={removeImage} className="btn btn-sm rounded-circle d-flex align-items-center justify-content-center" style={{ width: '28px', height: '28px', background: 'rgba(239,68,68,0.2)', border: '1px solid var(--accent-red)' }}>
++                                            <FaTimes size={11} className="text-neon-red" />
+                                         </button>
+                                     </div>
+-                                    {/* AI analyzing overlay */}
+-                                    {isCaptioning && (
+-                                        <div className="position-absolute top-0 start-0 end-0 bottom-0 d-flex align-items-center justify-content-center" style={{ background: 'rgba(99,102,241,0.15)', backdropFilter: 'blur(4px)' }}>
+-                                            <div className="text-white text-center">
+-                                                <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}>
+-                                                    <FaRobot size={32} />
+-                                                </motion.div>
+-                                                <p className="mt-2 fw-bold small mb-0">Analyzing image...</p>
+-                                            </div>
+-                                        </div>
+-                                    )}
+                                 </motion.div>
+                             )}
+                         </div>
+-
+-                        {/* Video Upload (optional) */}
+-                        <div className="mb-5">
+-                            <label className="fw-bold text-dark mb-2 d-block">
+-                                Video Evidence
+-                                <span className="ms-2 badge rounded-pill" style={{ background: '#f1f5f9', color: '#64748b', fontSize: '0.72rem', fontWeight: 500 }}>Optional</span>
+-                            </label>
+-                            <input type="file" ref={videoInputRef} onChange={handleVideoChange} className="d-none" id="videoUpload" accept="video/*" />
+-                            {!formData.video ? (
+-                                <label
+-                                    htmlFor="videoUpload"
+-                                    className="d-flex align-items-center gap-4 cursor-pointer"
+-                                    style={{
+-                                        border: '2px dashed #e2e8f0',
+-                                        borderRadius: '16px',
+-                                        padding: '24px 32px',
+-                                        background: '#fafafa',
+-                                        transition: 'all 0.2s',
+-                                        cursor: 'pointer'
+-                                    }}
+-                                    onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
+-                                    onMouseLeave={e => e.currentTarget.style.background = '#fafafa'}
+-                                >
+-                                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+-                                        <FaVideo size={20} style={{ color: '#64748b' }} />
+-                                    </div>
+-                                    <div>
+-                                        <p className="fw-bold text-dark mb-0">Click to upload video</p>
+-                                        <small className="text-muted">MP4, MOV up to 10MB ┬╖ AI extracts description</small>
+-                                    </div>
+-                                </label>
+-                            ) : (
+-                                <motion.div
+-                                    initial={{ opacity: 0, y: 6 }}
+-                                    animate={{ opacity: 1, y: 0 }}
+-                                    className="d-flex align-items-center justify-content-between p-3 rounded-3 border"
+-                                    style={{ background: isVideoAnalyzing ? '#fafbff' : '#f0fdf4', borderColor: isVideoAnalyzing ? '#c7d2fe' : '#bbf7d0' }}
+-                                >
+-                                    <div className="d-flex align-items-center gap-3">
+-                                        <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: isVideoAnalyzing ? '#eef2ff' : '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+-                                            {isVideoAnalyzing
+-                                                ? <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}><FaRobot size={18} style={{ color: '#6366f1' }} /></motion.div>
+-                                                : <FaVideo size={18} style={{ color: '#16a34a' }} />
+-                                            }
+-                                        </div>
+-                                        <div>
+-                                            <p className="fw-bold small mb-0 text-dark text-truncate" style={{ maxWidth: '200px' }}>{formData.video.name}</p>
+-                                            <small className="text-muted">{isVideoAnalyzing ? 'Analyzing...' : 'Γ£ô Ready'}</small>
+-                                        </div>
+-                                    </div>
+-                                    {!isVideoAnalyzing && (
+-                                        <button type="button" onClick={removeVideo} className="btn btn-sm rounded-circle d-flex align-items-center justify-content-center" style={{ width: '28px', height: '28px', background: '#fee2e2', border: 'none' }}>
+-                                            <FaTimes size={11} className="text-danger" />
+-                                        </button>
+-                                    )}
+-                                </motion.div>
+-                            )}
+-                        </div>
+-
+                     </div>
+ 
+-                    {/* ΓöÇΓöÇΓöÇ RIGHT: Sticky Preview + AI Results + CTA ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+-                    <div
+-                        className="px-4 py-5 d-flex flex-column gap-4"
+-                        style={{
+-                            flex: '0 0 380px',
+-                            width: '380px',
+-                            background: 'white',
+-                            borderLeft: '1px solid #e2e8f0',
+-                            position: 'sticky',
+-                            top: '65px',
+-                            height: 'calc(100vh - 65px)',
+-                            overflowY: 'auto',
+-                        }}
+-                    >
+-                        {/* Image preview in sidebar */}
++                    {/* RIGHT: Validation Panel */}
++                    <div className="px-4 py-5 d-flex flex-column gap-4 glass-card border-end-0 border-top-0 border-bottom-0" style={{ flex: '0 0 380px', width: '380px', position: 'sticky', top: '65px', height: 'calc(100vh - 65px)', overflowY: 'auto', borderRadius: 0, borderLeft: '1px solid rgba(255,255,255,0.1)' }}>
+                         <div>
+-                            <label className="fw-bold text-muted text-uppercase mb-2 d-block" style={{ fontSize: '0.72rem', letterSpacing: '0.08em' }}>Photo Preview</label>
+-                            {imagePreview ? (
+-                                <div className="rounded-3 overflow-hidden border shadow-sm" style={{ height: '180px' }}>
+-                                    <img src={imagePreview} alt="Preview" className="w-100 h-100 object-fit-cover" />
+-                                </div>
+-                            ) : (
+-                                <div
+-                                    className="rounded-3 d-flex align-items-center justify-content-center"
+-                                    style={{ height: '180px', background: '#f8fafc', border: '2px dashed #e2e8f0' }}
+-                                >
+-                                    <div className="text-center text-muted">
+-                                        <FaCamera size={28} className="mb-2" style={{ opacity: 0.3 }} />
+-                                        <p className="small mb-0">No photo uploaded yet</p>
+-                                    </div>
+-                                </div>
+-                            )}
+-                        </div>
+-
+-                        {/* AI Detection Card */}
+-                        <div>
+-                            <label className="fw-bold text-muted text-uppercase mb-3 d-block" style={{ fontSize: '0.72rem', letterSpacing: '0.08em' }}>
+-                                <FaRobot className="me-1" style={{ color: '#6366f1' }} /> AI Detection
++                            <label className="label-sm text-muted mb-3 d-flex align-items-center gap-2">
++                                <FaTerminal className="text-neon-purple" /> AUTO-DIAGNOSTICS
+                             </label>
+ 
+                             {/* Department */}
+-                            <div className="mb-3 p-3 rounded-3 border d-flex align-items-center gap-3" style={{ background: deptMeta ? deptMeta.bg : '#f8fafc', borderColor: deptMeta ? 'transparent' : '#e2e8f0', transition: 'all 0.3s' }}>
+-                                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: deptMeta ? `${deptMeta.color}20` : '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+-                                    {deptMeta
+-                                        ? <deptMeta.icon size={18} style={{ color: deptMeta.color }} />
+-                                        : <FaRobot size={16} style={{ color: '#94a3b8' }} />
+-                                    }
++                            <div className="mb-3 p-3 rounded border d-flex align-items-center gap-3" style={{ background: deptMeta ? deptMeta.bg : 'rgba(255,255,255,0.05)', borderColor: deptMeta ? deptMeta.color : 'rgba(255,255,255,0.2)' }}>
++                                <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: deptMeta ? 'transparent' : 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
++                                    {deptMeta ? <deptMeta.icon size={18} style={{ color: deptMeta.color }} /> : <FaRobot size={16} className="text-muted" />}
+                                 </div>
+                                 <div>
+-                                    <p className="fw-bold small mb-0" style={{ color: deptMeta ? deptMeta.color : '#94a3b8' }}>
+-                                        {formData.category || 'Waiting for input...'}
++                                    <p className="tech-font fw-bold small mb-0 text-uppercase" style={{ color: deptMeta ? deptMeta.color : 'var(--text-muted)' }}>
++                                        {formData.category || 'PENDING...'}
+                                     </p>
+-                                    <small className="text-muted">Department</small>
+                                 </div>
+-                                {formData.category && <FaCheckCircle className="ms-auto" style={{ color: '#10b981' }} />}
++                                {formData.category && <FaCheckCircle className="ms-auto text-neon-green" />}
+                             </div>
+ 
+                             {/* Priority */}
+-                            <div className="p-3 rounded-3 border d-flex align-items-center gap-3" style={{ background: prioMeta ? prioMeta.bg : '#f8fafc', borderColor: prioMeta ? prioMeta.border : '#e2e8f0', transition: 'all 0.3s' }}>
+-                                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: prioMeta ? `${prioMeta.color}20` : '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+-                                    <FaExclamationTriangle size={16} style={{ color: prioMeta ? prioMeta.color : '#94a3b8' }} />
++                            <div className="p-3 rounded border d-flex align-items-center gap-3" style={{ background: prioMeta ? prioMeta.bg : 'rgba(255,255,255,0.05)', borderColor: prioMeta ? prioMeta.color : 'rgba(255,255,255,0.2)' }}>
++                                <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: prioMeta ? 'transparent' : 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
++                                    <FaExclamationTriangle size={16} style={{ color: prioMeta ? prioMeta.color : 'var(--text-muted)' }} />
+                                 </div>
+                                 <div>
+-                                    <p className="fw-bold small mb-0" style={{ color: prioMeta ? prioMeta.color : '#94a3b8' }}>
+-                                        {prioMeta ? prioMeta.label : 'Waiting for input...'}
++                                    <p className="tech-font fw-bold small mb-0 text-uppercase" style={{ color: prioMeta ? prioMeta.color : 'var(--text-muted)' }}>
++                                        {prioMeta ? prioMeta.label : 'PENDING...'}
+                                     </p>
+-                                    <small className="text-muted">Priority Level</small>
+                                 </div>
+-                                {formData.priority && <FaCheckCircle className="ms-auto" style={{ color: '#10b981' }} />}
++                                {formData.priority && <FaCheckCircle className="ms-auto text-neon-green" />}
+                             </div>
+ 
+                             {formData.aiScore > 0 && (
+-                                <div className="mt-3 p-3 rounded-3" style={{ background: 'linear-gradient(135deg, #eef2ff, #f0fdf4)', border: '1px solid #c7d2fe' }}>
++                                <div className="mt-3 p-3 rounded" style={{ background: 'rgba(163,230,53,0.05)', border: '1px solid var(--secondary-color)' }}>
+                                     <div className="d-flex align-items-center justify-content-between mb-2">
+-                                        <small className="fw-bold text-muted">AI Confidence</small>
+-                                        <small className="fw-bold" style={{ color: '#6366f1' }}>{Math.round(formData.aiScore)}%</small>
++                                        <small className="tech-font fw-bold text-muted text-uppercase" style={{ letterSpacing: '0.1em' }}>THREAT LEVEL</small>
++                                        <small className="tech-font fw-bold text-neon-green">{Math.round(formData.aiScore)}%</small>
+                                     </div>
+-                                    <div className="progress rounded-pill" style={{ height: '6px' }}>
+-                                        <div
+-                                            className="progress-bar rounded-pill"
+-                                            style={{ width: `${formData.aiScore}%`, background: 'linear-gradient(to right, #6366f1, #8b5cf6)' }}
+-                                        />
++                                    <div className="progress rounded-pill bg-dark" style={{ height: '4px' }}>
++                                        <div className="progress-bar" style={{ width: `${formData.aiScore}%`, background: 'var(--secondary-color)' }} />
+                                     </div>
+                                 </div>
+                             )}
+-
+-                            {isAiActive && (
+-                                <motion.div
+-                                    initial={{ opacity: 0 }}
+-                                    animate={{ opacity: 1 }}
+-                                    className="mt-3 text-center py-2"
+-                                >
+-                                    <small className="text-muted d-flex align-items-center justify-content-center gap-2">
+-                                        <motion.span
+-                                            animate={{ rotate: 360 }}
+-                                            transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+-                                            style={{ display: 'inline-block' }}
+-                                        >
+-                                            <FaRobot size={12} style={{ color: '#6366f1' }} />
+-                                        </motion.span>
+-                                        AI is processing...
+-                                    </small>
+-                                </motion.div>
+-                            )}
+                         </div>
+ 
+-                        {/* Checklist */}
+                         <div>
+-                            <label className="fw-bold text-muted text-uppercase mb-3 d-block" style={{ fontSize: '0.72rem', letterSpacing: '0.08em' }}>Checklist</label>
++                            <label className="tech-font fw-bold text-muted text-uppercase mb-3 d-flex align-items-center gap-2" style={{ fontSize: '0.72rem', letterSpacing: '0.15em' }}>
++                                SUBMISSION PARAMS
++                            </label>
+                             {[
+-                                { label: 'Title added', done: !!formData.title },
+-                                { label: 'Description added', done: formData.description.length > 10 },
+-                                { label: 'Location set', done: !!formData.location },
+-                                { label: 'Photo uploaded', done: !!formData.image },
+-                                { label: 'Department detected', done: !!formData.category },
+-                                { label: 'Priority detected', done: !!formData.priority },
++                                { label: 'DESIGNATION', done: !!formData.title },
++                                { label: 'LOGS', done: formData.description.length > 10 },
++                                { label: 'COORDS', done: !!formData.location },
++                                { label: 'INTEL', done: !!formData.image },
++                                { label: 'ROUTING', done: !!formData.category },
++                                { label: 'PRIORITY', done: !!formData.priority },
+                             ].map((item, i) => (
+                                 <div key={i} className="d-flex align-items-center gap-2 mb-2">
+-                                    <span style={{ width: '18px', height: '18px', borderRadius: '50%', background: item.done ? '#ecfdf5' : '#f1f5f9', border: `1.5px solid ${item.done ? '#6ee7b7' : '#e2e8f0'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+-                                        {item.done && <FaCheckCircle size={10} style={{ color: '#10b981' }} />}
++                                    <span style={{ width: '16px', height: '16px', background: item.done ? 'rgba(163,230,53,0.2)' : 'rgba(255,255,255,0.1)', border: `1px solid ${item.done ? 'var(--secondary-color)' : 'transparent'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
++                                        {item.done && <FaCheckCircle size={8} className="text-neon-green" />}
+                                     </span>
+-                                    <small className={item.done ? 'text-dark fw-medium' : 'text-muted'}>{item.label}</small>
++                                    <small className={`tech-font fw-bold ${item.done ? 'text-white' : 'text-muted'} text-uppercase`} style={{ letterSpacing: '0.08em', fontSize: '0.85rem' }}>{item.label}</small>
+                                 </div>
+                             ))}
+                         </div>
+ 
+-                        {/* Submit Button */}
+                         <div className="mt-auto">
+-                            <button
+-                                type="submit"
+-                                disabled={loading || isAiActive}
+-                                className="btn w-100 fw-bold py-3 rounded-3"
++                            <button type="submit" disabled={loading || isAiActive}
++                                className="btn w-100 fw-bold py-3 text-uppercase tech-font"
+                                 style={{
+-                                    background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+-                                    color: 'white',
+-                                    border: 'none',
+-                                    fontSize: '1rem',
+-                                    boxShadow: '0 4px 14px rgba(99,102,241,0.35)',
+-                                    opacity: loading || isAiActive ? 0.7 : 1,
+-                                    transition: 'all 0.2s'
+-                                }}
+-                            >
+-                                {loading ? (
+-                                    <span className="d-flex align-items-center justify-content-center gap-2">
+-                                        <span className="spinner-border spinner-border-sm" /> Submitting Report...
+-                                    </span>
+-                                ) : isAiActive ? (
+-                                    <span className="d-flex align-items-center justify-content-center gap-2">
+-                                        <span className="spinner-border spinner-border-sm" /> AI Processing...
+-                                    </span>
+-                                ) : 'Submit Report'}
++                                    background: (loading || isAiActive) ? 'rgba(255,255,255,0.1)' : 'var(--primary-color)',
++                                    color: 'white', border: '1px solid ' + ((loading || isAiActive) ? 'rgba(255,255,255,0.2)' : 'var(--primary-color)'),
++                                    letterSpacing: '0.2em'
++                                }}>
++                                {loading || isAiActive ? <span className="spinner-border spinner-border-sm" /> : 'TRANSMIT LOG'}
+                             </button>
+-                            <p className="text-center text-muted mt-2 mb-0" style={{ fontSize: '0.75rem' }}>
+-                                Your report will be reviewed by the relevant authority within 24 hours.
+-                            </p>
+                         </div>
+                     </div>
+-
+                 </div>
+             </form>
+         </div>
+diff --git a/civic-sense/src/components/LiveIncidentMap.jsx b/civic-sense/src/components/LiveIncidentMap.jsx
+new file mode 100644
+index 0000000..cbcb620
+--- /dev/null
++++ b/civic-sense/src/components/LiveIncidentMap.jsx
+@@ -0,0 +1,257 @@
++import React, { useState, useEffect, useRef } from 'react';
++import { MapContainer, TileLayer, Marker, Popup, useMapEvents, CircleMarker, Tooltip } from 'react-leaflet';
++import L from 'leaflet';
++import 'leaflet/dist/leaflet.css';
++import { motion, AnimatePresence } from 'framer-motion';
++import api from '../api/axios';
++import { initiateSocketConnection } from '../utils/socketService';
++import { FaExclamationTriangle, FaCheckCircle, FaRegDotCircle, FaTimes, FaLayerGroup, FaMap } from 'react-icons/fa';
++
++/* ΓöÇΓöÇΓöÇ Tactical SVG marker factory ΓöÇΓöÇΓöÇ */
++const makeIcon = (color, symbol) => L.divIcon({
++    className: '',
++    html: `<div style="
++        width:32px;height:32px;
++        border-radius:50% 50% 50% 0;
++        transform:rotate(-45deg);
++        background:${color};
++        border:2px solid rgba(255,255,255,0.3);
++        box-shadow:0 0 12px ${color},0 0 24px ${color}44;
++        display:flex;align-items:center;justify-content:center;">
++        <span style="transform:rotate(45deg);color:#fff;font-weight:900;font-size:13px;font-family:'Share Tech Mono',monospace;line-height:1;">${symbol}</span>
++    </div>`,
++    iconSize: [32, 32],
++    iconAnchor: [16, 32],
++    popupAnchor: [0, -34],
++});
++
++const ICONS = {
++    pending:     makeIcon('#ef4444', '!'),
++    'in progress': makeIcon('#f59e0b', 'Γå╗'),
++    resolved:    makeIcon('#a3e635', 'Γ£ô'),
++    closed:      makeIcon('#6b7280', 'Γûá'),
++    default:     makeIcon('#aa00ff', '?'),
++};
++
++const getIcon = (status = '') => ICONS[status.toLowerCase()] || ICONS.default;
++
++const PRIORITY_COLOR = {
++    Emergency: '#ef4444',
++    High: '#f97316',
++    Medium: '#f59e0b',
++    Low: '#a3e635',
++};
++
++/* ΓöÇΓöÇΓöÇ Popup dark card ΓöÇΓöÇΓöÇ */
++const IncidentCard = ({ point, onClose }) => (
++    <div style={{
++        background: 'rgba(9,9,11,0.97)',
++        border: `1px solid ${PRIORITY_COLOR[point.priority] || 'rgba(170,0,255,0.6)'}`,
++        borderRadius: '6px',
++        padding: '14px 16px',
++        minWidth: '220px',
++        fontFamily: "'Share Tech Mono',monospace",
++        boxShadow: `0 0 20px ${PRIORITY_COLOR[point.priority] || '#aa00ff'}44`,
++        position: 'relative',
++    }}>
++        <button onClick={onClose} style={{ position: 'absolute', top: '8px', right: '8px', background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', lineHeight: 1 }}>
++            <FaTimes size={10}/>
++        </button>
++        <div style={{ color: PRIORITY_COLOR[point.priority] || '#aa00ff', fontSize: '10px', letterSpacing: '0.15em', marginBottom: '6px' }}>
++            ΓÜá {point.priority?.toUpperCase() || 'UNKNOWN'} PRIORITY
++        </div>
++        <div style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px', marginBottom: '4px', letterSpacing: '0.05em' }}>
++            {point.title || 'ANOMALY LOGGED'}
++        </div>
++        <div style={{ color: '#a1a1aa', fontSize: '10px', marginBottom: '8px' }}>{point.category}</div>
++        <div style={{
++            display: 'inline-block',
++            padding: '2px 8px',
++            borderRadius: '3px',
++            fontSize: '9px',
++            letterSpacing: '0.15em',
++            background: point.status?.toLowerCase() === 'resolved' ? 'rgba(163,230,53,0.15)' : 'rgba(239,68,68,0.15)',
++            color: point.status?.toLowerCase() === 'resolved' ? '#a3e635' : '#ef4444',
++            border: `1px solid ${point.status?.toLowerCase() === 'resolved' ? '#a3e635' : '#ef4444'}`,
++        }}>
++            {(point.status || 'PENDING').toUpperCase()}
++        </div>
++        {point.resolvedAt && (
++            <div style={{ color: '#6b7280', fontSize: '9px', marginTop: '6px' }}>
++                RESOLVED: {new Date(point.resolvedAt).toLocaleDateString()}
++            </div>
++        )}
++    </div>
++);
++
++/* ΓöÇΓöÇΓöÇ Legend ΓöÇΓöÇΓöÇ */
++const MapLegend = () => (
++    <div style={{
++        position: 'absolute',
++        bottom: '16px',
++        left: '16px',
++        background: 'rgba(9,9,11,0.92)',
++        border: '1px solid rgba(170,0,255,0.3)',
++        borderRadius: '6px',
++        padding: '10px 14px',
++        fontFamily: "'Share Tech Mono',monospace",
++        fontSize: '9px',
++        letterSpacing: '0.1em',
++        zIndex: 1000,
++        boxShadow: '0 0 15px rgba(0,0,0,0.8)',
++    }}>
++        <div style={{ color: '#a1a1aa', marginBottom: '8px', letterSpacing: '0.2em' }}>MAP LEGEND</div>
++        {[
++            { color: '#ef4444', label: 'PENDING', symbol: '!' },
++            { color: '#f59e0b', label: 'IN PROGRESS', symbol: 'Γå╗' },
++            { color: '#a3e635', label: 'RESOLVED', symbol: 'Γ£ô' },
++        ].map(({ color, label, symbol }) => (
++            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
++                <div style={{
++                    width: '14px', height: '14px', borderRadius: '50% 50% 50% 0', transform: 'rotate(-45deg)',
++                    background: color, border: '1px solid rgba(255,255,255,0.2)',
++                    display: 'flex', alignItems: 'center', justifyContent: 'center',
++                    flexShrink: 0,
++                }}>
++                    <span style={{ transform: 'rotate(45deg)', color: '#fff', fontSize: '7px', lineHeight: 1 }}>{symbol}</span>
++                </div>
++                <span style={{ color: '#e5e7eb' }}>{label}</span>
++            </div>
++        ))}
++    </div>
++);
++
++/* ΓöÇΓöÇΓöÇ Main Component ΓöÇΓöÇΓöÇ */
++const LiveIncidentMap = ({ height = '420px', showTitle = true }) => {
++    const [points, setPoints] = useState([]);
++    const [selectedPoint, setSelectedPoint] = useState(null);
++    const [loading, setLoading] = useState(true);
++    const [center, setCenter] = useState([28.6139, 77.2090]);
++    const socketRef = useRef(null);
++
++    // Load existing incidents
++    useEffect(() => {
++        api.get('/complaint/map-points')
++            .then(res => {
++                if (res.data?.data) setPoints(res.data.data);
++            })
++            .catch(console.error)
++            .finally(() => setLoading(false));
++
++        // Try to center on user
++        if (navigator.geolocation) {
++            navigator.geolocation.getCurrentPosition(
++                (pos) => setCenter([pos.coords.latitude, pos.coords.longitude]),
++                () => {}
++            );
++        }
++    }, []);
++
++    // Subscribe to socket for live map_update and map_status_update events
++    useEffect(() => {
++        const socket = initiateSocketConnection();
++        if (socket) {
++            socketRef.current = socket;
++            // New complaint pinned
++            socket.on('map_update', (newPoint) => {
++                setPoints(prev => {
++                    const exists = prev.find(p => p.id === newPoint.complaintId);
++                    if (exists) return prev;
++                    return [{
++                        id: newPoint.complaintId,
++                        title: newPoint.title,
++                        category: newPoint.category,
++                        status: newPoint.status,
++                        priority: newPoint.priority,
++                        lat: newPoint.lat,
++                        lng: newPoint.lng,
++                    }, ...prev];
++                });
++            });
++            // Status changed (e.g. resolved) ΓÇö update marker color in real-time
++            socket.on('map_status_update', (update) => {
++                setPoints(prev => prev.map(p =>
++                    p.id === update.id ? { ...p, status: update.status } : p
++                ));
++            });
++        }
++        return () => {
++            if (socketRef.current) {
++                socketRef.current.off('map_update');
++                socketRef.current.off('map_status_update');
++            }
++        };
++    }, []);
++
++    const stats = {
++        active: points.filter(p => !['resolved', 'closed'].includes(p.status?.toLowerCase())).length,
++        resolved: points.filter(p => ['resolved', 'closed'].includes(p.status?.toLowerCase())).length,
++    };
++
++    return (
++        <div style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(170,0,255,0.3)', boxShadow: '0 0 30px rgba(170,0,255,0.1)', zIndex: 0, isolation: 'isolate' }}>
++            {showTitle && (
++                <div style={{
++                    background: 'rgba(9,9,11,0.95)',
++                    borderBottom: '1px solid rgba(170,0,255,0.2)',
++                    padding: '10px 16px',
++                    display: 'flex',
++                    alignItems: 'center',
++                    justifyContent: 'space-between',
++                    fontFamily: "'Share Tech Mono',monospace",
++                }}>
++                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
++                        <FaMap size={14} style={{ color: 'var(--primary-color)' }} />
++                        <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '0.8rem', letterSpacing: '0.15em' }}>LIVE INCIDENT MAP</span>
++                    </div>
++                    <div style={{ display: 'flex', gap: '12px', fontSize: '9px', letterSpacing: '0.1em' }}>
++                        <span style={{ color: '#ef4444' }}>Γ¼ñ {stats.active} ACTIVE</span>
++                        <span style={{ color: '#a3e635' }}>Γ¼ñ {stats.resolved} RESOLVED</span>
++                        <span style={{ color: '#a1a1aa' }}>Γ¼ñ {points.length} TOTAL</span>
++                    </div>
++                </div>
++            )}
++            <div style={{ height, position: 'relative' }}>
++                {loading && (
++                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(9,9,11,0.8)', zIndex: 1000, fontFamily: "'Share Tech Mono',monospace", color: '#a1a1aa', letterSpacing: '0.2em', fontSize: '11px' }}>
++                        ESTABLISHING UPLINK...
++                    </div>
++                )}
++                <MapContainer center={center} zoom={12} scrollWheelZoom={true} style={{ height: '100%', width: '100%', background: '#0a0a0f' }}>
++                    <TileLayer
++                        attribution='&copy; <a href="https://carto.com/">CARTO</a>'
++                        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
++                    />
++                    {points.map((point, i) => (
++                        point.lat && point.lng ? (
++                            <Marker
++                                key={point.id || i}
++                                position={[point.lat, point.lng]}
++                                icon={getIcon(point.status)}
++                                eventHandlers={{ click: () => setSelectedPoint(selectedPoint?.id === point.id ? null : point) }}
++                            />
++                        ) : null
++                    ))}
++                </MapContainer>
++
++                {/* Custom floating info card ΓÇö outside Leaflet Popup for full dark control */}
++                <AnimatePresence>
++                    {selectedPoint && (
++                        <motion.div
++                            initial={{ opacity: 0, scale: 0.9, y: 10 }}
++                            animate={{ opacity: 1, scale: 1, y: 0 }}
++                            exit={{ opacity: 0, scale: 0.9 }}
++                            style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 1200 }}
++                        >
++                            <IncidentCard point={selectedPoint} onClose={() => setSelectedPoint(null)} />
++                        </motion.div>
++                    )}
++                </AnimatePresence>
++
++                <MapLegend />
++            </div>
++        </div>
++    );
++};
++
++export default LiveIncidentMap;

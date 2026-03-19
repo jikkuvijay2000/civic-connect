@@ -33,6 +33,16 @@ const complaintSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    complaintLat: {
+        type: Number,
+        required: false,
+        default: null
+    },
+    complaintLng: {
+        type: Number,
+        required: false,
+        default: null
+    },
     complaintStatus: {
         type: String,
         required: true,

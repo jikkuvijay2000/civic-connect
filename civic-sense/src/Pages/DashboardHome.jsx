@@ -12,6 +12,7 @@ import { notify } from '../utils/notify';
 import { initiateSocketConnection, subscribeToNotifications, subscribeToAlerts, disconnectSocket } from '../utils/socketService';
 import AIAnimation from '../Components/AIAnimation';
 import api from '../api/axios';
+import LiveIncidentMap from '../components/LiveIncidentMap';
 
 /* ── Tag color map ────────────────────────────────────────────────── */
 const TAG_META = {
@@ -173,6 +174,11 @@ const DashboardHome = () => {
                                 </div>
                             );
                         })}
+                    </div>
+
+                    {/* ── Live Incident Map ── */}
+                    <div className="mb-5">
+                        <LiveIncidentMap height="380px" showTitle={true} />
                     </div>
 
                     {/* ── Feed header + filter ── */}

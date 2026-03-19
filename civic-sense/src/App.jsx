@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Register from './Pages/Register'
@@ -27,8 +27,18 @@ import SecurityPage from './Pages/SecurityPage'
 
 
 import SessionOverlay from './components/SessionOverlay'
+import KillSwitchScreen from './Pages/KillSwitchScreen'
 
 function App() {
+  const [isKilled, setIsKilled] = useState(false);
+
+  useEffect(() => {
+    const handleKillSwitch = () => setIsKilled(true);
+    window.addEventListener('civic:kill_switch', handleKillSwitch);
+    return () => window.removeEventListener('civic:kill_switch', handleKillSwitch);
+  }, []);
+
+  if (isKilled) return <KillSwitchScreen />;
 
   return (
     <>

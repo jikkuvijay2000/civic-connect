@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { createComplaint, getUserContributions, predictComplaint, generateCaption, getAuthorityComplaints, getAuthorityStats, updateComplaintStatus, analyzeVideo, addFeedback, getResolvedComplaints, editComplaint, getAiHealth } = require("../Controllers/ComplaintController");
+const { createComplaint, getUserContributions, predictComplaint, generateCaption, getAuthorityComplaints, getAuthorityStats, updateComplaintStatus, analyzeVideo, addFeedback, getResolvedComplaints, editComplaint, getAiHealth, getMapPoints } = require("../Controllers/ComplaintController");
 const { protect, verifyAuthority } = require("../Middlewares/authMiddleware");
 const multer = require("multer");
 const path = require("path");
@@ -43,5 +43,9 @@ router.put("/edit/:id", protect, editComplaint);
 
 // Global Resolved Complaints Route
 router.get("/resolved", protect, getResolvedComplaints);
+
+// Live Incident Map — all geocoded complaints
+router.get("/map-points", protect, getMapPoints);
+
 
 module.exports = { complaintRouter: router };

@@ -15,6 +15,7 @@ const { noteRouter } = require("./Router/noteRouter");
 const { communityPostRouter } = require("./Router/communityPostRouter");
 const aiChatRouter = require("./Router/aiChatRouter"); // NEW: AI Chat Router
 const { rewardRouter } = require("./Router/rewardRouter"); // NEW: Rewards Router
+const { killSwitchMiddleware } = require("./Middlewares/killSwitchMiddleware"); // KILL SWITCH
 
 
 const app = express();
@@ -127,6 +128,10 @@ app.use(cors({
     credentials: true,
 }));
 app.use(cookieParser());
+
+// ── KILL SWITCH – gates every route ──────────────────────────────────────
+app.use(killSwitchMiddleware);
+// ─────────────────────────────────────────────────────────────────────────
 
 const PORT = process.env.PORT || 3000;
 

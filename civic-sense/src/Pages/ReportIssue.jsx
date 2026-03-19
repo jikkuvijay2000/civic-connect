@@ -47,7 +47,7 @@ const ReportIssue = () => {
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         title: '', description: '', category: '', priority: '',
-        location: '', image: null, video: null, aiScore: 0
+        location: '', lat: null, lng: null, image: null, video: null, aiScore: 0
     });
     const [imagePreview, setImagePreview] = useState(null);
     const [isCaptioning, setIsCaptioning] = useState(false);
@@ -143,7 +143,7 @@ const ReportIssue = () => {
         if (videoInputRef.current) videoInputRef.current.value = '';
     };
 
-    const handleLocationSelect = ({ address }) => setFormData(prev => ({ ...prev, location: address }));
+    const handleLocationSelect = ({ address, lat, lng }) => setFormData(prev => ({ ...prev, location: address, lat: lat || null, lng: lng || null }));
 
     /* ── Submit ── */
     const handleSubmit = async (e) => {
@@ -162,6 +162,8 @@ const ReportIssue = () => {
         data.append('aiScore', formData.aiScore);
         data.append('image', formData.image);
         if (formData.video) data.append('video', formData.video);
+        if (formData.lat != null) data.append('lat', formData.lat);
+        if (formData.lng != null) data.append('lng', formData.lng);
         try {
             const res = await api.post('/complaint/create', data, { headers: { 'Content-Type': 'multipart/form-data' } });
             if (res.status === 201) {
