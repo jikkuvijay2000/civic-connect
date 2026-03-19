@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
     FaSearch, FaCheckCircle, FaMapMarkerAlt, FaEye,
-    FaCalendarAlt, FaFilter
+    FaCalendarAlt, FaTerminal
 } from 'react-icons/fa';
 import api from '../api/axios';
 import { notify } from '../utils/notify';
 import ComplaintDetailsModal from '../components/ComplaintDetailsModal';
 
 const formatDate = (d) =>
-    new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }).toUpperCase();
 
 const ResolvedIssues = () => {
     const [complaints, setComplaints] = useState([]);
@@ -24,7 +24,7 @@ const ResolvedIssues = () => {
                 const res = await api.get('/complaint/resolved');
                 if (res.data?.data) setComplaints(res.data.data);
             } catch (e) {
-                notify('error', 'Failed to fetch resolved issues');
+                notify('error', 'FAILED TO RETRIEVE ARCHIVES');
             } finally {
                 setLoading(false);
             }
@@ -39,156 +39,115 @@ const ResolvedIssues = () => {
     );
 
     return (
-        <div className="p-5" style={{ background: '#f8fafc', minHeight: '100vh' }}>
+        <div className="p-4 p-md-5" style={{ background: 'transparent', minHeight: '100vh' }}>
 
-            {/* ── Header ── */}
-            <div className="d-flex justify-content-between align-items-start mb-5">
-                <div>
-                    <h2 className="fw-bold text-dark ls-tight mb-1">Resolved Issues</h2>
-                    <p className="text-muted mb-0">
-                        Transparency portal — civic issues addressed and closed by authorities.
-                    </p>
+            {/* Header */}
+            <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-start mb-5 gap-3">
+                <div className="d-flex align-items-center gap-3">
+                    <FaTerminal size={28} className="text-secondary" />
+                    <div>
+                        <h2 className="tech-font fw-bold text-white ls-tight mb-0 text-uppercase" style={{ letterSpacing: '0.15em' }}>RESOLVED ARCHIVES</h2>
+                        <p className="tech-font text-muted mb-0 text-uppercase" style={{ fontSize: '0.8rem', letterSpacing: '0.1em' }}>
+                            TRANSPARENCY PORTAL — SECURED AND CLOSED CIVIC INCIDENTS.
+                        </p>
+                    </div>
                 </div>
 
-                {/* Summary badge */}
                 {!loading && (
-                    <div
-                        className="d-flex align-items-center gap-2 px-4 py-3 rounded-3 border"
-                        style={{ background: '#ecfdf5', borderColor: '#6ee7b7' }}
-                    >
-                        <FaCheckCircle style={{ color: '#10b981' }} />
-                        <div>
-                            <span className="fw-bold text-dark">{complaints.length}</span>
-                            <span className="text-muted small ms-1">issues resolved</span>
+                    <div className="d-flex align-items-center gap-2 px-4 py-3 rounded border" style={{ background: 'rgba(163,230,53,0.1)', borderColor: 'var(--secondary-color)' }}>
+                        <FaCheckCircle className="pulse-animation" style={{ color: 'var(--secondary-color)' }} />
+                        <div className="tech-font">
+                            <span className="fw-bold text-white fs-5">{complaints.length}</span>
+                            <span className="text-secondary small ms-2 text-uppercase tracking-widest" style={{ letterSpacing: '0.1em' }}>ARCHIVED</span>
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* ── Toolbar ── */}
-            <div className="d-flex align-items-center justify-content-between mb-4 gap-3">
-                <div className="d-flex align-items-center bg-white rounded-3 border px-3 py-2" style={{ width: '340px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+            {/* Toolbar */}
+            <div className="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+                <div className="d-flex align-items-center rounded border px-3 py-2" style={{ width: '340px', background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)' }}>
                     <FaSearch className="text-muted me-2" size={13} />
-                    <input
-                        type="text"
-                        className="form-control border-0 p-0 shadow-none bg-transparent"
-                        placeholder="Search by type, location or ID..."
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                        style={{ fontSize: '0.87rem' }}
+                    <input type="text" className="form-control tech-font text-white border-0 p-0 shadow-none bg-transparent"
+                        placeholder="SEARCH ARCHIVES..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+                        style={{ fontSize: '0.85rem', letterSpacing: '0.1em' }}
                     />
                     {searchTerm && (
-                        <button className="btn btn-sm p-0 text-muted ms-2" onClick={() => setSearchTerm('')}>
-                            &times;
-                        </button>
+                        <button className="btn btn-sm p-0 text-muted ms-2" onClick={() => setSearchTerm('')}>&times;</button>
                     )}
                 </div>
 
                 {/* View toggle */}
-                <div className="d-flex gap-1 bg-white border rounded-3 p-1">
-                    {[['grid', 'Grid'], ['list', 'List']].map(([mode, label]) => (
-                        <button
-                            key={mode}
-                            onClick={() => setViewMode(mode)}
-                            className="btn btn-sm fw-medium px-3"
+                <div className="d-flex gap-1 border rounded p-1" style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)' }}>
+                    {[['grid', 'MATRIX'], ['list', 'TABLE']].map(([mode, label]) => (
+                        <button key={mode} onClick={() => setViewMode(mode)} className="btn btn-sm tech-font fw-bold px-3 text-uppercase"
                             style={{
-                                borderRadius: '8px',
-                                background: viewMode === mode ? '#1e293b' : 'transparent',
-                                color: viewMode === mode ? 'white' : '#64748b',
-                                border: 'none',
-                                fontSize: '0.82rem',
-                                transition: 'all 0.15s'
-                            }}
-                        >
+                                borderRadius: '4px', background: viewMode === mode ? 'rgba(163,230,53,0.2)' : 'transparent',
+                                color: viewMode === mode ? 'var(--secondary-color)' : 'var(--text-muted)', border: 'none',
+                                fontSize: '0.75rem', letterSpacing: '0.1em', transition: 'all 0.15s'
+                            }}>
                             {label}
                         </button>
                     ))}
                 </div>
             </div>
 
-            {/* ── Content ── */}
+            {/* Content */}
             {loading ? (
                 <div className="text-center py-5">
-                    <div className="spinner-border text-primary" role="status">
-                        <span className="visually-hidden">Loading...</span>
-                    </div>
+                    <span className="spinner-border text-neon-green" role="status" />
+                    <p className="tech-font mt-3 text-muted text-uppercase" style={{ letterSpacing: '0.2em', fontSize: '0.8rem' }}>DECRYPTING ARCHIVES...</p>
                 </div>
             ) : filtered.length === 0 ? (
-                <div className="text-center py-5 bg-white rounded-4 border">
-                    <FaCheckCircle size={40} className="text-muted mb-3" style={{ opacity: 0.25 }} />
-                    <h6 className="fw-bold text-dark">No resolved issues found</h6>
-                    <p className="text-muted small mb-0">
-                        {searchTerm ? 'Try adjusting your search.' : 'No issues have been resolved yet.'}
+                <div className="text-center py-5 glass-card">
+                    <FaCheckCircle size={40} className="text-secondary mb-3" style={{ opacity: 0.25 }} />
+                    <h6 className="tech-font fw-bold text-white text-uppercase" style={{ letterSpacing: '0.15em' }}>NO ARCHIVES FOUND</h6>
+                    <p className="tech-font text-muted small mb-0 text-uppercase" style={{ letterSpacing: '0.1em' }}>
+                        {searchTerm ? 'ADJUST QUERY PARAMETERS.' : 'DATABASE EMPTY.'}
                     </p>
                 </div>
             ) : viewMode === 'grid' ? (
-                /* ── Grid View ── */
+                /* Grid View */
                 <div className="row g-4">
                     {filtered.map((c, i) => (
                         <div className="col-lg-4 col-md-6" key={c._id || c.complaintId}>
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: i * 0.04 }}
-                                onClick={() => setSelected(c)}
-                                className="bg-white rounded-4 border overflow-hidden d-flex flex-column h-100 cursor-pointer"
-                                style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.05)', transition: 'all 0.18s', cursor: 'pointer' }}
-                                onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.1)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                                onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)'; e.currentTarget.style.transform = 'translateY(0)'; }}
-                            >
+                            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }} onClick={() => setSelected(c)}
+                                className="glass-card overflow-hidden d-flex flex-column h-100 hover-scale cursor-pointer"
+                                style={{ borderBottom: '2px solid var(--secondary-color)', transition: 'all 0.18s' }}>
                                 {/* Image */}
                                 {c.complaintImage ? (
-                                    <div style={{ height: '190px', overflow: 'hidden', flexShrink: 0 }}>
-                                        <img src={c.complaintImage} alt={c.complaintType} className="w-100 h-100 object-fit-cover" />
+                                    <div style={{ height: '190px', overflow: 'hidden', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                                        <img src={c.complaintImage} alt="Intel" className="w-100 h-100 object-fit-cover" style={{ filter: 'brightness(0.8) contrast(1.2)' }} />
                                     </div>
                                 ) : (
-                                    <div className="d-flex align-items-center justify-content-center" style={{ height: '130px', background: '#f0fdf4', flexShrink: 0 }}>
-                                        <FaCheckCircle size={44} style={{ color: '#6ee7b7' }} />
+                                    <div className="d-flex align-items-center justify-content-center" style={{ height: '190px', background: 'rgba(163,230,53,0.05)', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                                        <FaCheckCircle size={44} style={{ color: 'var(--secondary-color)' }} />
                                     </div>
                                 )}
 
                                 <div className="p-4 d-flex flex-column flex-grow-1">
                                     <div className="d-flex justify-content-between align-items-center mb-3">
-                                        <span
-                                            className="badge rounded-pill fw-medium px-3 py-1"
-                                            style={{ background: '#ecfdf5', color: '#10b981', border: '1px solid #6ee7b7', fontSize: '0.75rem' }}
-                                        >
+                                        <span className="badge tech-font fw-bold px-3 py-1 text-uppercase" style={{ background: 'rgba(163,230,53,0.1)', color: 'var(--secondary-color)', border: '1px solid var(--secondary-color)', fontSize: '0.65rem', letterSpacing: '0.1em' }}>
                                             {c.complaintStatus}
                                         </span>
-                                        <small className="text-muted fw-medium">#{c.complaintId?.substring(0, 8) || 'N/A'}</small>
+                                        <small className="tech-font text-muted fw-bold">#{c.complaintId?.substring(0, 8) || 'N/A'}</small>
                                     </div>
 
-                                    <h6 className="fw-bold text-dark mb-2 text-truncate">{c.complaintType}</h6>
-                                    <p
-                                        className="text-muted mb-3"
-                                        style={{
-                                            fontSize: '0.83rem',
-                                            display: '-webkit-box',
-                                            WebkitLineClamp: 2,
-                                            WebkitBoxOrient: 'vertical',
-                                            overflow: 'hidden',
-                                            lineHeight: 1.6,
-                                        }}
-                                    >
-                                        {c.complaintDescription?.replace(/^\*\*(.*?)\*\*\n?/, '').trim() || 'No description.'}
+                                    <h6 className="tech-font fw-bold text-white mb-2 text-truncate tracking-widest text-uppercase">{c.complaintType}</h6>
+                                    <p className="text-secondary mb-3 font-monospace" style={{ fontSize: '0.8rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.6 }}>
+                                        {c.complaintDescription?.replace(/^\*\*(.*?)\*\*\n?/, '').trim() || 'NO LOG DATA.'}
                                     </p>
 
-                                    <div className="mt-auto pt-3 border-top">
-                                        <div className="d-flex align-items-center gap-2 text-muted mb-2" style={{ fontSize: '0.8rem' }}>
-                                            <FaMapMarkerAlt className="text-danger" size={11} />
+                                    <div className="mt-auto pt-3 border-top" style={{ borderColor: 'rgba(255,255,255,0.1) !important' }}>
+                                        <div className="d-flex align-items-center gap-2 text-muted tech-font mb-2 text-uppercase" style={{ fontSize: '0.7rem', letterSpacing: '0.1em' }}>
+                                            <FaMapMarkerAlt className="text-neon-red" size={11} />
                                             <span className="text-truncate">{c.complaintLocation}</span>
                                         </div>
-                                        <div className="d-flex justify-content-between align-items-center text-muted" style={{ fontSize: '0.78rem' }}>
-                                            <span className="d-flex align-items-center gap-1">
-                                                <FaCalendarAlt size={10} />
-                                                {formatDate(c.complaintResolvedDate || c.updatedAt)}
-                                            </span>
-                                            <button
-                                                onClick={e => { e.stopPropagation(); setSelected(c); }}
-                                                className="btn btn-sm d-flex align-items-center gap-1 fw-medium"
-                                                style={{ borderRadius: '8px', background: '#f8fafc', border: '1px solid #e2e8f0', fontSize: '0.78rem', color: '#475569' }}
-                                            >
-                                                <FaEye size={11} /> View
+                                        <div className="d-flex justify-content-between align-items-center text-muted tech-font text-uppercase" style={{ fontSize: '0.7rem', letterSpacing: '0.1em' }}>
+                                            <span className="d-flex align-items-center gap-1"><FaCalendarAlt size={10} /> {formatDate(c.complaintResolvedDate || c.updatedAt)}</span>
+                                            <button onClick={e => { e.stopPropagation(); setSelected(c); }} className="btn btn-sm d-flex align-items-center gap-1 tech-font fw-bold text-uppercase"
+                                                style={{ borderRadius: '4px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.2)', fontSize: '0.65rem', color: 'white', letterSpacing: '0.1em' }}>
+                                                <FaEye size={11} /> DECRYPT
                                             </button>
                                         </div>
                                     </div>
@@ -198,60 +157,34 @@ const ResolvedIssues = () => {
                     ))}
                 </div>
             ) : (
-                /* ── List View ── */
+                /* List View */
                 <div className="d-flex flex-column gap-3">
                     {filtered.map((c, i) => (
-                        <motion.div
-                            key={c._id || c.complaintId}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: i * 0.04 }}
-                            onClick={() => setSelected(c)}
-                            className="bg-white rounded-4 border d-flex align-items-center gap-4 px-4 py-3 cursor-pointer"
-                            style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)', transition: 'all 0.15s', cursor: 'pointer' }}
-                            onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 14px rgba(0,0,0,0.08)'}
-                            onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'}
-                        >
+                        <motion.div key={c._id || c.complaintId} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }} onClick={() => setSelected(c)}
+                            className="glass-card d-flex align-items-center gap-4 px-4 py-3 cursor-pointer hover-bg-light"
+                            style={{ borderLeft: '3px solid var(--secondary-color)', transition: 'all 0.15s' }}>
                             {/* Thumbnail */}
-                            <div className="rounded-3 overflow-hidden flex-shrink-0" style={{ width: '56px', height: '56px', background: '#f0fdf4' }}>
-                                {c.complaintImage
-                                    ? <img src={c.complaintImage} alt="" className="w-100 h-100 object-fit-cover" />
-                                    : <div className="w-100 h-100 d-flex align-items-center justify-content-center">
-                                        <FaCheckCircle size={22} style={{ color: '#6ee7b7' }} />
-                                    </div>
-                                }
+                            <div className="rounded overflow-hidden flex-shrink-0" style={{ width: '56px', height: '56px', background: 'rgba(163,230,53,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                {c.complaintImage ? <img src={c.complaintImage} alt="Intel" className="w-100 h-100 object-fit-cover" style={{ filter: 'brightness(0.9) contrast(1.1)' }} />
+                                    : <div className="w-100 h-100 d-flex align-items-center justify-content-center"><FaCheckCircle size={22} className="text-secondary" /></div>}
                             </div>
 
                             <div className="flex-grow-1 min-width-0">
                                 <div className="d-flex align-items-baseline gap-2 mb-1">
-                                    <h6 className="fw-bold text-dark mb-0 text-truncate">{c.complaintType}</h6>
-                                    <small className="text-muted flex-shrink-0">#{c.complaintId?.substring(0, 8)}</small>
+                                    <h6 className="tech-font fw-bold text-white mb-0 text-truncate tracking-widest text-uppercase">{c.complaintType}</h6>
+                                    <small className="tech-font text-muted flex-shrink-0 fw-bold">#{c.complaintId?.substring(0, 8)}</small>
                                 </div>
-                                <div className="d-flex align-items-center gap-3 text-muted" style={{ fontSize: '0.79rem' }}>
-                                    <span className="d-flex align-items-center gap-1">
-                                        <FaMapMarkerAlt size={10} className="text-danger" />
-                                        <span className="text-truncate" style={{ maxWidth: '200px' }}>{c.complaintLocation}</span>
-                                    </span>
-                                    <span className="d-flex align-items-center gap-1">
-                                        <FaCalendarAlt size={10} />
-                                        {formatDate(c.complaintResolvedDate || c.updatedAt)}
-                                    </span>
+                                <div className="d-flex align-items-center gap-3 text-muted tech-font text-uppercase" style={{ fontSize: '0.7rem', letterSpacing: '0.1em' }}>
+                                    <span className="d-flex align-items-center gap-1"><FaMapMarkerAlt size={10} className="text-neon-red" /><span className="text-truncate" style={{ maxWidth: '200px' }}>{c.complaintLocation}</span></span>
+                                    <span className="d-flex align-items-center gap-1"><FaCalendarAlt size={10} /> {formatDate(c.complaintResolvedDate || c.updatedAt)}</span>
                                 </div>
                             </div>
 
-                            <span
-                                className="badge rounded-pill fw-medium px-3 py-2 flex-shrink-0"
-                                style={{ background: '#ecfdf5', color: '#10b981', border: '1px solid #6ee7b7', fontSize: '0.76rem' }}
-                            >
+                            <span className="badge tech-font rounded px-3 py-2 flex-shrink-0 text-uppercase fw-bold" style={{ background: 'rgba(163,230,53,0.1)', color: 'var(--secondary-color)', border: '1px solid var(--secondary-color)', fontSize: '0.65rem', letterSpacing: '0.1em' }}>
                                 {c.complaintStatus}
                             </span>
-
-                            <button
-                                onClick={e => { e.stopPropagation(); setSelected(c); }}
-                                className="btn btn-sm rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                                style={{ width: '34px', height: '34px', background: '#f8fafc', border: '1px solid #e2e8f0' }}
-                            >
-                                <FaEye size={13} className="text-muted" />
+                            <button onClick={e => { e.stopPropagation(); setSelected(c); }} className="btn btn-sm rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '34px', height: '34px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.2)' }}>
+                                <FaEye size={13} className="text-white" />
                             </button>
                         </motion.div>
                     ))}
@@ -259,11 +192,7 @@ const ResolvedIssues = () => {
             )}
 
             {/* Modal */}
-            <ComplaintDetailsModal
-                isOpen={!!selected}
-                onClose={() => setSelected(null)}
-                complaint={selected}
-            />
+            <ComplaintDetailsModal isOpen={!!selected} onClose={() => setSelected(null)} complaint={selected} />
         </div>
     );
 };

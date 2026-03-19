@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
     FaLock, FaEye, FaEyeSlash, FaShieldAlt, FaSignOutAlt,
     FaCheckCircle, FaExclamationTriangle, FaKey, FaUserShield,
-    FaInfoCircle, FaDatabase
+    FaInfoCircle, FaDatabase, FaTerminal
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/axios';
@@ -19,10 +19,10 @@ const strengthInfo = (pw) => {
     if (/[@$!%*?&#]/.test(pw)) score++;
     const map = [
         { label: '', color: '' },
-        { label: 'Weak', color: '#ef4444' },
-        { label: 'Fair', color: '#f97316' },
-        { label: 'Good', color: '#f59e0b' },
-        { label: 'Strong', color: '#10b981' },
+        { label: 'CRITICAL', color: 'var(--accent-red)' },
+        { label: 'WEAK', color: '#f97316' },
+        { label: 'STABLE', color: '#f59e0b' },
+        { label: 'SECURE', color: 'var(--neon-green)' },
     ];
     return { score, ...map[score] };
 };
@@ -31,19 +31,23 @@ const PasswordField = ({ label, value, onChange, placeholder }) => {
     const [show, setShow] = useState(false);
     return (
         <div>
-            <label className="fw-semibold text-dark mb-2 d-block" style={{ fontSize: '0.85rem' }}>{label}</label>
-            <div className="d-flex align-items-center rounded-3 border px-3" style={{ background: '#f8fafc', gap: '8px' }}>
-                <FaKey size={13} style={{ color: '#94a3b8', flexShrink: 0 }} />
+            <label className="fw-bold text-secondary tech-font mb-2 d-flex align-items-center gap-2 tracking-widest text-uppercase" style={{ fontSize: '0.75rem', letterSpacing: '0.15em' }}>
+                <FaTerminal size={10} /> {label}
+            </label>
+            <div className="d-flex align-items-center border px-3 transition-all" style={{ background: 'rgba(0,0,0,0.5)', borderColor: 'rgba(255,255,255,0.1) !important', gap: '8px' }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--primary-color) !important'; e.currentTarget.style.boxShadow = '0 0 10px rgba(170,0,255,0.2)'; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1) !important'; e.currentTarget.style.boxShadow = 'none'; }}>
+                <FaKey size={13} className="text-secondary opacity-50 flex-shrink-0" />
                 <input
                     type={show ? 'text' : 'password'}
-                    className="form-control border-0 shadow-none bg-transparent py-3"
+                    className="form-control border-0 shadow-none bg-transparent py-3 text-white font-monospace"
                     placeholder={placeholder}
                     value={value}
                     onChange={e => onChange(e.target.value)}
-                    style={{ fontSize: '0.9rem' }}
+                    style={{ fontSize: '0.9rem', letterSpacing: show ? 'normal' : '0.2em' }}
                 />
-                <button type="button" className="border-0 bg-transparent p-0" onClick={() => setShow(s => !s)}>
-                    {show ? <FaEyeSlash size={14} style={{ color: '#94a3b8' }} /> : <FaEye size={14} style={{ color: '#94a3b8' }} />}
+                <button type="button" className="border-0 bg-transparent p-0 hover-scale" onClick={() => setShow(s => !s)}>
+                    {show ? <FaEyeSlash size={14} className="text-secondary" /> : <FaEye size={14} className="text-secondary opacity-50" />}
                 </button>
             </div>
         </div>
@@ -75,12 +79,12 @@ const SecurityPage = () => {
         setSaving(true);
         try {
             await api.put('/user/change-password', { currentPassword: current, newPassword: newPw });
-            notify('success', 'Password updated successfully');
+            notify('success', 'ENCRYPTION KEY UPDATED.');
             setCurrent(''); setNewPw(''); setConfirm('');
             setPwDone(true);
             setTimeout(() => setPwDone(false), 4000);
         } catch (err) {
-            notify('error', err?.response?.data?.message || 'Failed to update password');
+            notify('error', err?.response?.data?.message || 'SYSTEM ERROR: KEY UPDATE FAILED.');
         } finally {
             setSaving(false);
         }
@@ -91,91 +95,103 @@ const SecurityPage = () => {
         document.cookie.split(';').forEach(c => {
             document.cookie = c.replace(/^ +/, '').replace(/=.*/, '=;expires=' + new Date().toUTCString() + ';path=/');
         });
-        notify('success', 'Logged out successfully');
+        notify('success', 'COM-LINK SEVERED. LOGGED OUT.');
         navigate('/');
     };
 
     return (
-        <div style={{ background: '#f8fafc', minHeight: '100vh' }}>
+        <div style={{ background: 'transparent', minHeight: '100vh', position: 'relative' }}>
+
+            {/* Background Map Overlay */}
+            <div className="position-absolute top-0 start-0 w-100 h-100 pointer-events-none opacity-25"
+                style={{
+                    backgroundImage: 'radial-gradient(circle at center, rgba(170,0,255,0.05) 0%, transparent 70%), linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
+                    backgroundSize: '100% 100%, 30px 30px, 30px 30px',
+                    zIndex: 0
+                }}
+            />
 
             {/* ── Top bar ── */}
-            <div className="px-4 px-md-5 py-4 border-bottom" style={{ background: 'white', position: 'sticky', top: 0, zIndex: 10 }}>
+            <div className="px-4 px-md-5 py-4 border-bottom" style={{ background: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(12px)', position: 'sticky', top: 0, zIndex: 10, borderColor: 'rgba(255,255,255,0.1) !important' }}>
                 <div className="d-flex align-items-center gap-3">
-                    <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#eef2ff', border: '1px solid #a5b4fc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <FaShieldAlt size={15} style={{ color: '#6366f1' }} />
+                    <div className="d-flex align-items-center justify-content-center border border-primary rounded" style={{ width: '48px', height: '48px', background: 'rgba(170,0,255,0.1)', color: 'var(--primary-color)', boxShadow: '0 0 10px rgba(170,0,255,0.2)' }}>
+                        <FaShieldAlt size={20} />
                     </div>
                     <div>
-                        <h4 className="fw-bold text-dark mb-0">Security &amp; Privacy</h4>
-                        <small className="text-muted">Manage your account credentials and privacy settings</small>
+                        <h4 className="fw-bold text-white tech-font mb-1 text-uppercase tracking-widest">SECURITY PROTOCOLS</h4>
+                        <small className="tech-font text-muted font-monospace text-uppercase" style={{ fontSize: '0.75rem', letterSpacing: '0.1em' }}>
+                            // MANAGE ENCRYPTION KEYS & DATA PRIVACY
+                        </small>
                     </div>
                 </div>
             </div>
 
-            <div className="px-4 px-md-5 py-5">
-                <div style={{ maxWidth: '720px' }}>
+            <div className="px-4 px-md-5 py-5 z-1 position-relative">
+                <div style={{ maxWidth: '760px', margin: '0 auto' }}>
 
                     {/* ── Account info banner ── */}
-                    <div className="d-flex align-items-center gap-4 p-4 rounded-4 mb-5 border"
-                        style={{ background: 'white', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
-                        <div className="rounded-circle d-flex align-items-center justify-content-center fw-bold flex-shrink-0"
-                            style={{ width: '52px', height: '52px', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: 'white', fontSize: '1.1rem' }}>
-                            {user.userName?.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || 'U'}
+                    <div className="glass-card d-flex align-items-center gap-4 p-4 mb-5"
+                        style={{ border: '1px solid var(--primary-color)', boxShadow: '0 0 20px rgba(170,0,255,0.1)' }}>
+                        <div className="d-flex align-items-center justify-content-center border tech-font fw-bold flex-shrink-0"
+                            style={{ width: '60px', height: '60px', borderRadius: '8px', background: 'rgba(170,0,255,0.2)', color: 'var(--primary-color)', fontSize: '1.5rem', borderColor: 'var(--primary-color) !important', boxShadow: 'inset 0 0 15px rgba(170,0,255,0.3)' }}>
+                            {user.userName?.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || 'OP'}
                         </div>
                         <div className="flex-grow-1">
-                            <div className="fw-bold text-dark" style={{ fontSize: '1rem' }}>{user.userName || '—'}</div>
-                            <small className="text-muted">{user.userEmail || '—'}</small>
+                            <div className="fw-bold text-white font-monospace text-uppercase" style={{ fontSize: '1.2rem', letterSpacing: '0.05em' }}>{user.userName || 'UNKNOWN ALIAS'}</div>
+                            <small className="tech-font text-secondary text-uppercase tracking-widest" style={{ fontSize: '0.75rem' }}>{user.userEmail || '—'}</small>
                         </div>
-                        <div className="d-flex align-items-center gap-2 px-3 py-2 rounded-3" style={{ background: '#ecfdf5', border: '1px solid #6ee7b7' }}>
-                            <FaCheckCircle size={12} style={{ color: '#10b981' }} />
-                            <small className="fw-bold" style={{ color: '#065f46', fontSize: '0.75rem' }}>Email Verified</small>
+                        <div className="d-flex align-items-center gap-2 px-3 py-2 border tech-font text-uppercase" style={{ background: 'rgba(16,185,129,0.1)', borderColor: 'var(--neon-green) !important', boxShadow: '0 0 10px rgba(16,185,129,0.2)' }}>
+                            <FaCheckCircle size={14} className="text-neon-green" />
+                            <small className="fw-bold text-neon-green tracking-widest" style={{ fontSize: '0.7rem' }}>VERIFIED_OP</small>
                         </div>
                     </div>
 
                     {/* ── Change Password ── */}
-                    <div className="bg-white rounded-4 border mb-4 overflow-hidden" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
-                        <div className="px-4 py-4 border-bottom d-flex align-items-center gap-3" style={{ background: '#f8fafc' }}>
-                            <FaLock size={14} style={{ color: '#6366f1' }} />
+                    <div className="glass-card mb-5 overflow-hidden border-secondary">
+                        <div className="px-4 py-4 border-bottom d-flex align-items-center gap-3" style={{ background: 'rgba(0,0,0,0.5)', borderColor: 'rgba(255,255,255,0.1) !important' }}>
+                            <FaLock size={16} className="text-primary" />
                             <div>
-                                <div className="fw-bold text-dark" style={{ fontSize: '0.93rem' }}>Change Password</div>
-                                <small className="text-muted" style={{ fontSize: '0.78rem' }}>Use a strong password you don't use elsewhere</small>
+                                <div className="fw-bold text-white tech-font text-uppercase tracking-widest" style={{ fontSize: '1rem' }}>ENCRYPTION KEY MANAGEMENT</div>
+                                <small className="tech-font text-muted font-monospace text-uppercase" style={{ fontSize: '0.7rem' }}>// RECYCLE KEYS PERIODICALLY TO MAINTAIN SECURITY CLEARANCE</small>
                             </div>
                         </div>
-                        <form onSubmit={handleChangePassword} className="p-4">
+                        <form onSubmit={handleChangePassword} className="p-4 p-md-5">
                             <div className="d-flex flex-column gap-4">
-                                <PasswordField label="Current Password" value={current} onChange={setCurrent} placeholder="Enter current password" />
+                                <PasswordField label="CURRENT ENCRYPTION KEY" value={current} onChange={setCurrent} placeholder="ENTER CURRENT KEY" />
                                 <div>
-                                    <PasswordField label="New Password" value={newPw} onChange={setNewPw} placeholder="Enter new password" />
+                                    <PasswordField label="NEW ENCRYPTION KEY" value={newPw} onChange={setNewPw} placeholder="INITIATE NEW KEY" />
                                     {/* Strength bar */}
                                     {newPw && (
-                                        <div className="mt-2">
-                                            <div className="d-flex gap-1 mb-1">
+                                        <div className="mt-3">
+                                            <div className="d-flex gap-2 mb-2">
                                                 {[1, 2, 3, 4].map(i => (
-                                                    <div key={i} style={{ flex: 1, height: '4px', borderRadius: '2px', background: i <= strength.score ? strength.color : '#e2e8f0', transition: 'background 0.3s' }} />
+                                                    <div key={i} style={{ flex: 1, height: '4px', background: i <= strength.score ? strength.color : 'rgba(255,255,255,0.1)', transition: 'all 0.3s', boxShadow: i <= strength.score ? `0 0 5px ${strength.color}` : 'none' }} />
                                                 ))}
                                             </div>
-                                            <small style={{ color: strength.color, fontSize: '0.75rem', fontWeight: 600 }}>{strength.label}</small>
+                                            <small className="tech-font text-uppercase fw-bold pb-1 d-block" style={{ color: strength.color, fontSize: '0.75rem', letterSpacing: '0.1em' }}>&gt; INTEGRITY: {strength.label}</small>
                                         </div>
                                     )}
-                                    <div className="mt-2 d-flex flex-wrap gap-2">
+                                    <div className="mt-3 d-flex flex-wrap gap-3">
                                         {[
-                                            { rule: newPw.length >= 8, text: '8+ chars' },
-                                            { rule: /[A-Z]/.test(newPw), text: 'Uppercase' },
-                                            { rule: /[0-9]/.test(newPw), text: 'Number' },
-                                            { rule: /[@$!%*?&#]/.test(newPw), text: 'Special char' },
+                                            { rule: newPw.length >= 8, text: '8+ BYTES' },
+                                            { rule: /[A-Z]/.test(newPw), text: 'UPPERCASE_CHAR' },
+                                            { rule: /[0-9]/.test(newPw), text: 'NUMERIC_VAL' },
+                                            { rule: /[@$!%*?&#]/.test(newPw), text: 'SYMBOLIC_CHAR' },
                                         ].map((r, i) => (
-                                            <span key={i} className="d-flex align-items-center gap-1 fw-medium"
-                                                style={{ fontSize: '0.72rem', color: r.rule ? '#10b981' : '#94a3b8' }}>
-                                                <FaCheckCircle size={9} /> {r.text}
+                                            <span key={i} className="d-flex align-items-center gap-2 tech-font text-uppercase"
+                                                style={{ fontSize: '0.7rem', color: r.rule ? 'var(--neon-green)' : 'var(--text-muted)', letterSpacing: '0.1em' }}>
+                                                {r.rule ? <FaCheckCircle size={10} /> : <div style={{ width: '4px', height: '4px', background: 'var(--text-muted)', borderRadius: '50%' }} />}
+                                                <span style={{ opacity: r.rule ? 1 : 0.6 }}>{r.text}</span>
                                             </span>
                                         ))}
                                     </div>
                                 </div>
-                                <div>
-                                    <PasswordField label="Confirm New Password" value={confirm} onChange={setConfirm} placeholder="Repeat new password" />
+                                <div className="mt-2">
+                                    <PasswordField label="VERIFY NEW ENCRYPTION KEY" value={confirm} onChange={setConfirm} placeholder="REPEAT NEW KEY" />
                                     {confirm && (
-                                        <small className="mt-1 d-block" style={{ color: match ? '#10b981' : '#ef4444', fontSize: '0.75rem' }}>
-                                            {match ? '✓ Passwords match' : '✗ Passwords do not match'}
-                                        </small>
+                                        <div className="mt-2 d-flex align-items-center gap-2 tech-font text-uppercase" style={{ color: match ? 'var(--neon-green)' : 'var(--accent-red)', fontSize: '0.75rem', letterSpacing: '0.1em' }}>
+                                            <FaTerminal size={10} /> {match ? 'CHECKSUM VERIFIED' : 'CHECKSUM MISMATCH'}
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -183,57 +199,55 @@ const SecurityPage = () => {
                             <AnimatePresence>
                                 {pwDone && (
                                     <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                                        className="d-flex align-items-center gap-2 mt-4 p-3 rounded-3"
-                                        style={{ background: '#ecfdf5', border: '1px solid #6ee7b7' }}>
-                                        <FaCheckCircle style={{ color: '#10b981' }} size={14} />
-                                        <small className="fw-bold" style={{ color: '#065f46' }}>Password changed successfully!</small>
+                                        className="d-flex align-items-center gap-3 mt-4 p-3 border tech-font"
+                                        style={{ background: 'rgba(16,185,129,0.1)', borderColor: 'var(--neon-green) !important', boxShadow: '0 0 10px rgba(16,185,129,0.2)' }}>
+                                        <FaCheckCircle className="text-neon-green" size={16} />
+                                        <span className="fw-bold text-neon-green text-uppercase tracking-widest" style={{ fontSize: '0.8rem' }}>ENCRYPTION KEY OVERWRITTEN SUCCESSFULLY.</span>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
 
-                            <div className="mt-4 d-flex justify-content-end">
+                            <div className="mt-5 d-flex justify-content-end">
                                 <button type="submit" disabled={!canSave || saving}
-                                    className="btn fw-bold px-5 py-2"
+                                    className="btn fw-bold px-5 py-3 tech-font text-uppercase tracking-widest d-flex align-items-center gap-2 hover-scale transition-all"
                                     style={{
-                                        borderRadius: '10px',
-                                        background: canSave ? 'linear-gradient(135deg, #6366f1, #4f46e5)' : '#e2e8f0',
-                                        color: canSave ? 'white' : '#94a3b8',
-                                        border: 'none',
-                                        boxShadow: canSave ? '0 4px 14px rgba(99,102,241,0.3)' : 'none',
-                                        transition: 'all 0.2s',
-                                        fontSize: '0.88rem',
+                                        background: canSave ? 'rgba(170,0,255,0.2)' : 'rgba(255,255,255,0.05)',
+                                        color: canSave ? 'var(--primary-color)' : 'var(--text-muted)',
+                                        border: `1px solid ${canSave ? 'var(--primary-color)' : 'rgba(255,255,255,0.1)'}`,
+                                        boxShadow: canSave ? '0 0 15px rgba(170,0,255,0.3)' : 'none',
+                                        fontSize: '0.85rem'
                                     }}>
-                                    {saving ? <><span className="spinner-border spinner-border-sm me-2" />Saving…</> : 'Update Password'}
+                                    {saving ? <><span className="spinner-border spinner-border-sm" /> OVERWRITING...</> : <><FaKey size={14} /> COMMIT NEW KEY</>}
                                 </button>
                             </div>
                         </form>
                     </div>
 
                     {/* ── Privacy Data Summary ── */}
-                    <div className="bg-white rounded-4 border mb-4 overflow-hidden" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
-                        <div className="px-4 py-4 border-bottom d-flex align-items-center gap-3" style={{ background: '#f8fafc' }}>
-                            <FaDatabase size={14} style={{ color: '#6366f1' }} />
+                    <div className="glass-card mb-5 overflow-hidden border-secondary">
+                        <div className="px-4 py-4 border-bottom d-flex align-items-center gap-3" style={{ background: 'rgba(0,0,0,0.5)', borderColor: 'rgba(255,255,255,0.1) !important' }}>
+                            <FaDatabase size={16} className="text-secondary" />
                             <div>
-                                <div className="fw-bold text-dark" style={{ fontSize: '0.93rem' }}>Your Data &amp; Privacy</div>
-                                <small className="text-muted" style={{ fontSize: '0.78rem' }}>What Civic Connect collects and how it's used</small>
+                                <div className="fw-bold text-white tech-font text-uppercase tracking-widest" style={{ fontSize: '1rem' }}>DATA CLASSIFICATION & PROTOCOLS</div>
+                                <small className="tech-font text-muted font-monospace text-uppercase" style={{ fontSize: '0.7rem' }}>// HOW YOUR INTEL IS STORED AND PROCESSED</small>
                             </div>
                         </div>
-                        <div className="p-4">
+                        <div className="p-4 p-md-5">
                             {[
-                                { title: 'Profile Information', desc: 'Name, email, and address are used to identify your account and route complaints to the relevant authority.', icon: FaUserShield },
-                                { title: 'Complaint Data', desc: 'Reports and images you submit are shared with the relevant municipal authority to action. Your identity is linked to each complaint.', icon: FaInfoCircle },
-                                { title: 'AI Processing', desc: 'Your complaint text and images are processed by our AI models for severity scoring and fake-detection. No data is sent to third parties.', icon: FaShieldAlt },
-                                { title: 'Data Retention', desc: 'Your account and complaint data are retained while your account is active. Deletion requests result in anonymisation of complaint records.', icon: FaDatabase },
+                                { title: 'OPERATIVE INTEL', desc: 'Alias, datalink (email), and coordinates verify your clearance and route anomalies to the correct sector command.', icon: FaUserShield },
+                                { title: 'ANOMALY REPORTS', desc: 'Visual records and encrypted text submitted to authority terminals. Your digital signature remains attached during triage.', icon: FaInfoCircle },
+                                { title: 'NEURAL NET PROCESSING', desc: 'Submissions parsed by central AI for threat assessment and duplication scanning. Data is strictly internal.', icon: FaShieldAlt },
+                                { title: 'DATA PERSISTENCE', desc: 'Records held in deep archive until account termination. Post-termination, anomaly records are permanently stripped of identifying markers.', icon: FaDatabase },
                             ].map((item, i) => {
                                 const Icon = item.icon;
                                 return (
-                                    <div key={i} className="d-flex align-items-start gap-3 mb-3 pb-3 border-bottom" style={{ borderColor: i === 3 ? 'transparent' : '#f1f5f9' }}>
-                                        <div style={{ width: '32px', height: '32px', borderRadius: '9px', background: '#eef2ff', border: '1px solid #a5b4fc', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
-                                            <Icon size={13} style={{ color: '#6366f1' }} />
+                                    <div key={i} className="d-flex align-items-start gap-4 mb-4 pb-4 border-bottom" style={{ borderColor: i === 3 ? 'transparent' : 'rgba(255,255,255,0.1) !important', margin: i === 3 ? '0 0 -1rem 0' : '0' }}>
+                                        <div className="border d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '42px', height: '42px', background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1) !important', boxShadow: 'inset 0 0 10px rgba(0,0,0,0.8)' }}>
+                                            <Icon size={16} className="text-secondary" />
                                         </div>
                                         <div>
-                                            <div className="fw-semibold text-dark mb-1" style={{ fontSize: '0.87rem' }}>{item.title}</div>
-                                            <p className="text-muted mb-0" style={{ fontSize: '0.8rem', lineHeight: 1.6 }}>{item.desc}</p>
+                                            <div className="fw-bold text-secondary tech-font text-uppercase tracking-widest mb-2" style={{ fontSize: '0.8rem' }}>&gt; {item.title}</div>
+                                            <p className="text-white font-monospace mb-0" style={{ fontSize: '0.8rem', lineHeight: 1.6, opacity: 0.8 }}>{item.desc}</p>
                                         </div>
                                     </div>
                                 );
@@ -241,96 +255,100 @@ const SecurityPage = () => {
                         </div>
                     </div>
 
-                    {/* ── Session ── */}
-                    <div className="bg-white rounded-4 border mb-4 overflow-hidden" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
-                        <div className="px-4 py-4 border-bottom d-flex align-items-center gap-3" style={{ background: '#f8fafc' }}>
-                            <FaSignOutAlt size={14} style={{ color: '#6366f1' }} />
+                    {/* ── Active Session ── */}
+                    <div className="glass-card mb-5 overflow-hidden border-secondary">
+                        <div className="px-4 py-4 border-bottom d-flex align-items-center gap-3" style={{ background: 'rgba(0,0,0,0.5)', borderColor: 'rgba(255,255,255,0.1) !important' }}>
+                            <FaSignOutAlt size={16} className="text-neon-green" />
                             <div>
-                                <div className="fw-bold text-dark" style={{ fontSize: '0.93rem' }}>Active Session</div>
-                                <small className="text-muted" style={{ fontSize: '0.78rem' }}>You're currently logged in on this device</small>
+                                <div className="fw-bold text-white tech-font text-uppercase tracking-widest" style={{ fontSize: '1rem' }}>COM-LINK STATUS</div>
+                                <small className="tech-font text-muted font-monospace text-uppercase" style={{ fontSize: '0.7rem' }}>// ACTIVE CONNECTIONS TO CENTRAL SERVER</small>
                             </div>
                         </div>
-                        <div className="p-4">
-                            <div className="d-flex align-items-center justify-content-between p-3 rounded-3 border" style={{ background: '#f8fafc' }}>
-                                <div className="d-flex align-items-center gap-3">
-                                    <div className="d-flex align-items-center justify-content-center"
-                                        style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#ecfdf5', border: '1px solid #6ee7b7' }}>
-                                        <FaCheckCircle size={14} style={{ color: '#10b981' }} />
+                        <div className="p-4 p-md-5">
+                            <div className="d-flex align-items-center justify-content-between p-4 border" style={{ background: 'rgba(16,185,129,0.05)', borderColor: 'rgba(16,185,129,0.2) !important', boxShadow: 'inset 0 0 20px rgba(16,185,129,0.05)' }}>
+                                <div className="d-flex align-items-center gap-4">
+                                    <div className="d-flex align-items-center justify-content-center border"
+                                        style={{ width: '48px', height: '48px', background: 'rgba(16,185,129,0.1)', borderColor: 'var(--neon-green) !important', boxShadow: '0 0 10px rgba(16,185,129,0.2)' }}>
+                                        <FaCheckCircle size={18} className="text-neon-green" />
                                     </div>
                                     <div>
-                                        <div className="fw-semibold text-dark" style={{ fontSize: '0.87rem' }}>Current session</div>
-                                        <small className="text-muted" style={{ fontSize: '0.75rem' }}>
-                                            Logged in as <strong>{user.userEmail}</strong> &nbsp;·&nbsp; {new Date().toLocaleDateString('en-US', { dateStyle: 'long' })}
+                                        <div className="fw-bold text-neon-green tech-font text-uppercase tracking-widest mb-1" style={{ fontSize: '0.85rem' }}>LINK: SECURE / ACTIVE</div>
+                                        <small className="font-monospace text-muted d-block" style={{ fontSize: '0.75rem' }}>
+                                            OPERATIVE: <span className="text-white">{user.userEmail}</span>
+                                        </small>
+                                        <small className="font-monospace text-secondary d-block mt-1" style={{ fontSize: '0.7rem' }}>
+                                            ESTABLISHED: {new Date().toLocaleDateString('en-US', { dateStyle: 'long' }).toUpperCase()}
                                         </small>
                                     </div>
                                 </div>
                                 <button onClick={handleLogout}
-                                    className="btn btn-sm fw-medium"
-                                    style={{ borderRadius: '8px', background: '#fef2f2', color: '#ef4444', border: '1px solid #fca5a5', fontSize: '0.8rem', padding: '6px 14px' }}
-                                    onMouseEnter={e => e.currentTarget.style.background = '#fee2e2'}
-                                    onMouseLeave={e => e.currentTarget.style.background = '#fef2f2'}>
-                                    Sign out
+                                    className="btn fw-bold tech-font text-uppercase px-4 py-2 hover-scale transition-all d-flex align-items-center gap-2"
+                                    style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid var(--accent-red)', color: 'var(--accent-red)', fontSize: '0.8rem', letterSpacing: '0.1em', boxShadow: '0 0 10px rgba(239,68,68,0.2)' }}>
+                                    <FaSignOutAlt size={12} /> SEVER LINK
                                 </button>
                             </div>
                         </div>
                     </div>
 
                     {/* ── Danger Zone ── */}
-                    <div className="bg-white rounded-4 border overflow-hidden" style={{ borderColor: '#fca5a5', boxShadow: '0 1px 4px rgba(239,68,68,0.08)' }}>
-                        <div className="px-4 py-4 border-bottom d-flex align-items-center gap-3" style={{ background: '#fef2f2', borderColor: '#fca5a5' }}>
-                            <FaExclamationTriangle size={14} style={{ color: '#ef4444' }} />
+                    <div className="glass-card overflow-hidden" style={{ borderColor: 'var(--accent-red)', boxShadow: '0 0 20px rgba(239,68,68,0.15)' }}>
+                        <div className="px-4 py-4 border-bottom d-flex align-items-center gap-3" style={{ background: 'rgba(239,68,68,0.1)', borderColor: 'rgba(239,68,68,0.3) !important' }}>
+                            <FaExclamationTriangle size={18} className="text-accent-red" />
                             <div>
-                                <div className="fw-bold" style={{ color: '#991b1b', fontSize: '0.93rem' }}>Danger Zone</div>
-                                <small style={{ color: '#b91c1c', fontSize: '0.78rem' }}>These actions are permanent and cannot be undone</small>
+                                <div className="fw-bold tech-font text-uppercase tracking-widest blink-slow" style={{ color: 'var(--accent-red)', fontSize: '1rem' }}>RESTRICTED SECTOR [ DANGER ]</div>
+                                <small className="font-monospace text-uppercase" style={{ color: '#fca5a5', fontSize: '0.7rem' }}>// CRITICAL ACTIONS ARE IRREVERSIBLE</small>
                             </div>
                         </div>
-                        <div className="p-4">
+                        <div className="p-4 p-md-5">
                             <div className="d-flex align-items-start justify-content-between gap-4 flex-wrap">
                                 <div>
-                                    <div className="fw-semibold text-dark mb-1" style={{ fontSize: '0.88rem' }}>Delete Account</div>
-                                    <small className="text-muted" style={{ fontSize: '0.78rem' }}>Permanently delete your account. All personal data will be anonymised and complaints will be retained for civic records.</small>
+                                    <div className="fw-bold text-white tech-font text-uppercase tracking-widest mb-2" style={{ fontSize: '0.9rem' }}>&gt; PURGE OPERATIVE DATA</div>
+                                    <p className="text-muted font-monospace mb-0" style={{ fontSize: '0.8rem', lineHeight: 1.6, maxWidth: '400px' }}>
+                                        Complete erasure of profile from Central Servers. Anomalies filed will be decoupled and permanently grouped as "ARCHIVED_ORPHAN". This data cannot be recovered.
+                                    </p>
                                 </div>
                                 <button
                                     onClick={() => setShowDelete(true)}
-                                    className="btn btn-sm fw-bold flex-shrink-0"
-                                    style={{ borderRadius: '8px', background: '#fef2f2', color: '#ef4444', border: '1.5px solid #fca5a5', fontSize: '0.8rem', padding: '7px 16px', whiteSpace: 'nowrap' }}>
-                                    Delete Account
+                                    className="btn fw-bold flex-shrink-0 tech-font text-uppercase tracking-widest px-4 py-3 hover-scale transition-all"
+                                    style={{ background: 'transparent', color: 'var(--accent-red)', border: '1px solid var(--accent-red)', fontSize: '0.85rem' }}>
+                                    INITIATE PURGE
                                 </button>
                             </div>
 
                             <AnimatePresence>
                                 {showDelete && (
                                     <motion.div
-                                        initial={{ opacity: 0, y: -8 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -8 }}
-                                        className="mt-4 p-4 rounded-3 border"
-                                        style={{ background: '#fef2f2', borderColor: '#fca5a5' }}
+                                        initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                                        animate={{ opacity: 1, height: 'auto', marginTop: '2rem' }}
+                                        exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                                        className="overflow-hidden"
                                     >
-                                        <p className="fw-semibold text-danger mb-2" style={{ fontSize: '0.87rem' }}>
-                                            Type <strong>DELETE</strong> to confirm account deletion
-                                        </p>
-                                        <input
-                                            type="text"
-                                            className="form-control shadow-none mb-3"
-                                            placeholder='Type "DELETE"'
-                                            value={deleteInput}
-                                            onChange={e => setDeleteInput(e.target.value)}
-                                            style={{ borderRadius: '8px', border: '1.5px solid #fca5a5', fontSize: '0.87rem' }}
-                                        />
-                                        <div className="d-flex gap-2">
-                                            <button
-                                                disabled={deleteInput !== 'DELETE'}
-                                                className="btn btn-sm fw-bold px-4"
-                                                style={{ borderRadius: '8px', background: deleteInput === 'DELETE' ? '#ef4444' : '#e2e8f0', color: deleteInput === 'DELETE' ? 'white' : '#94a3b8', border: 'none', fontSize: '0.83rem' }}
-                                                onClick={() => notify('info', 'Account deletion is not available yet — contact support.')}>
-                                                Confirm Delete
-                                            </button>
-                                            <button onClick={() => { setShowDelete(false); setDeleteInput(''); }}
-                                                className="btn btn-sm fw-medium px-4"
-                                                style={{ borderRadius: '8px', background: 'white', border: '1px solid #e2e8f0', fontSize: '0.83rem' }}>
-                                                Cancel
-                                            </button>
+                                        <div className="p-4 border" style={{ background: 'rgba(0,0,0,0.8)', borderColor: 'var(--accent-red) !important', boxShadow: 'inset 0 0 20px rgba(239,68,68,0.1)' }}>
+                                            <p className="fw-bold text-white tech-font text-uppercase tracking-widest mb-3 d-flex align-items-center gap-2" style={{ fontSize: '0.85rem' }}>
+                                                <FaTerminal size={12} className="text-accent-red" /> TYPE "<span className="text-accent-red">PURGE</span>" TO OVERRIDE SAFETY PROTOCOL
+                                            </p>
+                                            <input
+                                                type="text"
+                                                className="form-control text-uppercase font-monospace mb-4"
+                                                placeholder='AWAITING COMMAND...'
+                                                value={deleteInput}
+                                                onChange={e => setDeleteInput(e.target.value.toUpperCase())}
+                                                style={{ background: 'rgba(239,68,68,0.05)', color: 'var(--accent-red)', border: '1px solid rgba(239,68,68,0.4)', fontSize: '0.9rem', padding: '12px 16px', letterSpacing: '0.2em' }}
+                                            />
+                                            <div className="d-flex gap-3">
+                                                <button
+                                                    disabled={deleteInput !== 'PURGE'}
+                                                    className="btn fw-bold px-5 py-2 tech-font text-uppercase tracking-widest transition-all"
+                                                    style={{ background: deleteInput === 'PURGE' ? 'var(--accent-red)' : 'rgba(255,255,255,0.05)', color: deleteInput === 'PURGE' ? 'white' : 'var(--text-muted)', border: 'none', fontSize: '0.8rem', boxShadow: deleteInput === 'PURGE' ? '0 0 15px rgba(239,68,68,0.4)' : 'none' }}
+                                                    onClick={() => notify('info', 'PURGE PROTOCOL UNAVAILABLE — CONTACT SYSTEM ADMIN.')}>
+                                                    EXECUTE
+                                                </button>
+                                                <button onClick={() => { setShowDelete(false); setDeleteInput(''); }}
+                                                    className="btn fw-bold px-5 py-2 tech-font text-uppercase tracking-widest hover-scale"
+                                                    style={{ background: 'transparent', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.2)', fontSize: '0.8rem' }}>
+                                                    ABORT
+                                                </button>
+                                            </div>
                                         </div>
                                     </motion.div>
                                 )}

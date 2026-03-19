@@ -2,75 +2,81 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     FaTimes, FaMapMarkerAlt, FaFilePdf, FaCheckCircle, FaExclamationCircle,
-    FaRobot, FaEdit, FaSave, FaBan, FaUserTie, FaUser, FaHistory,
+    FaRobot, FaEdit, FaSave, FaUserTie, FaUser, FaHistory,
     FaPencilAlt, FaRedo, FaCheck, FaPlus, FaExchangeAlt, FaCalendarAlt,
-    FaCommentAlt, FaTag
+    FaCommentAlt, FaTag, FaTerminal, FaShieldAlt, FaExclamationTriangle
 } from 'react-icons/fa';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import api from '../api/axios';
 import { notify } from '../utils/notify';
 
-/* ─── Status config ──────────────────────────────────────────────────────────── */
+/* ─── Dark theme status configs ─── */
 const STATUS_META = {
-    Resolved: { color: '#10b981', bg: '#ecfdf5', border: '#6ee7b7' },
-    Closed: { color: '#10b981', bg: '#ecfdf5', border: '#6ee7b7' },
-    Pending: { color: '#f59e0b', bg: '#fffbeb', border: '#fcd34d' },
-    'In Progress': { color: '#3b82f6', bg: '#eff6ff', border: '#93c5fd' },
-    Rejected: { color: '#ef4444', bg: '#fef2f2', border: '#fca5a5' },
+    Resolved:    { color: '#a3e635', bg: 'rgba(163,230,53,0.08)', border: 'rgba(163,230,53,0.3)' },
+    Closed:      { color: '#a3e635', bg: 'rgba(163,230,53,0.08)', border: 'rgba(163,230,53,0.3)' },
+    Pending:     { color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.3)' },
+    'In Progress':{ color: '#00f0ff', bg: 'rgba(0,240,255,0.08)', border: 'rgba(0,240,255,0.3)' },
+    Rejected:    { color: '#ef4444', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.3)' },
 };
-const getStatusMeta = (s) => STATUS_META[s] || { color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb' };
+const getStatusMeta = (s) => STATUS_META[s] || { color: '#6b7280', bg: 'rgba(107,114,128,0.08)', border: 'rgba(107,114,128,0.3)' };
 
-/* ─── Activity Log helpers ───────────────────────────────────────────────────── */
+const PRIORITY_COLOR = { Emergency: '#ef4444', High: '#f97316', Medium: '#f59e0b', Low: '#a3e635' };
+
+/* ─── Activity log helpers ─── */
 const logActionMeta = (action) => {
     const a = action?.toLowerCase() || '';
-    if (a.includes('filed')) return { icon: FaPlus, color: '#6366f1', bg: '#eef2ff' };
-    if (a.includes('edited')) return { icon: FaPencilAlt, color: '#f59e0b', bg: '#fffbeb' };
-    if (a.includes('status')) return { icon: FaExchangeAlt, color: '#3b82f6', bg: '#eff6ff' };
-    if (a.includes('reopened')) return { icon: FaRedo, color: '#ef4444', bg: '#fef2f2' };
-    if (a.includes('accepted')) return { icon: FaCheck, color: '#10b981', bg: '#ecfdf5' };
-    return { icon: FaHistory, color: '#6b7280', bg: '#f9fafb' };
+    if (a.includes('filed'))    return { icon: FaPlus,        color: '#aa00ff' };
+    if (a.includes('edited'))   return { icon: FaPencilAlt,   color: '#f59e0b' };
+    if (a.includes('status'))   return { icon: FaExchangeAlt, color: '#00f0ff' };
+    if (a.includes('reopened')) return { icon: FaRedo,        color: '#ef4444' };
+    if (a.includes('accepted')) return { icon: FaCheck,       color: '#a3e635' };
+    return { icon: FaHistory, color: '#6b7280' };
 };
 
 const ActivityLog = ({ log = [] }) => {
-    if (!log || log.length === 0) {
-        return (
-            <div className="text-center py-4">
-                <FaHistory size={28} style={{ color: '#cbd5e1', marginBottom: '8px' }} />
-                <p className="text-muted small mb-0">No activity recorded yet.</p>
-            </div>
-        );
-    }
+    if (!log || log.length === 0) return (
+        <div style={{ padding: '32px', textAlign: 'center', color: '#4b5563', fontFamily: "'Share Tech Mono',monospace", fontSize: '11px', letterSpacing: '0.1em' }}>
+            <FaHistory size={24} style={{ color: '#374151', marginBottom: '8px', display: 'block', margin: '0 auto 8px' }} />
+            NO ACTIVITY LOGGED
+        </div>
+    );
     return (
-        <div className="position-relative ps-4" style={{ borderLeft: '2px solid #e2e8f0' }}>
+        <div style={{ paddingLeft: '20px', borderLeft: '1px solid rgba(170,0,255,0.2)' }}>
             {[...log].reverse().map((entry, idx) => {
-                const { icon: Icon, color, bg } = logActionMeta(entry.action);
+                const { icon: Icon, color } = logActionMeta(entry.action);
                 return (
-                    <div key={idx} className="mb-4 position-relative">
-                        <span
-                            className="position-absolute rounded-circle d-flex align-items-center justify-content-center"
-                            style={{ left: '-21px', top: '10px', width: '14px', height: '14px', background: bg, border: `2px solid ${color}` }}
-                        >
+                    <div key={idx} style={{ marginBottom: '16px', position: 'relative' }}>
+                        <span style={{
+                            position: 'absolute', left: '-27px', top: '8px',
+                            width: '14px', height: '14px', borderRadius: '50%',
+                            background: `rgba(0,0,0,0.8)`, border: `1.5px solid ${color}`,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            boxShadow: `0 0 6px ${color}44`,
+                        }}>
                             <Icon size={6} style={{ color }} />
                         </span>
-                        <div className="bg-white rounded-3 border p-3 shadow-sm">
-                            <div className="d-flex justify-content-between align-items-start flex-wrap gap-1 mb-1">
-                                <span className="fw-bold small" style={{ color }}>{entry.action}</span>
-                                <span className="text-muted" style={{ fontSize: '0.7rem' }}>
+                        <div style={{
+                            background: 'rgba(255,255,255,0.03)',
+                            border: '1px solid rgba(255,255,255,0.06)',
+                            borderRadius: '6px', padding: '10px 14px',
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px', marginBottom: '4px' }}>
+                                <span style={{ color, fontWeight: 'bold', fontSize: '11px', fontFamily: "'Share Tech Mono',monospace", letterSpacing: '0.1em' }}>{entry.action}</span>
+                                <span style={{ color: '#4b5563', fontSize: '9px', fontFamily: "'Share Tech Mono',monospace" }}>
                                     {new Date(entry.timestamp).toLocaleString()}
                                 </span>
                             </div>
-                            <div className="d-flex align-items-center gap-2">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 {entry.performedByRole === 'Authority'
-                                    ? <FaUserTie size={11} className="text-primary" />
-                                    : <FaUser size={11} className="text-secondary" />
-                                }
-                                <small className="text-muted" style={{ fontSize: '0.75rem' }}>
+                                    ? <FaUserTie size={10} style={{ color: '#aa00ff' }} />
+                                    : <FaUser size={10} style={{ color: '#a3e635' }} />}
+                                <small style={{ color: '#6b7280', fontSize: '10px', fontFamily: "'Rajdhani',sans-serif" }}>
                                     {entry.performedByName || 'Unknown'} · {entry.performedByRole}
                                 </small>
                             </div>
                             {entry.note && (
-                                <p className="mb-0 mt-2 text-dark fst-italic" style={{ fontSize: '0.78rem' }}>
+                                <p style={{ margin: '6px 0 0', color: '#9ca3af', fontSize: '11px', fontFamily: "'Rajdhani',sans-serif", fontStyle: 'italic', lineHeight: 1.5 }}>
                                     "{entry.note}"
                                 </p>
                             )}
@@ -82,7 +88,7 @@ const ActivityLog = ({ log = [] }) => {
     );
 };
 
-/* ─── Main Modal ─────────────────────────────────────────────────────────────── */
+/* ─── Main Modal ─── */
 const ComplaintDetailsModal = ({ isOpen, onClose, complaint, onUpdate }) => {
     const [feedbackMsg, setFeedbackMsg] = useState('');
     const [submitting, setSubmitting] = useState(false);
@@ -95,90 +101,50 @@ const ComplaintDetailsModal = ({ isOpen, onClose, complaint, onUpdate }) => {
 
     const currentUser = JSON.parse(localStorage.getItem('user') || 'null');
     const isOwner = currentUser && complaint && (
-        // Populated: complaintUser is an object with _id
-        (complaint.complaintUser && complaint.complaintUser._id === currentUser._id) ||
-        // Unpopulated: complaintUser is the raw ObjectId (object or string) — use toString()
-        (complaint.complaintUser && complaint.complaintUser.toString() === currentUser._id) ||
-        // Direct string match (fallback)
+        (complaint.complaintUser?._id === currentUser._id) ||
+        (complaint.complaintUser?.toString() === currentUser._id) ||
         complaint.complaintUser === currentUser._id
     );
     const canEdit = isOwner && !['Resolved', 'Closed'].includes(complaint.complaintStatus);
 
-    const getDescription = (desc) => {
-        if (!desc) return '';
-        return desc.replace(/^\*\*(.*?)\*\*\n?/, '').trim();
-    };
-
+    const getDescription = (desc) => desc ? desc.replace(/^\*\*(.*?)\*\*\n?/, '').trim() : '';
     const getTitle = (desc) => {
         if (!desc) return complaint.complaintType || 'Issue Report';
         const m = desc.match(/^\*\*(.*?)\*\*/);
         return m ? m[1] : complaint.complaintType || 'Issue Report';
     };
 
-    const startEdit = () => {
-        setEditedDescription(getDescription(complaint.complaintDescription));
-        setIsEditing(true);
-    };
-
+    const startEdit = () => { setEditedDescription(getDescription(complaint.complaintDescription)); setIsEditing(true); };
     const saveEdit = async () => {
         if (!editedDescription.trim()) { notify('warning', 'Description cannot be empty.'); return; }
         setSavingEdit(true);
         try {
             await api.put(`/complaint/edit/${complaint.complaintId || complaint._id}`, { description: editedDescription });
-            notify('success', 'Complaint updated successfully!');
+            notify('success', 'UPLINK UPDATED');
             setIsEditing(false);
             if (onUpdate) onUpdate();
-        } catch (err) {
-            notify('error', err?.response?.data?.message || 'Failed to update complaint');
-        } finally {
-            setSavingEdit(false);
-        }
+        } catch (err) { notify('error', err?.response?.data?.message || 'UPDATE FAILED'); }
+        finally { setSavingEdit(false); }
     };
 
     const downloadExpenseReport = () => {
         const doc = new jsPDF();
         const pageW = doc.internal.pageSize.getWidth();
         const now = new Date();
-
-        /* ── Header banner ── */
-        doc.setFillColor(99, 102, 241);           // indigo
-        doc.rect(0, 0, pageW, 28, 'F');
-        doc.setFontSize(16); doc.setTextColor(255, 255, 255); doc.setFont(undefined, 'bold');
-        doc.text('Civic Connect', 14, 11);
-        doc.setFontSize(10); doc.setFont(undefined, 'normal');
-        doc.text('Official Complaint & Expense Report', 14, 19);
+        doc.setFillColor(10, 10, 16); doc.rect(0, 0, pageW, 28, 'F');
+        doc.setFontSize(16); doc.setTextColor(170, 0, 255); doc.setFont(undefined, 'bold');
+        doc.text('CIVIC CONNECT', 14, 11);
+        doc.setFontSize(10); doc.setTextColor(200, 200, 200); doc.setFont(undefined, 'normal');
+        doc.text('OFFICIAL COMPLAINT & EXPENSE REPORT', 14, 19);
         doc.setFontSize(9);
-        doc.text(`Generated: ${now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}  ${now.toLocaleTimeString()}`, pageW - 14, 19, { align: 'right' });
-
-        /* ── Section 1: Complaint Details ── */
+        doc.text(`GENERATED: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`, pageW - 14, 19, { align: 'right' });
+        const status = complaint.complaintStatus || '—';
+        const priority = complaint.complaintPriority || '—';
+        const filedDate = complaint.createdAt ? new Date(complaint.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
         doc.setTextColor(40, 40, 40); doc.setFontSize(12); doc.setFont(undefined, 'bold');
         doc.text('1. Complaint Details', 14, 40);
         doc.setDrawColor(220, 220, 220); doc.line(14, 43, pageW - 14, 43);
-
-        const status = complaint.complaintStatus || '—';
-        const priority = complaint.complaintPriority || '—';
-        const filedDate = complaint.createdAt
-            ? new Date(complaint.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
-            : '—';
-        const aiScore = complaint.aiConfidenceScore != null ? `${complaint.aiConfidenceScore}%` : '—';
-
-        autoTable(doc, {
-            startY: 47,
-            theme: 'grid',
-            styles: { fontSize: 9, cellPadding: 3 },
-            columnStyles: { 0: { fontStyle: 'bold', cellWidth: 48, fillColor: [245, 247, 250] } },
-            body: [
-                ['Complaint ID', complaint.complaintId || complaint._id || '—'],
-                ['Issue Type', complaint.complaintType || '—'],
-                ['Priority', priority],
-                ['Status', status],
-                ['Location', complaint.complaintLocation || '—'],
-                ['Date Filed', filedDate],
-                ['AI Confidence', aiScore],
-            ],
-        });
-
-        /* ── Description (multi-line) ── */
+        autoTable(doc, { startY: 47, theme: 'grid', styles: { fontSize: 9, cellPadding: 3 }, columnStyles: { 0: { fontStyle: 'bold', cellWidth: 48, fillColor: [245, 247, 250] } }, body: [['Complaint ID', complaint.complaintId || complaint._id || '—'], ['Issue Type', complaint.complaintType || '—'], ['Priority', priority], ['Status', status], ['Location', complaint.complaintLocation || '—'], ['Date Filed', filedDate]] });
         const afterTable = doc.lastAutoTable.finalY + 6;
         doc.setFontSize(9); doc.setFont(undefined, 'bold'); doc.setTextColor(40, 40, 40);
         doc.text('Description:', 14, afterTable);
@@ -186,116 +152,64 @@ const ComplaintDetailsModal = ({ isOpen, onClose, complaint, onUpdate }) => {
         const desc = complaint.complaintDescription || 'No description provided.';
         const descLines = doc.splitTextToSize(desc, pageW - 28);
         doc.text(descLines, 14, afterTable + 6);
-
-        /* ── Section 2: Official Notes ── */
         let notesStartY = afterTable + 6 + descLines.length * 5 + 12;
         let notesLines = [];
         if (complaint.complaintNotes) {
             doc.setFontSize(12); doc.setFont(undefined, 'bold'); doc.setTextColor(40, 40, 40);
             doc.text('2. Official Notes', 14, notesStartY);
             doc.setDrawColor(220, 220, 220); doc.line(14, notesStartY + 3, pageW - 14, notesStartY + 3);
-
             doc.setFontSize(9); doc.setFont(undefined, 'normal');
             notesLines = doc.splitTextToSize(complaint.complaintNotes, pageW - 28);
             doc.text(notesLines, 14, notesStartY + 10);
         }
-
-        /* ── Section 3: Expense Breakdown ── */
-        const expenseStartY = complaint.complaintNotes
-            ? notesStartY + 10 + notesLines.length * 5 + 12
-            : afterTable + 6 + descLines.length * 5 + 12;
-
+        const expenseStartY = complaint.complaintNotes ? notesStartY + 10 + notesLines.length * 5 + 12 : afterTable + 6 + descLines.length * 5 + 12;
         doc.setFontSize(12); doc.setFont(undefined, 'bold'); doc.setTextColor(40, 40, 40);
         doc.text(complaint.complaintNotes ? '3. Expense Breakdown' : '2. Expense Breakdown', 14, expenseStartY);
         doc.setDrawColor(220, 220, 220); doc.line(14, expenseStartY + 3, pageW - 14, expenseStartY + 3);
-
         if (complaint.expenses?.length > 0) {
-            const tableData = complaint.expenses.map((e, i) => [i + 1, e.item, `Rs. ${Number(e.cost).toLocaleString('en-IN')}`]);
             const total = complaint.expenses.reduce((acc, e) => acc + Number(e.cost), 0);
-            autoTable(doc, {
-                startY: expenseStartY + 8,
-                head: [['#', 'Item / Description', 'Cost']],
-                body: tableData,
-                foot: [['', 'Total', `Rs. ${total.toLocaleString('en-IN')}`]],
-                theme: 'striped',
-                headStyles: { fillColor: [99, 102, 241], textColor: 255, fontStyle: 'bold', fontSize: 9 },
-                footStyles: { fillColor: [240, 242, 255], textColor: [40, 40, 40], fontStyle: 'bold', fontSize: 9 },
-                styles: { fontSize: 9, cellPadding: 3 },
-                columnStyles: { 0: { cellWidth: 12 }, 2: { halign: 'right', cellWidth: 36 } },
-            });
+            autoTable(doc, { startY: expenseStartY + 8, head: [['#', 'Item', 'Cost']], body: complaint.expenses.map((e, i) => [i + 1, e.item, `Rs. ${Number(e.cost).toLocaleString('en-IN')}`]), foot: [['', 'Total', `Rs. ${total.toLocaleString('en-IN')}`]], theme: 'striped', headStyles: { fillColor: [90, 0, 180], textColor: 255, fontStyle: 'bold', fontSize: 9 }, footStyles: { fillColor: [240, 242, 255], textColor: [40, 40, 40], fontStyle: 'bold', fontSize: 9 }, styles: { fontSize: 9, cellPadding: 3 }, columnStyles: { 0: { cellWidth: 12 }, 2: { halign: 'right', cellWidth: 36 } } });
         } else {
             doc.setFontSize(9); doc.setFont(undefined, 'normal'); doc.setTextColor(120);
-            doc.text('No expenses recorded for this resolution.', 14, expenseStartY + 14);
+            doc.text('No expenses recorded.', 14, expenseStartY + 14);
         }
-
-        /* ── Signature block (last page, bottom-right) ── */
-        const authorityUser = JSON.parse(localStorage.getItem('user') || '{}');
-        const authorityName = authorityUser.userName || 'Authorised Officer';
-        const authorityDept = authorityUser.userDepartment || 'Civic Authority';
-
-        // Go to last page
-        doc.setPage(doc.internal.getNumberOfPages());
-        const pageH = doc.internal.pageSize.getHeight();
-        const sigRight = pageW - 14;
-        const sigY = pageH - 38;
-
-        doc.setDrawColor(180, 180, 180);
-        doc.line(sigRight - 60, sigY, sigRight, sigY);           // signature line
-        doc.setFontSize(8); doc.setTextColor(120); doc.setFont(undefined, 'normal');
-        doc.text('Authorised Signatory', sigRight, sigY + 5, { align: 'right' });
-        doc.setFontSize(9); doc.setFont(undefined, 'bold'); doc.setTextColor(40, 40, 40);
-        doc.text(authorityName, sigRight, sigY + 11, { align: 'right' });
-        doc.setFontSize(8); doc.setFont(undefined, 'normal'); doc.setTextColor(100);
-        doc.text(authorityDept, sigRight, sigY + 17, { align: 'right' });
-        doc.text(`Date: ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`, sigRight, sigY + 23, { align: 'right' });
-
-        /* ── Footer ── */
         const pageCount = doc.internal.getNumberOfPages();
         for (let p = 1; p <= pageCount; p++) {
             doc.setPage(p);
             doc.setFontSize(8); doc.setTextColor(160);
-            doc.text(`Page ${p} of ${pageCount}  |  Civic Connect – Confidential`, pageW / 2, pageH - 8, { align: 'center' });
+            doc.text(`Page ${p} of ${pageCount}  |  Civic Connect – Confidential`, pageW / 2, doc.internal.pageSize.getHeight() - 8, { align: 'center' });
         }
-
         doc.save(`CivicConnect_Report_${complaint.complaintId || 'Issue'}.pdf`);
     };
 
-
     const submitFeedback = async (action) => {
-        if (action === 'Reopen' && !feedbackMsg.trim()) {
-            notify('warning', 'Please provide a reason to reopen the issue.'); return;
-        }
+        if (action === 'Reopen' && !feedbackMsg.trim()) { notify('warning', 'PROVIDE REASON TO REOPEN'); return; }
         setSubmitting(true);
         try {
-            await api.post(`/complaint/feedback/${complaint.complaintId || complaint._id}`, {
-                message: action === 'Accept' ? (feedbackMsg || 'Resolution accepted by citizen.') : feedbackMsg,
-                action
-            });
-            notify('success', action === 'Accept' ? 'Resolution accepted' : 'Issue reopened');
+            await api.post(`/complaint/feedback/${complaint.complaintId || complaint._id}`, { message: action === 'Accept' ? (feedbackMsg || 'Resolution accepted.') : feedbackMsg, action });
+            notify('success', action === 'Accept' ? 'RESOLUTION ACCEPTED' : 'ISSUE REOPENED');
             if (onUpdate) onUpdate();
             setFeedbackMsg('');
             if (onClose) onClose();
-        } catch (err) {
-            notify('error', 'Failed to send feedback');
-        } finally {
-            setSubmitting(false);
-        }
+        } catch (err) { notify('error', 'FEEDBACK TRANSMISSION FAILED'); }
+        finally { setSubmitting(false); }
     };
 
     const sm = getStatusMeta(complaint.complaintStatus);
     const totalExpense = (complaint.expenses || []).reduce((s, e) => s + Number(e.cost), 0);
     const TABS = [
-        { id: 'details', label: 'Details' },
-        { id: 'activity', label: `Activity${complaint.activityLog?.length ? ` (${complaint.activityLog.length})` : ''}` },
-        { id: 'feedback', label: 'Feedback' },
+        { id: 'details', label: 'DETAILS' },
+        { id: 'activity', label: `LOGS${complaint.activityLog?.length ? ` (${complaint.activityLog.length})` : ''}` },
+        { id: 'feedback', label: 'FEEDBACK' },
     ];
+
+    const DARK = { bg: '#09090b', surface: 'rgba(15,15,20,0.98)', panel: 'rgba(255,255,255,0.03)', border: 'rgba(255,255,255,0.07)', textMain: '#f0f0f5', textMuted: '#6b7280', mono: "'Share Tech Mono',monospace" };
 
     return (
         <AnimatePresence>
             {isOpen && (
                 <div
-                    className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
-                    style={{ background: 'rgba(15,23,42,0.65)', backdropFilter: 'blur(6px)', zIndex: 9999 }}
+                    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     onClick={e => e.target === e.currentTarget && onClose()}
                 >
                     <motion.div
@@ -304,50 +218,47 @@ const ComplaintDetailsModal = ({ isOpen, onClose, complaint, onUpdate }) => {
                         exit={{ opacity: 0, y: 16, scale: 0.97 }}
                         transition={{ type: 'spring', stiffness: 320, damping: 30 }}
                         style={{
-                            width: '100vw', maxWidth: '100vw',
-                            height: '100vh', borderRadius: '0',
-                            overflow: 'hidden', background: 'white',
-                            display: 'flex', flexDirection: 'column'
+                            width: '100vw', maxWidth: '100vw', height: '100vh',
+                            borderRadius: 0, overflow: 'hidden',
+                            background: DARK.surface,
+                            display: 'flex', flexDirection: 'column',
+                            border: 'none',
                         }}
                     >
                         {/* ── Header ── */}
-                        <div
-                            className="px-5 py-4 d-flex justify-content-between align-items-start border-bottom flex-shrink-0"
-                            style={{ background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)' }}
-                        >
-                            <div className="flex-grow-1 me-4">
-                                <div className="d-flex align-items-center gap-2 flex-wrap mb-1">
-                                    <h5 className="fw-bold text-dark mb-0">{getTitle(complaint.complaintDescription)}</h5>
+                        <div style={{
+                            padding: '16px 24px',
+                            background: 'rgba(9,9,11,0.95)',
+                            borderBottom: '1px solid rgba(170,0,255,0.2)',
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                            flexShrink: 0,
+                        }}>
+                            <div style={{ flex: 1, marginRight: '16px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '6px' }}>
+                                    <FaTerminal size={14} style={{ color: '#aa00ff' }} />
+                                    <h5 style={{ margin: 0, color: '#fff', fontFamily: DARK.mono, fontWeight: 'bold', fontSize: '1rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                                        {getTitle(complaint.complaintDescription)}
+                                    </h5>
                                     {complaint.isEdited && (
-                                        <span className="badge d-flex align-items-center gap-1" style={{ background: '#fff3cd', color: '#92400e', border: '1px solid #fcd34d', fontSize: '0.65rem', padding: '2px 7px', borderRadius: '20px' }}>
-                                            <FaPencilAlt size={7} /> Edited
+                                        <span style={{ background: 'rgba(245,158,11,0.1)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '3px', fontSize: '9px', padding: '1px 6px', fontFamily: DARK.mono, letterSpacing: '0.1em' }}>
+                                            EDITED
                                         </span>
                                     )}
-                                    <span
-                                        className="badge rounded-pill fw-medium px-3 py-1"
-                                        style={{ background: sm.bg, color: sm.color, border: `1px solid ${sm.border}`, fontSize: '0.75rem' }}
-                                    >
+                                    <span style={{ background: sm.bg, color: sm.color, border: `1px solid ${sm.border}`, borderRadius: '4px', fontSize: '10px', padding: '2px 10px', fontFamily: DARK.mono, letterSpacing: '0.15em' }}>
                                         {complaint.complaintStatus}
                                     </span>
                                 </div>
-                                <div className="d-flex align-items-center gap-3 flex-wrap" style={{ fontSize: '0.78rem', color: '#64748b' }}>
-                                    <span className="d-flex align-items-center gap-1">
-                                        <span style={{ fontWeight: 600 }}>#{complaint.complaintId?.substring(0, 10) || 'N/A'}</span>
-                                    </span>
-                                    <span>·</span>
-                                    <span className="d-flex align-items-center gap-1">
-                                        <FaTag size={10} /> {complaint.complaintType}
-                                    </span>
-                                    <span>·</span>
-                                    <span className="d-flex align-items-center gap-1">
-                                        <FaCalendarAlt size={10} />
-                                        {new Date(complaint.createdAt || complaint.updatedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
-                                    </span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', fontSize: '10px', color: DARK.textMuted, fontFamily: DARK.mono, letterSpacing: '0.1em' }}>
+                                    <span>#{complaint.complaintId?.substring(0, 12) || 'N/A'}</span>
+                                    <span style={{ color: '#374151' }}>|</span>
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><FaTag size={8} /> {complaint.complaintType}</span>
+                                    <span style={{ color: '#374151' }}>|</span>
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><FaCalendarAlt size={8} /> {new Date(complaint.createdAt || complaint.updatedAt).toLocaleDateString()}</span>
                                     {complaint.complaintPriority && (
                                         <>
-                                            <span>·</span>
-                                            <span className={`badge rounded-pill px-2 ${complaint.complaintPriority === 'High' || complaint.complaintPriority === 'Emergency' ? 'bg-danger-subtle text-danger' : 'bg-info-subtle text-info'}`} style={{ fontSize: '0.72rem' }}>
-                                                {complaint.complaintPriority}
+                                            <span style={{ color: '#374151' }}>|</span>
+                                            <span style={{ color: PRIORITY_COLOR[complaint.complaintPriority] || '#6b7280' }}>
+                                                ⬤ {complaint.complaintPriority?.toUpperCase()}
                                             </span>
                                         </>
                                     )}
@@ -355,246 +266,224 @@ const ComplaintDetailsModal = ({ isOpen, onClose, complaint, onUpdate }) => {
                             </div>
                             <button
                                 onClick={onClose}
-                                className="btn btn-sm rounded-circle d-flex align-items-center justify-content-center border flex-shrink-0"
-                                style={{ width: '36px', height: '36px', background: 'white' }}
+                                style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
                             >
-                                <FaTimes size={14} className="text-secondary" />
+                                <FaTimes size={13} style={{ color: '#6b7280' }} />
                             </button>
                         </div>
 
-                        {/* ── Body: two columns ── */}
-                        <div className="d-flex flex-grow-1 overflow-hidden">
+                        {/* ── Body ── */}
+                        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
-                            {/* ── LEFT: Photo + Description + AI ── */}
-                            <div className="overflow-auto p-5" style={{ flex: '1 1 55%', borderRight: '1px solid #e2e8f0' }}>
+                            {/* LEFT */}
+                            <div style={{ flex: '1 1 55%', borderRight: '1px solid rgba(255,255,255,0.06)', overflowY: 'auto', padding: '28px 32px' }}>
 
-                                {/* Image */}
-                                {complaint.complaintImage ? (
-                                    <div className="rounded-3 overflow-hidden border shadow-sm mb-4" style={{ maxHeight: '240px' }}>
-                                        <img src={complaint.complaintImage} alt="Evidence" className="w-100 object-fit-cover" style={{ maxHeight: '240px' }} />
+                                {complaint.complaintImage && (
+                                    <div style={{ borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)', marginBottom: '20px', maxHeight: '260px' }}>
+                                        <img src={complaint.complaintImage} alt="Evidence" style={{ width: '100%', height: '260px', objectFit: 'cover', filter: 'brightness(0.9) contrast(1.1)' }} />
                                     </div>
-                                ) : null}
+                                )}
 
                                 {/* Location */}
-                                <div className="d-flex align-items-center gap-2 px-3 py-2 rounded-3 mb-4" style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
-                                    <FaMapMarkerAlt className="text-danger" size={13} />
-                                    <span className="text-dark fw-medium small">{complaint.complaintLocation}</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '6px', marginBottom: '20px' }}>
+                                    <FaMapMarkerAlt style={{ color: '#ef4444', flexShrink: 0 }} size={12} />
+                                    <span style={{ color: '#e5e7eb', fontSize: '12px', fontFamily: "'Rajdhani',sans-serif", lineHeight: 1.4 }}>{complaint.complaintLocation}</span>
                                 </div>
 
-                                {/* Tabbed sub-panel */}
-                                <div>
-                                    {/* Sub-tabs */}
-                                    <div className="d-flex gap-1 border-bottom mb-4" style={{ borderColor: '#e2e8f0' }}>
-                                        {TABS.map(tab => (
-                                            <button
-                                                key={tab.id}
-                                                onClick={() => setActiveTab(tab.id)}
-                                                className="btn btn-sm fw-medium px-4 py-2"
-                                                style={{
-                                                    borderRadius: '8px 8px 0 0',
-                                                    background: activeTab === tab.id ? 'white' : 'transparent',
-                                                    color: activeTab === tab.id ? '#1e293b' : '#64748b',
-                                                    border: activeTab === tab.id ? '1px solid #e2e8f0' : 'none',
-                                                    borderBottom: activeTab === tab.id ? '2px solid #6366f1' : '2px solid transparent',
-                                                    fontSize: '0.82rem',
-                                                    transition: 'all 0.15s',
-                                                }}
-                                            >
-                                                {tab.label}
-                                            </button>
-                                        ))}
-                                    </div>
+                                {/* Sub-tabs */}
+                                <div style={{ display: 'flex', gap: '4px', borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: '20px' }}>
+                                    {TABS.map(tab => (
+                                        <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                                            style={{
+                                                background: 'none', border: 'none', cursor: 'pointer',
+                                                padding: '8px 16px',
+                                                color: activeTab === tab.id ? '#aa00ff' : '#4b5563',
+                                                fontFamily: DARK.mono, fontSize: '10px', letterSpacing: '0.12em',
+                                                borderBottom: activeTab === tab.id ? '2px solid #aa00ff' : '2px solid transparent',
+                                                transition: 'all 0.15s',
+                                            }}>
+                                            {tab.label}
+                                        </button>
+                                    ))}
+                                </div>
 
-                                    <AnimatePresence mode="wait">
-                                        {/* Details tab */}
-                                        {activeTab === 'details' && (
-                                            <motion.div key="details" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
-                                                <label className="fw-bold text-muted text-uppercase mb-2 d-block" style={{ fontSize: '0.71rem', letterSpacing: '0.08em' }}>Description</label>
-                                                {isEditing ? (
-                                                    <div>
-                                                        <textarea
-                                                            className="form-control shadow-none mb-3"
-                                                            rows={5}
-                                                            value={editedDescription}
-                                                            onChange={e => setEditedDescription(e.target.value)}
-                                                            placeholder="Update complaint description..."
-                                                            autoFocus
-                                                            style={{ borderRadius: '12px', border: '1.5px solid #6366f1', fontSize: '0.9rem', resize: 'none' }}
-                                                        />
-                                                        <div className="d-flex gap-2">
-                                                            <button onClick={saveEdit} disabled={savingEdit} className="btn btn-sm fw-bold px-4" style={{ borderRadius: '10px', background: '#6366f1', color: 'white', border: 'none' }}>
-                                                                <FaSave size={12} className="me-1" /> {savingEdit ? 'Saving...' : 'Save'}
-                                                            </button>
-                                                            <button onClick={() => setIsEditing(false)} disabled={savingEdit} className="btn btn-sm btn-light border fw-medium px-4" style={{ borderRadius: '10px' }}>
-                                                                Cancel
-                                                            </button>
+                                <AnimatePresence mode="wait">
+                                    {/* Details Tab */}
+                                    {activeTab === 'details' && (
+                                        <motion.div key="details" initial={{ opacity: 0, x: 6 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}>
+                                            <label style={{ color: DARK.textMuted, fontFamily: DARK.mono, fontSize: '9px', letterSpacing: '0.2em', display: 'block', marginBottom: '8px', textTransform: 'uppercase' }}>SITUATION LOG</label>
+                                            {isEditing ? (
+                                                <div>
+                                                    <textarea rows={5} value={editedDescription} onChange={e => setEditedDescription(e.target.value)} autoFocus
+                                                        style={{ width: '100%', background: 'rgba(170,0,255,0.05)', border: '1px solid rgba(170,0,255,0.4)', borderRadius: '6px', padding: '12px', color: '#e5e7eb', fontFamily: "'Rajdhani',sans-serif", fontSize: '14px', resize: 'none', outline: 'none', marginBottom: '10px' }} />
+                                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                                        <button onClick={saveEdit} disabled={savingEdit} style={{ background: '#aa00ff', color: '#fff', border: 'none', borderRadius: '4px', padding: '8px 16px', fontFamily: DARK.mono, fontSize: '10px', letterSpacing: '0.1em', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                            <FaSave size={10} /> {savingEdit ? 'SAVING...' : 'COMMIT'}
+                                                        </button>
+                                                        <button onClick={() => setIsEditing(false)} disabled={savingEdit} style={{ background: 'rgba(255,255,255,0.05)', color: '#6b7280', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', padding: '8px 16px', fontFamily: DARK.mono, fontSize: '10px', cursor: 'pointer' }}>
+                                                            ABORT
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div>
+                                                    <p style={{ color: '#d1d5db', fontSize: '14px', fontFamily: "'Rajdhani',sans-serif", lineHeight: 1.75, marginBottom: '16px' }}>
+                                                        {getDescription(complaint.complaintDescription) || complaint.complaintDescription}
+                                                    </p>
+                                                    {canEdit && (
+                                                        <button onClick={startEdit} style={{ background: 'rgba(245,158,11,0.08)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '4px', padding: '6px 14px', fontFamily: DARK.mono, fontSize: '10px', letterSpacing: '0.1em', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                            <FaEdit size={10} /> EDIT LOG
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {/* AI Score */}
+                                            {complaint.complaintAIScore > 0 && (
+                                                <div style={{ marginTop: '20px', padding: '16px', background: 'rgba(170,0,255,0.05)', border: '1px solid rgba(170,0,255,0.2)', borderRadius: '6px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                            <FaRobot style={{ color: '#aa00ff' }} size={12} />
+                                                            <span style={{ color: '#fff', fontFamily: DARK.mono, fontSize: '10px', letterSpacing: '0.15em' }}>AI THREAT SCORE</span>
                                                         </div>
+                                                        <span style={{
+                                                            color: complaint.complaintAIScore > 80 ? '#ef4444' : complaint.complaintAIScore > 50 ? '#f59e0b' : '#a3e635',
+                                                            fontFamily: DARK.mono, fontWeight: 'bold', fontSize: '13px',
+                                                        }}>
+                                                            {Math.round(complaint.complaintAIScore)}/100
+                                                        </span>
                                                     </div>
-                                                ) : (
-                                                    <div>
-                                                        <p className="text-secondary mb-3" style={{ lineHeight: 1.75, fontSize: '0.9rem' }}>
-                                                            {getDescription(complaint.complaintDescription) || complaint.complaintDescription}
-                                                        </p>
-                                                        {canEdit && (
-                                                            <button onClick={startEdit} className="btn btn-sm fw-medium d-flex align-items-center gap-2" style={{ borderRadius: '10px', background: '#fffbeb', color: '#92400e', border: '1px solid #fcd34d', fontSize: '0.82rem' }}>
-                                                                <FaEdit size={12} /> Edit Description
-                                                            </button>
-                                                        )}
+                                                    <div style={{ background: 'rgba(0,0,0,0.4)', borderRadius: '4px', height: '4px', overflow: 'hidden' }}>
+                                                        <div style={{
+                                                            height: '100%', width: `${complaint.complaintAIScore}%`,
+                                                            background: complaint.complaintAIScore > 80 ? '#ef4444' : complaint.complaintAIScore > 50 ? '#f59e0b' : '#a3e635',
+                                                            boxShadow: `0 0 6px ${complaint.complaintAIScore > 80 ? '#ef4444' : '#a3e635'}`,
+                                                            transition: 'width 0.4s',
+                                                        }} />
                                                     </div>
-                                                )}
+                                                </div>
+                                            )}
+                                        </motion.div>
+                                    )}
 
-                                                {/* AI Score */}
-                                                {complaint.complaintAIScore > 0 && (
-                                                    <div className="mt-4 p-4 rounded-3 border" style={{ background: 'linear-gradient(135deg, #eff6ff, #f0fdf4)' }}>
-                                                        <div className="d-flex align-items-center justify-content-between mb-2">
-                                                            <div className="d-flex align-items-center gap-2">
-                                                                <FaRobot className="text-primary" size={15} />
-                                                                <span className="fw-bold text-dark small">AI Severity Score</span>
+                                    {/* Activity Tab */}
+                                    {activeTab === 'activity' && (
+                                        <motion.div key="activity" initial={{ opacity: 0, x: 6 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}>
+                                            <ActivityLog log={complaint.activityLog} />
+                                        </motion.div>
+                                    )}
+
+                                    {/* Feedback Tab */}
+                                    {activeTab === 'feedback' && (
+                                        <motion.div key="feedback" initial={{ opacity: 0, x: 6 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}>
+                                            {complaint.feedbackHistory?.length > 0 ? (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
+                                                    {complaint.feedbackHistory.map((fb, idx) => (
+                                                        <div key={idx} style={{
+                                                            padding: '12px 14px', borderRadius: '6px',
+                                                            background: fb.action === 'Accept' ? 'rgba(163,230,53,0.06)' : 'rgba(245,158,11,0.06)',
+                                                            border: `1px solid ${fb.action === 'Accept' ? 'rgba(163,230,53,0.25)' : 'rgba(245,158,11,0.25)'}`,
+                                                        }}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                                                <small style={{ color: fb.action === 'Accept' ? '#a3e635' : '#f59e0b', fontFamily: DARK.mono, fontSize: '9px', letterSpacing: '0.1em' }}>
+                                                                    {fb.action === 'Accept' ? 'RESOLUTION ACCEPTED' : 'REOPEN REQUEST'}
+                                                                </small>
+                                                                <small style={{ color: DARK.textMuted, fontSize: '9px', fontFamily: DARK.mono }}>{new Date(fb.date).toLocaleString()}</small>
                                                             </div>
-                                                            <span className={`badge rounded-pill fw-bold px-3 ${complaint.complaintAIScore > 80 ? 'bg-danger' : complaint.complaintAIScore > 50 ? 'bg-warning text-dark' : 'bg-success'}`}>
-                                                                {Math.round(complaint.complaintAIScore)}/100
-                                                            </span>
+                                                            <p style={{ margin: 0, color: '#d1d5db', fontSize: '12px', fontStyle: 'italic', fontFamily: "'Rajdhani',sans-serif" }}>"{fb.message}"</p>
                                                         </div>
-                                                        <div className="progress rounded-pill" style={{ height: '6px' }}>
-                                                            <div
-                                                                className={`progress-bar rounded-pill ${complaint.complaintAIScore > 80 ? 'bg-danger' : complaint.complaintAIScore > 50 ? 'bg-warning' : 'bg-success'}`}
-                                                                style={{ width: `${complaint.complaintAIScore}%` }}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </motion.div>
-                                        )}
-
-                                        {/* Activity tab */}
-                                        {activeTab === 'activity' && (
-                                            <motion.div key="activity" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
-                                                <ActivityLog log={complaint.activityLog} />
-                                            </motion.div>
-                                        )}
-
-                                        {/* Feedback tab */}
-                                        {activeTab === 'feedback' && (
-                                            <motion.div key="feedback" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
-                                                {/* Feedback history */}
-                                                {(complaint.feedbackHistory?.length > 0) ? (
-                                                    <div className="d-flex flex-column gap-3 mb-4">
-                                                        {complaint.feedbackHistory.map((fb, idx) => {
-                                                            const isAccept = fb.action === 'Accept';
-                                                            return (
-                                                                <div key={idx} className="p-3 rounded-3 border" style={{ background: isAccept ? '#ecfdf5' : '#fffbeb', borderColor: isAccept ? '#6ee7b7' : '#fcd34d' }}>
-                                                                    <div className="d-flex justify-content-between align-items-center mb-1">
-                                                                        <small className="fw-bold" style={{ color: isAccept ? '#10b981' : '#f59e0b' }}>{fb.action === 'Accept' ? 'Resolution Accepted' : 'Reopen Request'}</small>
-                                                                        <small className="text-muted" style={{ fontSize: '0.7rem' }}>{new Date(fb.date).toLocaleString()}</small>
-                                                                    </div>
-                                                                    <p className="mb-0 text-dark fst-italic" style={{ fontSize: '0.83rem' }}>"{fb.message}"</p>
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                ) : complaint.feedback?.message ? (
-                                                    <div className="p-3 rounded-3 border mb-4" style={{ background: '#f8fafc' }}>
-                                                        <small className="text-muted d-block mb-1">Feedback</small>
-                                                        <p className="mb-0 text-dark fst-italic small">"{complaint.feedback.message}"</p>
-                                                    </div>
-                                                ) : (
-                                                    <div className="text-center py-4 mb-4">
-                                                        <FaCommentAlt size={28} style={{ color: '#cbd5e1', marginBottom: '8px' }} />
-                                                        <p className="text-muted small mb-0">No feedback history yet.</p>
-                                                    </div>
-                                                )}
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div style={{ padding: '24px', textAlign: 'center', color: DARK.textMuted, fontFamily: DARK.mono, fontSize: '10px', letterSpacing: '0.1em' }}>
+                                                    <FaCommentAlt size={20} style={{ color: '#1f2937', display: 'block', margin: '0 auto 8px' }} />
+                                                    NO FEEDBACK TRANSMITTED
+                                                </div>
+                                            )}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
 
-                            {/* ── RIGHT: Resolution info + actions ── */}
-                            <div className="overflow-auto p-5" style={{ flex: '0 0 340px', background: '#f8fafc' }}>
+                            {/* RIGHT */}
+                            <div style={{ flex: '0 0 320px', overflowY: 'auto', padding: '24px', background: 'rgba(0,0,0,0.2)', borderLeft: '1px solid rgba(255,255,255,0.04)' }}>
 
                                 {/* Status card */}
-                                <div className="p-4 rounded-3 border mb-4" style={{ background: sm.bg, borderColor: sm.border }}>
-                                    <div className="d-flex align-items-center gap-2 mb-1">
-                                        <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: sm.color, flexShrink: 0 }} />
-                                        <span className="fw-bold" style={{ color: sm.color }}>{complaint.complaintStatus}</span>
+                                <div style={{ padding: '14px', background: sm.bg, border: `1px solid ${sm.border}`, borderRadius: '6px', marginBottom: '16px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: sm.color, boxShadow: `0 0 6px ${sm.color}` }} />
+                                        <span style={{ color: sm.color, fontFamily: DARK.mono, fontWeight: 'bold', fontSize: '11px', letterSpacing: '0.15em' }}>{complaint.complaintStatus?.toUpperCase()}</span>
                                     </div>
-                                    {(complaint.complaintStatus === 'Resolved' || complaint.complaintStatus === 'Closed') ? (
-                                        <small className="text-muted">
-                                            Resolved on {new Date(complaint.complaintResolvedDate || complaint.updatedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
-                                        </small>
-                                    ) : (
-                                        <small className="text-muted">Authority is actively reviewing this issue.</small>
-                                    )}
+                                    <small style={{ color: DARK.textMuted, fontSize: '11px' }}>
+                                        {['Resolved', 'Closed'].includes(complaint.complaintStatus)
+                                            ? `Resolved: ${new Date(complaint.complaintResolvedDate || complaint.updatedAt).toLocaleDateString()}`
+                                            : 'Authority actively reviewing this issue.'
+                                        }
+                                    </small>
                                 </div>
 
-                                {/* Authority Notes */}
-                                {complaint.complaintStatus !== 'Pending' && complaint.complaintNotes && (
-                                    <div className="mb-4">
-                                        <label className="fw-bold text-muted text-uppercase mb-2 d-block" style={{ fontSize: '0.71rem', letterSpacing: '0.08em' }}>Official Notes</label>
-                                        <div className="p-3 rounded-3 border bg-white" style={{ borderColor: '#e2e8f0' }}>
-                                            <p className="mb-0 text-dark" style={{ fontSize: '0.88rem', lineHeight: 1.7, whiteSpace: 'pre-line' }}>
-                                                {complaint.complaintNotes}
-                                            </p>
+                                {/* Reporter */}
+                                {complaint.complaintUser && (
+                                    <div style={{ marginBottom: '16px' }}>
+                                        <label style={{ color: DARK.textMuted, fontFamily: DARK.mono, fontSize: '9px', letterSpacing: '0.2em', display: 'block', marginBottom: '8px' }}>REPORTER</label>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: DARK.panel, border: `1px solid ${DARK.border}`, borderRadius: '6px' }}>
+                                            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(170,0,255,0.12)', border: '1px solid rgba(170,0,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                <FaUser size={12} style={{ color: '#aa00ff' }} />
+                                            </div>
+                                            <div>
+                                                <p style={{ margin: 0, color: '#fff', fontFamily: DARK.mono, fontSize: '11px', letterSpacing: '0.08em' }}>{complaint.complaintUser?.userName || 'CITIZEN'}</p>
+                                                <small style={{ color: DARK.textMuted, fontSize: '9px' }}>CITIZEN</small>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Expense Report */}
+                                {/* Official Notes */}
+                                {complaint.complaintStatus !== 'Pending' && complaint.complaintNotes && (
+                                    <div style={{ marginBottom: '16px' }}>
+                                        <label style={{ color: DARK.textMuted, fontFamily: DARK.mono, fontSize: '9px', letterSpacing: '0.2em', display: 'block', marginBottom: '8px' }}>OFFICIAL NOTES</label>
+                                        <div style={{ padding: '12px', background: 'rgba(0,240,255,0.04)', border: '1px solid rgba(0,240,255,0.15)', borderRadius: '6px' }}>
+                                            <p style={{ margin: 0, color: '#d1d5db', fontSize: '12px', fontFamily: "'Rajdhani',sans-serif", lineHeight: 1.7, whiteSpace: 'pre-line' }}>{complaint.complaintNotes}</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Expenses */}
                                 {complaint.complaintStatus !== 'Pending' && complaint.expenses?.length > 0 && (
-                                    <div className="mb-4">
-                                        <label className="fw-bold text-muted text-uppercase mb-2 d-block" style={{ fontSize: '0.71rem', letterSpacing: '0.08em' }}>Expenses</label>
-                                        <div className="bg-white rounded-3 border overflow-hidden mb-3">
+                                    <div style={{ marginBottom: '16px' }}>
+                                        <label style={{ color: DARK.textMuted, fontFamily: DARK.mono, fontSize: '9px', letterSpacing: '0.2em', display: 'block', marginBottom: '8px' }}>EXPENSE LEDGER</label>
+                                        <div style={{ background: DARK.panel, border: `1px solid ${DARK.border}`, borderRadius: '6px', overflow: 'hidden', marginBottom: '10px' }}>
                                             {complaint.expenses.map((exp, i) => (
-                                                <div key={i} className="d-flex justify-content-between align-items-center px-3 py-2 border-bottom" style={{ borderColor: '#f1f5f9' }}>
-                                                    <small className="text-dark fw-medium">{exp.item}</small>
-                                                    <small className="text-primary fw-bold">₹{Number(exp.cost).toLocaleString()}</small>
+                                                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                                                    <small style={{ color: '#d1d5db', fontFamily: "'Rajdhani',sans-serif", fontSize: '12px' }}>{exp.item}</small>
+                                                    <small style={{ color: '#aa00ff', fontFamily: DARK.mono, fontWeight: 'bold' }}>₹{Number(exp.cost).toLocaleString()}</small>
                                                 </div>
                                             ))}
-                                            <div className="d-flex justify-content-between align-items-center px-3 py-2" style={{ background: '#f8fafc' }}>
-                                                <small className="fw-bold text-dark">Total</small>
-                                                <small className="fw-bold text-success">₹{totalExpense.toLocaleString()}</small>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'rgba(170,0,255,0.05)' }}>
+                                                <small style={{ color: '#fff', fontFamily: DARK.mono, fontWeight: 'bold', fontSize: '10px', letterSpacing: '0.1em' }}>TOTAL</small>
+                                                <small style={{ color: '#a3e635', fontFamily: DARK.mono, fontWeight: 'bold' }}>₹{totalExpense.toLocaleString()}</small>
                                             </div>
                                         </div>
-                                        <button
-                                            onClick={downloadExpenseReport}
-                                            className="btn btn-sm w-100 fw-medium d-flex align-items-center justify-content-center gap-2"
-                                            style={{ borderRadius: '10px', background: 'white', border: '1.5px solid #e2e8f0', color: '#64748b', fontSize: '0.83rem' }}
-                                        >
-                                            <FaFilePdf className="text-danger" /> Download PDF Report
+                                        <button onClick={downloadExpenseReport} style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', padding: '8px', color: '#6b7280', fontFamily: DARK.mono, fontSize: '10px', letterSpacing: '0.1em', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                                            <FaFilePdf style={{ color: '#ef4444' }} /> EXPORT PDF REPORT
                                         </button>
                                     </div>
                                 )}
 
-                                {/* Citizen feedback action (accept / reopen) */}
+                                {/* Citizen Verdict Action */}
                                 {isOwner && complaint.complaintStatus === 'Resolved' && !complaint.accepted && (
-                                    <div className="mb-4">
-                                        <label className="fw-bold text-muted text-uppercase mb-2 d-block" style={{ fontSize: '0.71rem', letterSpacing: '0.08em' }}>Your Verdict</label>
-                                        <div className="bg-white rounded-3 border p-3">
-                                            <p className="small text-muted mb-3">Review the resolution. Accept it or request a reopen if the issue persists.</p>
-                                            <textarea
-                                                className="form-control shadow-none mb-3"
-                                                rows={2}
-                                                placeholder="Comment (required if reopening)"
-                                                value={feedbackMsg}
-                                                onChange={e => setFeedbackMsg(e.target.value)}
-                                                style={{ borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '0.85rem', resize: 'none' }}
-                                            />
-                                            <div className="d-flex gap-2">
-                                                <button
-                                                    onClick={() => submitFeedback('Accept')}
-                                                    disabled={submitting}
-                                                    className="btn btn-sm fw-bold flex-grow-1 py-2"
-                                                    style={{ borderRadius: '10px', background: '#ecfdf5', color: '#10b981', border: '1.5px solid #6ee7b7' }}
-                                                >
-                                                    {submitting ? '...' : 'Accept'}
+                                    <div style={{ marginBottom: '16px' }}>
+                                        <label style={{ color: DARK.textMuted, fontFamily: DARK.mono, fontSize: '9px', letterSpacing: '0.2em', display: 'block', marginBottom: '8px' }}>YOUR VERDICT</label>
+                                        <div style={{ padding: '14px', background: DARK.panel, border: `1px solid ${DARK.border}`, borderRadius: '6px' }}>
+                                            <p style={{ color: DARK.textMuted, fontSize: '11px', marginBottom: '10px', fontFamily: "'Rajdhani',sans-serif", lineHeight: 1.5 }}>Accept the resolution or reopen if issue persists.</p>
+                                            <textarea rows={2} placeholder="REASON (required if reopening)" value={feedbackMsg} onChange={e => setFeedbackMsg(e.target.value)}
+                                                style={{ width: '100%', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', padding: '8px', color: '#e5e7eb', fontFamily: "'Rajdhani',sans-serif", fontSize: '12px', resize: 'none', outline: 'none', marginBottom: '10px' }} />
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                <button onClick={() => submitFeedback('Accept')} disabled={submitting} style={{ flex: 1, background: 'rgba(163,230,53,0.1)', color: '#a3e635', border: '1px solid rgba(163,230,53,0.3)', borderRadius: '4px', padding: '8px', fontFamily: DARK.mono, fontSize: '9px', cursor: 'pointer', letterSpacing: '0.1em' }}>
+                                                    {submitting ? '...' : '✓ ACCEPT'}
                                                 </button>
-                                                <button
-                                                    onClick={() => submitFeedback('Reopen')}
-                                                    disabled={submitting}
-                                                    className="btn btn-sm fw-bold flex-grow-1 py-2"
-                                                    style={{ borderRadius: '10px', background: '#fffbeb', color: '#f59e0b', border: '1.5px solid #fcd34d' }}
-                                                >
-                                                    {submitting ? '...' : 'Reopen'}
+                                                <button onClick={() => submitFeedback('Reopen')} disabled={submitting} style={{ flex: 1, background: 'rgba(245,158,11,0.1)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '4px', padding: '8px', fontFamily: DARK.mono, fontSize: '9px', cursor: 'pointer', letterSpacing: '0.1em' }}>
+                                                    {submitting ? '...' : '↻ REOPEN'}
                                                 </button>
                                             </div>
                                         </div>
@@ -603,30 +492,13 @@ const ComplaintDetailsModal = ({ isOpen, onClose, complaint, onUpdate }) => {
 
                                 {/* Closed confirmation */}
                                 {complaint.complaintStatus === 'Closed' && (
-                                    <div className="text-center p-4 rounded-3 border" style={{ background: '#ecfdf5', borderColor: '#6ee7b7' }}>
-                                        <FaCheckCircle size={28} style={{ color: '#10b981', marginBottom: '8px' }} />
-                                        <h6 className="fw-bold mb-1" style={{ color: '#10b981' }}>Ticket Closed</h6>
-                                        <small className="text-muted">The citizen has accepted the resolution.</small>
-                                    </div>
-                                )}
-
-                                {/* Reporter info */}
-                                {complaint.complaintUser && (
-                                    <div className="mt-4 pt-4 border-top">
-                                        <label className="fw-bold text-muted text-uppercase mb-2 d-block" style={{ fontSize: '0.71rem', letterSpacing: '0.08em' }}>Reporter</label>
-                                        <div className="d-flex align-items-center gap-3 p-3 rounded-3 bg-white border">
-                                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                                <FaUser size={14} style={{ color: '#6366f1' }} />
-                                            </div>
-                                            <div>
-                                                <p className="fw-bold text-dark mb-0 small">{complaint.complaintUser?.userName || 'Citizen'}</p>
-                                                <small className="text-muted">Citizen</small>
-                                            </div>
-                                        </div>
+                                    <div style={{ padding: '20px', background: 'rgba(163,230,53,0.06)', border: '1px solid rgba(163,230,53,0.3)', borderRadius: '6px', textAlign: 'center' }}>
+                                        <FaCheckCircle size={24} style={{ color: '#a3e635', marginBottom: '8px' }} />
+                                        <h6 style={{ color: '#a3e635', fontFamily: DARK.mono, fontSize: '11px', letterSpacing: '0.15em', margin: '0 0 4px' }}>TICKET CLOSED</h6>
+                                        <small style={{ color: DARK.textMuted, fontSize: '10px' }}>Resolution accepted by citizen.</small>
                                     </div>
                                 )}
                             </div>
-
                         </div>
                     </motion.div>
                 </div>

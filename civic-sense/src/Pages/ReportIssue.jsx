@@ -3,28 +3,27 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     FaArrowLeft, FaCamera, FaVideo, FaMapMarkerAlt, FaRobot,
     FaCloudUploadAlt, FaTimes, FaCheckCircle, FaExclamationTriangle,
-    FaFire, FaTint, FaBroom, FaHardHat, FaShieldAlt, FaEllipsisH
+    FaFire, FaTint, FaBroom, FaHardHat, FaShieldAlt, FaEllipsisH, FaTerminal
 } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { notify } from '../utils/notify';
 import LocationPicker from '../components/LocationPicker';
 import api from '../api/axios';
 
-/* ── Department icon map ─────────────────────────────────────────── */
 const DEPT_META = {
-    'Fire Department': { icon: FaFire, color: '#ef4444', bg: '#fef2f2' },
-    'Water Department': { icon: FaTint, color: '#3b82f6', bg: '#eff6ff' },
-    'Cleaning Department': { icon: FaBroom, color: '#10b981', bg: '#ecfdf5' },
-    'Public Works Department': { icon: FaHardHat, color: '#f59e0b', bg: '#fffbeb' },
-    'Police Department': { icon: FaShieldAlt, color: '#6366f1', bg: '#eef2ff' },
-    'Others': { icon: FaEllipsisH, color: '#6b7280', bg: '#f9fafb' },
+    'Fire Department': { icon: FaFire, color: 'var(--accent-red)', bg: 'rgba(239, 68, 68, 0.1)' },
+    'Water Department': { icon: FaTint, color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.1)' },
+    'Cleaning Department': { icon: FaBroom, color: 'var(--secondary-color)', bg: 'rgba(163, 230, 53, 0.1)' },
+    'Public Works Department': { icon: FaHardHat, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
+    'Police Department': { icon: FaShieldAlt, color: 'var(--primary-color)', bg: 'rgba(170, 0, 255, 0.1)' },
+    'Others': { icon: FaEllipsisH, color: '#6b7280', bg: 'rgba(107, 114, 128, 0.1)' },
 };
 
 const PRIORITY_META = {
-    'Low': { color: '#10b981', bg: '#ecfdf5', border: '#6ee7b7', label: '🟢 Low' },
-    'Medium': { color: '#f59e0b', bg: '#fffbeb', border: '#fcd34d', label: '🟡 Medium' },
-    'High': { color: '#f97316', bg: '#fff7ed', border: '#fed7aa', label: '🟠 High' },
-    'Emergency': { color: '#ef4444', bg: '#fef2f2', border: '#fca5a5', label: '🔴 Emergency' },
+    'Low': { color: 'var(--secondary-color)', bg: 'rgba(163, 230, 53, 0.1)', border: 'var(--secondary-color)', label: 'LOW' },
+    'Medium': { color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)', border: '#f59e0b', label: 'ELEVATED' },
+    'High': { color: '#f97316', bg: 'rgba(249, 115, 22, 0.1)', border: '#f97316', label: 'CRITICAL' },
+    'Emergency': { color: 'var(--accent-red)', bg: 'rgba(239, 68, 68, 0.1)', border: 'var(--accent-red)', label: 'EMERGENCY' },
 };
 
 const departmentMapping = {
@@ -36,9 +35,6 @@ const departmentMapping = {
     'Fire Department': 'Fire Department',
 };
 
-/* ════════════════════════════════════════════════════════════════════
-   ReportIssue Page
-════════════════════════════════════════════════════════════════════ */
 const ReportIssue = () => {
     const navigate = useNavigate();
     const imageInputRef = useRef(null);
@@ -47,14 +43,13 @@ const ReportIssue = () => {
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         title: '', description: '', category: '', priority: '',
-        location: '', image: null, video: null, aiScore: 0
+        location: '', lat: null, lng: null, image: null, video: null, aiScore: 0
     });
     const [imagePreview, setImagePreview] = useState(null);
     const [isCaptioning, setIsCaptioning] = useState(false);
     const [isVideoAnalyzing, setIsVideoAnalyzing] = useState(false);
     const [isThinking, setIsThinking] = useState(false);
 
-    /* ── AI text prediction (debounced) ── */
     useEffect(() => {
         const timer = setTimeout(() => {
             if (formData.description.length > 10 && !isCaptioning) {
@@ -83,7 +78,6 @@ const ReportIssue = () => {
 
     const handleChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
-    /* ── Image upload + captioning ── */
     const handleImageChange = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -101,7 +95,7 @@ const ReportIssue = () => {
                 setFormData(prev => ({ ...prev, description: res.data.description }));
             }
         } catch (e) {
-            notify('error', e.response?.data?.message || 'Could not analyze image');
+            notify('error', e.response?.data?.message || 'ANALYSIS FAILURE');
         } finally {
             setIsCaptioning(false);
         }
@@ -113,7 +107,6 @@ const ReportIssue = () => {
         if (imageInputRef.current) imageInputRef.current.value = '';
     };
 
-    /* ── Video upload + analysis ── */
     const handleVideoChange = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -126,13 +119,10 @@ const ReportIssue = () => {
             const res = await api.post('/complaint/analyze-video', data, { headers: { 'Content-Type': 'multipart/form-data' } });
             await minDelay;
             if (res.data?.description) {
-                setFormData(prev => ({
-                    ...prev,
-                    description: (prev.description ? prev.description + '\n\n' : '') + res.data.description
-                }));
+                setFormData(prev => ({ ...prev, description: (prev.description ? prev.description + '\n\n' : '') + res.data.description }));
             }
         } catch (e) {
-            notify('error', e.response?.data?.message || 'Could not analyze video');
+            notify('error', e.response?.data?.message || 'VIDEO ANALYSIS FAILURE');
         } finally {
             setIsVideoAnalyzing(false);
         }
@@ -143,13 +133,17 @@ const ReportIssue = () => {
         if (videoInputRef.current) videoInputRef.current.value = '';
     };
 
-    const handleLocationSelect = ({ address }) => setFormData(prev => ({ ...prev, location: address }));
+    const handleLocationSelect = ({ address, lat, lng }) => setFormData(prev => ({
+        ...prev,
+        location: address,
+        lat: lat || null,
+        lng: lng || null,
+    }));
 
-    /* ── Submit ── */
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!formData.title || !formData.category || !formData.location || !formData.description || !formData.image || !formData.priority) {
-            notify('error', 'Please fill in all required fields and upload an image.');
+            notify('error', 'AUTHORIZATION DENIED: MISSING PARAMETERS.');
             return;
         }
         setLoading(true);
@@ -162,16 +156,18 @@ const ReportIssue = () => {
         data.append('aiScore', formData.aiScore);
         data.append('image', formData.image);
         if (formData.video) data.append('video', formData.video);
+        if (formData.lat != null) data.append('lat', formData.lat);
+        if (formData.lng != null) data.append('lng', formData.lng);
         try {
             const res = await api.post('/complaint/create', data, { headers: { 'Content-Type': 'multipart/form-data' } });
             if (res.status === 201) {
-                notify('success', 'Issue reported successfully!');
+                notify('success', 'INCIDENT TRANSMITTED');
                 navigate('/dashboard');
             } else {
-                notify('error', res.data.message || 'Failed to report issue');
+                notify('error', res.data.message || 'TRANSMISSION FAILURE');
             }
         } catch (e) {
-            notify('error', e.response?.data?.message || 'Something went wrong');
+            notify('error', e.response?.data?.message || 'NETWORK INTERRUPTION');
         } finally {
             setLoading(false);
         }
@@ -181,115 +177,75 @@ const ReportIssue = () => {
     const deptMeta = formData.category ? DEPT_META[formData.category] : null;
     const prioMeta = formData.priority ? PRIORITY_META[formData.priority] : null;
 
-    /* ══════════════════════════════════════════════════════════════ */
     return (
-        <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
-
-            {/* ── Top Bar ── */}
-            <div
-                className="d-flex align-items-center justify-content-between px-5 py-3 border-bottom"
-                style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', position: 'sticky', top: 0, zIndex: 100 }}
-            >
+        <div style={{ minHeight: '100vh', background: 'transparent' }}>
+            {/* Top Bar */}
+            <div className="d-flex align-items-center justify-content-between px-4 py-3 glass-sticky">
                 <div className="d-flex align-items-center gap-3">
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="btn btn-sm rounded-circle d-flex align-items-center justify-content-center border"
-                        style={{ width: '36px', height: '36px', background: 'white' }}
-                    >
-                        <FaArrowLeft size={13} className="text-secondary" />
+                    <button onClick={() => navigate(-1)} className="btn btn-sm rounded-circle d-flex align-items-center justify-content-center" style={{ width: '36px', height: '36px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)' }}>
+                        <FaArrowLeft size={13} className="text-white" />
                     </button>
                     <div>
-                        <h5 className="fw-bold mb-0 text-dark">Report an Issue</h5>
-                        <small className="text-muted">Help us keep your community clean and safe</small>
+                        <h5 className="tech-font fw-bold mb-0 text-white" style={{ letterSpacing: '0.15em' }}>REPORT INCIDENT</h5>
+                        <small className="tech-font text-muted text-uppercase" style={{ letterSpacing: '0.1em' }}>INITIATE CRISIS UPLINK</small>
                     </div>
                 </div>
-                <button
-                    type="button"
-                    onClick={() => setFormData({ title: '', description: '', category: '', priority: '', location: '', image: null, video: null, aiScore: 0 })}
-                    className="btn btn-sm btn-light border rounded-pill px-3 text-secondary"
-                >
-                    Clear Form
+                <button type="button" onClick={() => setFormData({ title: '', description: '', category: '', priority: '', location: '', lat: null, lng: null, image: null, video: null, aiScore: 0 })}
+                    className="btn btn-sm tech-font fw-bold text-uppercase" style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--accent-red)', border: '1px solid var(--accent-red)', letterSpacing: '0.1em' }}>
+                    ABORT
                 </button>
             </div>
 
-            {/* ── Two-column layout ── */}
+            {/* Two-column layout */}
             <form onSubmit={handleSubmit}>
-                <div className="d-flex" style={{ minHeight: 'calc(100vh - 65px)' }}>
-
-                    {/* ─── LEFT: Form Fields (scrollable) ─────────────────────── */}
-                    <div className="overflow-auto px-5 py-5" style={{ flex: '1 1 60%', maxHeight: 'calc(100vh - 65px)' }}>
-
-                        {/* Issue Title */}
+                <div className="d-flex flex-column flex-lg-row" style={{ minHeight: 'calc(100vh - 65px)' }}>
+                    {/* LEFT: Form Fields */}
+                    <div className="px-4 py-5 w-100" style={{ flex: '1 1 60%' }}>
+                        
+                        {/* Title */}
                         <div className="mb-5">
-                            <label className="fw-bold text-dark mb-2 d-block">
-                                Issue Title <span className="text-danger">*</span>
+                            <label className="tech-font fw-bold text-white mb-2 d-block text-uppercase" style={{ letterSpacing: '0.15em' }}>
+                                INCIDENT DESIGNATION <span className="text-neon-red">*</span>
                             </label>
-                            <input
-                                type="text"
-                                name="title"
-                                value={formData.title}
-                                onChange={handleChange}
-                                className="form-control form-control-lg shadow-none"
-                                placeholder="e.g., Deep pothole on Main Street near the park"
-                                required
-                                style={{ borderRadius: '12px', border: '1.5px solid #e2e8f0', fontSize: '0.95rem', background: 'white' }}
+                            <input type="text" name="title" value={formData.title} onChange={handleChange}
+                                className="form-control form-control-lg tech-font bg-transparent text-white shadow-none"
+                                placeholder="e.g Sector 7 Power Failure" required
+                                style={{ borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', fontSize: '0.95rem' }}
+                                onFocus={e => { e.currentTarget.style.borderColor = 'var(--primary-color)'; e.currentTarget.style.boxShadow = '0 0 10px rgba(170,0,255,0.15)'; e.currentTarget.style.background = 'rgba(170,0,255,0.05)'; }}
+                                onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.background = 'transparent'; }}
                             />
                         </div>
 
                         {/* Description */}
                         <div className="mb-5">
-                            <label className="fw-bold text-dark mb-2 d-block">
-                                Description <span className="text-danger">*</span>
-                                <span className="ms-2 text-muted fw-normal" style={{ fontSize: '0.8rem' }}>
-                                    — AI auto-fills this from your photo
-                                </span>
+                            <label className="tech-font fw-bold text-white mb-2 d-block text-uppercase" style={{ letterSpacing: '0.15em' }}>
+                                SITUATION LOG <span className="text-neon-red">*</span>
                             </label>
-                            <textarea
-                                name="description"
-                                value={formData.description}
-                                onChange={handleChange}
-                                className="form-control shadow-none"
-                                rows={5}
-                                placeholder="Describe the issue in detail. What's wrong? Since when? Any safety risk?"
-                                required
-                                style={{ borderRadius: '12px', border: '1.5px solid #e2e8f0', fontSize: '0.9rem', resize: 'none', lineHeight: 1.7, background: 'white' }}
+                            <textarea name="description" value={formData.description} onChange={handleChange}
+                                className="form-control tech-font bg-transparent text-white shadow-none font-monospace" rows={5}
+                                placeholder="INPUT SYSTEM LOGS..." required
+                                style={{ borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', fontSize: '0.85rem', resize: 'none' }}
+                                onFocus={e => { e.currentTarget.style.borderColor = 'var(--primary-color)'; e.currentTarget.style.boxShadow = '0 0 10px rgba(170,0,255,0.15)'; e.currentTarget.style.background = 'rgba(170,0,255,0.05)'; }}
+                                onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.background = 'transparent'; }}
                             />
-                            <div className="d-flex justify-content-end mt-1">
-                                <small className="text-muted">{formData.description.length} characters</small>
-                            </div>
-
-                            {/* AI Thinking Banner */}
+                            
                             <AnimatePresence>
                                 {isAiActive && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: -8 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -8 }}
-                                        className="mt-3 p-4 rounded-3 d-flex align-items-center gap-4"
-                                        style={{ background: 'linear-gradient(135deg, #eef2ff, #f0fdf4)', border: '1px solid #c7d2fe' }}
-                                    >
-                                        <motion.div
-                                            animate={{ rotate: 360 }}
-                                            transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-                                        >
-                                            <FaRobot size={26} style={{ color: '#6366f1' }} />
+                                    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                                        className="mt-3 p-4 rounded d-flex align-items-center gap-4"
+                                        style={{ background: 'rgba(170,0,255,0.1)', border: '1px solid var(--primary-color)' }}>
+                                        <motion.div animate={{ rotate: 360 }} transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}>
+                                            <FaRobot size={26} className="text-neon-purple" />
                                         </motion.div>
                                         <div>
-                                            <p className="fw-bold mb-0" style={{ background: 'linear-gradient(to right, #6366f1, #8b5cf6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                                                {isCaptioning ? 'Analyzing your photo...' : isVideoAnalyzing ? 'Analyzing video...' : 'AI is classifying your issue...'}
-                                            </p>
-                                            <p className="small text-muted mb-0 mt-1">
-                                                {isCaptioning ? 'Generating description from image using AI vision...' : isVideoAnalyzing ? 'Extracting key frames and description...' : 'Detecting department and priority level...'}
+                                            <p className="tech-font fw-bold mb-0 text-white text-uppercase" style={{ letterSpacing: '0.1em' }}>
+                                                {isCaptioning ? 'ANALYZING VISUAL DATA...' : isVideoAnalyzing ? 'DECODING FEED...' : 'PROCESSING VECTORS...'}
                                             </p>
                                         </div>
                                         <div className="ms-auto d-flex gap-1">
                                             {[0, 0.3, 0.6].map((delay, i) => (
-                                                <motion.span
-                                                    key={i}
-                                                    animate={{ opacity: [0.3, 1, 0.3] }}
-                                                    transition={{ duration: 1.2, repeat: Infinity, delay }}
-                                                    style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#6366f1', display: 'inline-block' }}
-                                                />
+                                                <motion.span key={i} animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.2, repeat: Infinity, delay }}
+                                                    style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--primary-color)', display: 'inline-block' }} />
                                             ))}
                                         </div>
                                     </motion.div>
@@ -299,323 +255,136 @@ const ReportIssue = () => {
 
                         {/* Location */}
                         <div className="mb-5">
-                            <label className="fw-bold text-dark mb-2 d-block">
-                                Location <span className="text-danger">*</span>
+                            <label className="tech-font fw-bold text-white mb-2 d-block text-uppercase" style={{ letterSpacing: '0.15em' }}>
+                                COORDINATES <span className="text-neon-red">*</span>
                             </label>
                             <div className="input-group mb-3">
-                                <span className="input-group-text bg-white" style={{ borderRadius: '12px 0 0 12px', border: '1.5px solid #e2e8f0', borderRight: 'none' }}>
-                                    <FaMapMarkerAlt className="text-danger" />
+                                <span className="input-group-text bg-transparent" style={{ borderRadius: '8px 0 0 8px', border: '1px solid rgba(255,255,255,0.2)', borderRight: 'none' }}>
+                                    <FaMapMarkerAlt className="text-neon-red" />
                                 </span>
-                                <input
-                                    type="text"
-                                    name="location"
-                                    value={formData.location}
-                                    onChange={handleChange}
-                                    className="form-control shadow-none border-start-0"
-                                    placeholder="Enter address or pick on map below"
-                                    required
-                                    style={{ borderRadius: '0 12px 12px 0', border: '1.5px solid #e2e8f0', borderLeft: 'none', fontSize: '0.9rem' }}
+                                <input type="text" name="location" value={formData.location} onChange={handleChange}
+                                    className="form-control tech-font bg-transparent text-white shadow-none border-start-0"
+                                    placeholder="INPUT COORDS..." required
+                                    style={{ borderRadius: '0 8px 8px 0', border: '1px solid rgba(255,255,255,0.2)', borderLeft: 'none', fontSize: '0.9rem' }}
                                 />
                             </div>
-                            <div className="rounded-3 overflow-hidden border shadow-sm">
+                            <div className="rounded overflow-hidden border" style={{ borderColor: 'rgba(255,255,255,0.2)' }}>
                                 <LocationPicker onLocationSelect={handleLocationSelect} />
                             </div>
                         </div>
 
                         {/* Photo Upload */}
                         <div className="mb-5">
-                            <label className="fw-bold text-dark mb-2 d-block">
-                                Photo Evidence <span className="text-danger">*</span>
-                                <span className="ms-2 text-muted fw-normal" style={{ fontSize: '0.8rem' }}>— AI will auto-fill description from your photo</span>
+                            <label className="tech-font fw-bold text-white mb-2 d-block text-uppercase" style={{ letterSpacing: '0.15em' }}>
+                                VISUAL INTEL <span className="text-neon-red">*</span>
                             </label>
                             <input type="file" ref={imageInputRef} onChange={handleImageChange} className="d-none" id="imageUpload" accept="image/*" />
                             {!formData.image ? (
-                                <label
-                                    htmlFor="imageUpload"
-                                    className="d-flex flex-column align-items-center justify-content-center gap-3 cursor-pointer"
-                                    style={{
-                                        border: '2px dashed #c7d2fe',
-                                        borderRadius: '16px',
-                                        padding: '40px',
-                                        background: '#fafbff',
-                                        transition: 'all 0.2s',
-                                        cursor: 'pointer'
-                                    }}
-                                    onMouseEnter={e => e.currentTarget.style.background = '#eef2ff'}
-                                    onMouseLeave={e => e.currentTarget.style.background = '#fafbff'}
-                                >
-                                    <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <FaCloudUploadAlt size={26} style={{ color: '#6366f1' }} />
+                                <label htmlFor="imageUpload" className="d-flex flex-column align-items-center justify-content-center gap-3 cursor-pointer hover-bg-light"
+                                    style={{ border: '1px dashed rgba(255,255,255,0.3)', borderRadius: '8px', padding: '40px', background: 'transparent' }}>
+                                    <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(170,0,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <FaCloudUploadAlt size={26} className="text-neon-purple" />
                                     </div>
                                     <div className="text-center">
-                                        <p className="fw-bold text-dark mb-1">Click to upload photo</p>
-                                        <small className="text-muted">JPG, PNG up to 5MB · AI will analyze it automatically</small>
+                                        <p className="tech-font fw-bold text-white mb-1 text-uppercase">UPLOAD FEED</p>
                                     </div>
                                 </label>
                             ) : (
-                                <motion.div
-                                    initial={{ opacity: 0, scale: 0.98 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    className="position-relative rounded-3 overflow-hidden border shadow-sm"
-                                    style={{ maxHeight: '340px' }}
-                                >
-                                    <img
-                                        src={imagePreview}
-                                        alt="Preview"
-                                        className="w-100 object-fit-cover"
-                                        style={{ maxHeight: '340px' }}
-                                    />
-                                    {/* Overlay with filename + remove button */}
-                                    <div
-                                        className="position-absolute bottom-0 start-0 end-0 d-flex align-items-center justify-content-between px-3 py-2"
-                                        style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)' }}
-                                    >
+                                <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="position-relative rounded overflow-hidden" style={{ maxHeight: '340px', border: '1px solid var(--primary-color)' }}>
+                                    <img src={imagePreview} alt="Intel" className="w-100 object-fit-cover" style={{ maxHeight: '340px', filter: 'brightness(0.85)' }} />
+                                    <div className="position-absolute bottom-0 start-0 end-0 d-flex align-items-center justify-content-between px-3 py-2" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.9), transparent)' }}>
                                         <div className="d-flex align-items-center gap-2 text-white">
-                                            <FaCamera size={13} />
-                                            <small className="fw-medium text-truncate" style={{ maxWidth: '260px' }}>{formData.image.name}</small>
+                                            <FaCamera size={13} className="text-neon-purple" />
+                                            <small className="tech-font fw-bold text-truncate" style={{ maxWidth: '260px' }}>{formData.image.name}</small>
                                         </div>
-                                        <button
-                                            type="button"
-                                            onClick={removeImage}
-                                            className="btn btn-sm rounded-circle d-flex align-items-center justify-content-center"
-                                            style={{ width: '28px', height: '28px', background: 'rgba(239,68,68,0.9)', border: 'none', flexShrink: 0 }}
-                                        >
-                                            <FaTimes size={11} className="text-white" />
+                                        <button type="button" onClick={removeImage} className="btn btn-sm rounded-circle d-flex align-items-center justify-content-center" style={{ width: '28px', height: '28px', background: 'rgba(239,68,68,0.2)', border: '1px solid var(--accent-red)' }}>
+                                            <FaTimes size={11} className="text-neon-red" />
                                         </button>
                                     </div>
-                                    {/* AI analyzing overlay */}
-                                    {isCaptioning && (
-                                        <div className="position-absolute top-0 start-0 end-0 bottom-0 d-flex align-items-center justify-content-center" style={{ background: 'rgba(99,102,241,0.15)', backdropFilter: 'blur(4px)' }}>
-                                            <div className="text-white text-center">
-                                                <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}>
-                                                    <FaRobot size={32} />
-                                                </motion.div>
-                                                <p className="mt-2 fw-bold small mb-0">Analyzing image...</p>
-                                            </div>
-                                        </div>
-                                    )}
                                 </motion.div>
                             )}
                         </div>
-
-                        {/* Video Upload (optional) */}
-                        <div className="mb-5">
-                            <label className="fw-bold text-dark mb-2 d-block">
-                                Video Evidence
-                                <span className="ms-2 badge rounded-pill" style={{ background: '#f1f5f9', color: '#64748b', fontSize: '0.72rem', fontWeight: 500 }}>Optional</span>
-                            </label>
-                            <input type="file" ref={videoInputRef} onChange={handleVideoChange} className="d-none" id="videoUpload" accept="video/*" />
-                            {!formData.video ? (
-                                <label
-                                    htmlFor="videoUpload"
-                                    className="d-flex align-items-center gap-4 cursor-pointer"
-                                    style={{
-                                        border: '2px dashed #e2e8f0',
-                                        borderRadius: '16px',
-                                        padding: '24px 32px',
-                                        background: '#fafafa',
-                                        transition: 'all 0.2s',
-                                        cursor: 'pointer'
-                                    }}
-                                    onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
-                                    onMouseLeave={e => e.currentTarget.style.background = '#fafafa'}
-                                >
-                                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                        <FaVideo size={20} style={{ color: '#64748b' }} />
-                                    </div>
-                                    <div>
-                                        <p className="fw-bold text-dark mb-0">Click to upload video</p>
-                                        <small className="text-muted">MP4, MOV up to 10MB · AI extracts description</small>
-                                    </div>
-                                </label>
-                            ) : (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 6 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="d-flex align-items-center justify-content-between p-3 rounded-3 border"
-                                    style={{ background: isVideoAnalyzing ? '#fafbff' : '#f0fdf4', borderColor: isVideoAnalyzing ? '#c7d2fe' : '#bbf7d0' }}
-                                >
-                                    <div className="d-flex align-items-center gap-3">
-                                        <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: isVideoAnalyzing ? '#eef2ff' : '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            {isVideoAnalyzing
-                                                ? <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}><FaRobot size={18} style={{ color: '#6366f1' }} /></motion.div>
-                                                : <FaVideo size={18} style={{ color: '#16a34a' }} />
-                                            }
-                                        </div>
-                                        <div>
-                                            <p className="fw-bold small mb-0 text-dark text-truncate" style={{ maxWidth: '200px' }}>{formData.video.name}</p>
-                                            <small className="text-muted">{isVideoAnalyzing ? 'Analyzing...' : '✓ Ready'}</small>
-                                        </div>
-                                    </div>
-                                    {!isVideoAnalyzing && (
-                                        <button type="button" onClick={removeVideo} className="btn btn-sm rounded-circle d-flex align-items-center justify-content-center" style={{ width: '28px', height: '28px', background: '#fee2e2', border: 'none' }}>
-                                            <FaTimes size={11} className="text-danger" />
-                                        </button>
-                                    )}
-                                </motion.div>
-                            )}
-                        </div>
-
                     </div>
 
-                    {/* ─── RIGHT: Sticky Preview + AI Results + CTA ────────────── */}
-                    <div
-                        className="px-4 py-5 d-flex flex-column gap-4"
-                        style={{
-                            flex: '0 0 380px',
-                            width: '380px',
-                            background: 'white',
-                            borderLeft: '1px solid #e2e8f0',
-                            position: 'sticky',
-                            top: '65px',
-                            height: 'calc(100vh - 65px)',
-                            overflowY: 'auto',
-                        }}
-                    >
-                        {/* Image preview in sidebar */}
+                    {/* RIGHT: Validation Panel */}
+                    <div className="px-4 py-5 d-flex flex-column gap-4 glass-card border-end-0 border-top-0 border-bottom-0" style={{ flex: '0 0 380px', width: '380px', position: 'sticky', top: '65px', height: 'calc(100vh - 65px)', overflowY: 'auto', borderRadius: 0, borderLeft: '1px solid rgba(255,255,255,0.1)' }}>
                         <div>
-                            <label className="fw-bold text-muted text-uppercase mb-2 d-block" style={{ fontSize: '0.72rem', letterSpacing: '0.08em' }}>Photo Preview</label>
-                            {imagePreview ? (
-                                <div className="rounded-3 overflow-hidden border shadow-sm" style={{ height: '180px' }}>
-                                    <img src={imagePreview} alt="Preview" className="w-100 h-100 object-fit-cover" />
-                                </div>
-                            ) : (
-                                <div
-                                    className="rounded-3 d-flex align-items-center justify-content-center"
-                                    style={{ height: '180px', background: '#f8fafc', border: '2px dashed #e2e8f0' }}
-                                >
-                                    <div className="text-center text-muted">
-                                        <FaCamera size={28} className="mb-2" style={{ opacity: 0.3 }} />
-                                        <p className="small mb-0">No photo uploaded yet</p>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* AI Detection Card */}
-                        <div>
-                            <label className="fw-bold text-muted text-uppercase mb-3 d-block" style={{ fontSize: '0.72rem', letterSpacing: '0.08em' }}>
-                                <FaRobot className="me-1" style={{ color: '#6366f1' }} /> AI Detection
+                            <label className="tech-font fw-bold text-muted text-uppercase mb-3 d-flex align-items-center gap-2" style={{ fontSize: '0.72rem', letterSpacing: '0.15em' }}>
+                                <FaTerminal className="text-neon-purple" /> AUTO-DIAGNOSTICS
                             </label>
 
                             {/* Department */}
-                            <div className="mb-3 p-3 rounded-3 border d-flex align-items-center gap-3" style={{ background: deptMeta ? deptMeta.bg : '#f8fafc', borderColor: deptMeta ? 'transparent' : '#e2e8f0', transition: 'all 0.3s' }}>
-                                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: deptMeta ? `${deptMeta.color}20` : '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                    {deptMeta
-                                        ? <deptMeta.icon size={18} style={{ color: deptMeta.color }} />
-                                        : <FaRobot size={16} style={{ color: '#94a3b8' }} />
-                                    }
+                            <div className="mb-3 p-3 rounded border d-flex align-items-center gap-3" style={{ background: deptMeta ? deptMeta.bg : 'rgba(255,255,255,0.05)', borderColor: deptMeta ? deptMeta.color : 'rgba(255,255,255,0.2)' }}>
+                                <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: deptMeta ? 'transparent' : 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    {deptMeta ? <deptMeta.icon size={18} style={{ color: deptMeta.color }} /> : <FaRobot size={16} className="text-muted" />}
                                 </div>
                                 <div>
-                                    <p className="fw-bold small mb-0" style={{ color: deptMeta ? deptMeta.color : '#94a3b8' }}>
-                                        {formData.category || 'Waiting for input...'}
+                                    <p className="tech-font fw-bold small mb-0 text-uppercase" style={{ color: deptMeta ? deptMeta.color : 'var(--text-muted)' }}>
+                                        {formData.category || 'PENDING...'}
                                     </p>
-                                    <small className="text-muted">Department</small>
                                 </div>
-                                {formData.category && <FaCheckCircle className="ms-auto" style={{ color: '#10b981' }} />}
+                                {formData.category && <FaCheckCircle className="ms-auto text-neon-green" />}
                             </div>
 
                             {/* Priority */}
-                            <div className="p-3 rounded-3 border d-flex align-items-center gap-3" style={{ background: prioMeta ? prioMeta.bg : '#f8fafc', borderColor: prioMeta ? prioMeta.border : '#e2e8f0', transition: 'all 0.3s' }}>
-                                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: prioMeta ? `${prioMeta.color}20` : '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                    <FaExclamationTriangle size={16} style={{ color: prioMeta ? prioMeta.color : '#94a3b8' }} />
+                            <div className="p-3 rounded border d-flex align-items-center gap-3" style={{ background: prioMeta ? prioMeta.bg : 'rgba(255,255,255,0.05)', borderColor: prioMeta ? prioMeta.color : 'rgba(255,255,255,0.2)' }}>
+                                <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: prioMeta ? 'transparent' : 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <FaExclamationTriangle size={16} style={{ color: prioMeta ? prioMeta.color : 'var(--text-muted)' }} />
                                 </div>
                                 <div>
-                                    <p className="fw-bold small mb-0" style={{ color: prioMeta ? prioMeta.color : '#94a3b8' }}>
-                                        {prioMeta ? prioMeta.label : 'Waiting for input...'}
+                                    <p className="tech-font fw-bold small mb-0 text-uppercase" style={{ color: prioMeta ? prioMeta.color : 'var(--text-muted)' }}>
+                                        {prioMeta ? prioMeta.label : 'PENDING...'}
                                     </p>
-                                    <small className="text-muted">Priority Level</small>
                                 </div>
-                                {formData.priority && <FaCheckCircle className="ms-auto" style={{ color: '#10b981' }} />}
+                                {formData.priority && <FaCheckCircle className="ms-auto text-neon-green" />}
                             </div>
 
                             {formData.aiScore > 0 && (
-                                <div className="mt-3 p-3 rounded-3" style={{ background: 'linear-gradient(135deg, #eef2ff, #f0fdf4)', border: '1px solid #c7d2fe' }}>
+                                <div className="mt-3 p-3 rounded" style={{ background: 'rgba(163,230,53,0.05)', border: '1px solid var(--secondary-color)' }}>
                                     <div className="d-flex align-items-center justify-content-between mb-2">
-                                        <small className="fw-bold text-muted">AI Confidence</small>
-                                        <small className="fw-bold" style={{ color: '#6366f1' }}>{Math.round(formData.aiScore)}%</small>
+                                        <small className="tech-font fw-bold text-muted text-uppercase" style={{ letterSpacing: '0.1em' }}>THREAT LEVEL</small>
+                                        <small className="tech-font fw-bold text-neon-green">{Math.round(formData.aiScore)}%</small>
                                     </div>
-                                    <div className="progress rounded-pill" style={{ height: '6px' }}>
-                                        <div
-                                            className="progress-bar rounded-pill"
-                                            style={{ width: `${formData.aiScore}%`, background: 'linear-gradient(to right, #6366f1, #8b5cf6)' }}
-                                        />
+                                    <div className="progress rounded-pill bg-dark" style={{ height: '4px' }}>
+                                        <div className="progress-bar" style={{ width: `${formData.aiScore}%`, background: 'var(--secondary-color)' }} />
                                     </div>
                                 </div>
                             )}
-
-                            {isAiActive && (
-                                <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    className="mt-3 text-center py-2"
-                                >
-                                    <small className="text-muted d-flex align-items-center justify-content-center gap-2">
-                                        <motion.span
-                                            animate={{ rotate: 360 }}
-                                            transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                                            style={{ display: 'inline-block' }}
-                                        >
-                                            <FaRobot size={12} style={{ color: '#6366f1' }} />
-                                        </motion.span>
-                                        AI is processing...
-                                    </small>
-                                </motion.div>
-                            )}
                         </div>
 
-                        {/* Checklist */}
                         <div>
-                            <label className="fw-bold text-muted text-uppercase mb-3 d-block" style={{ fontSize: '0.72rem', letterSpacing: '0.08em' }}>Checklist</label>
+                            <label className="tech-font fw-bold text-muted text-uppercase mb-3 d-flex align-items-center gap-2" style={{ fontSize: '0.72rem', letterSpacing: '0.15em' }}>
+                                SUBMISSION PARAMS
+                            </label>
                             {[
-                                { label: 'Title added', done: !!formData.title },
-                                { label: 'Description added', done: formData.description.length > 10 },
-                                { label: 'Location set', done: !!formData.location },
-                                { label: 'Photo uploaded', done: !!formData.image },
-                                { label: 'Department detected', done: !!formData.category },
-                                { label: 'Priority detected', done: !!formData.priority },
+                                { label: 'DESIGNATION', done: !!formData.title },
+                                { label: 'LOGS', done: formData.description.length > 10 },
+                                { label: 'COORDS', done: !!formData.location },
+                                { label: 'INTEL', done: !!formData.image },
+                                { label: 'ROUTING', done: !!formData.category },
+                                { label: 'PRIORITY', done: !!formData.priority },
                             ].map((item, i) => (
                                 <div key={i} className="d-flex align-items-center gap-2 mb-2">
-                                    <span style={{ width: '18px', height: '18px', borderRadius: '50%', background: item.done ? '#ecfdf5' : '#f1f5f9', border: `1.5px solid ${item.done ? '#6ee7b7' : '#e2e8f0'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                        {item.done && <FaCheckCircle size={10} style={{ color: '#10b981' }} />}
+                                    <span style={{ width: '16px', height: '16px', background: item.done ? 'rgba(163,230,53,0.2)' : 'rgba(255,255,255,0.1)', border: `1px solid ${item.done ? 'var(--secondary-color)' : 'transparent'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        {item.done && <FaCheckCircle size={8} className="text-neon-green" />}
                                     </span>
-                                    <small className={item.done ? 'text-dark fw-medium' : 'text-muted'}>{item.label}</small>
+                                    <small className={`tech-font fw-bold ${item.done ? 'text-white' : 'text-muted'} text-uppercase`} style={{ letterSpacing: '0.1em' }}>{item.label}</small>
                                 </div>
                             ))}
                         </div>
 
-                        {/* Submit Button */}
                         <div className="mt-auto">
-                            <button
-                                type="submit"
-                                disabled={loading || isAiActive}
-                                className="btn w-100 fw-bold py-3 rounded-3"
+                            <button type="submit" disabled={loading || isAiActive}
+                                className="btn w-100 fw-bold py-3 text-uppercase tech-font"
                                 style={{
-                                    background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
-                                    color: 'white',
-                                    border: 'none',
-                                    fontSize: '1rem',
-                                    boxShadow: '0 4px 14px rgba(99,102,241,0.35)',
-                                    opacity: loading || isAiActive ? 0.7 : 1,
-                                    transition: 'all 0.2s'
-                                }}
-                            >
-                                {loading ? (
-                                    <span className="d-flex align-items-center justify-content-center gap-2">
-                                        <span className="spinner-border spinner-border-sm" /> Submitting Report...
-                                    </span>
-                                ) : isAiActive ? (
-                                    <span className="d-flex align-items-center justify-content-center gap-2">
-                                        <span className="spinner-border spinner-border-sm" /> AI Processing...
-                                    </span>
-                                ) : 'Submit Report'}
+                                    background: (loading || isAiActive) ? 'rgba(255,255,255,0.1)' : 'var(--primary-color)',
+                                    color: 'white', border: '1px solid ' + ((loading || isAiActive) ? 'rgba(255,255,255,0.2)' : 'var(--primary-color)'),
+                                    letterSpacing: '0.2em'
+                                }}>
+                                {loading || isAiActive ? <span className="spinner-border spinner-border-sm" /> : 'TRANSMIT LOG'}
                             </button>
-                            <p className="text-center text-muted mt-2 mb-0" style={{ fontSize: '0.75rem' }}>
-                                Your report will be reviewed by the relevant authority within 24 hours.
-                            </p>
                         </div>
                     </div>
-
                 </div>
             </form>
         </div>

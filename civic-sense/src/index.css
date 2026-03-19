@@ -1,154 +1,196 @@
-/* Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
 
 :root {
-  /* Premium Color Palette (Indigo/Slate Theme) */
-  --primary-color: #4f46e5;
-  /* Indigo 600 */
-  --primary-hover: #4338ca;
-  /* Indigo 700 */
-  --primary-light: #e0e7ff;
-  /* Indigo 100 */
+  /* Cyber Tactical Palette */
+  --primary-color: #aa00ff; /* Neon Purple */
+  --primary-hover: #7b00b3;
+  --primary-light: rgba(170, 0, 255, 0.15);
+  
+  --secondary-color: #a3e635; /* Neon/Slime Green */
+  --accent-red: #ef4444; /* Threat/Alert Red */
+  
+  --bg-body: #09090b; /* Pitch Dark Gray/Black */
+  --bg-surface: #111116; /* HUD Surface */
+  
+  --text-main: #f8fafc; /* Near White */
+  --text-muted: #a1a1aa; /* Muted tech text */
+  --text-dark: #181920;
 
-  --secondary-color: #64748b;
-  /* Slate 500 */
+  --shadow-sm: 0 0 10px rgba(170,0,255,0.1);
+  --shadow-md: 0 0 20px rgba(170,0,255,0.25);
+  --shadow-lg: 0 0 35px rgba(170,0,255,0.4);
 
-  --bg-body: #f8fafc;
-  /* Slate 50 */
-  --bg-surface: #ffffff;
+  --radius-md: 4px; /* Sharper tactical corners */
+  --radius-lg: 8px;
+  --radius-xl: 12px;
 
-  --text-main: #1e293b;
-  /* Slate 800 */
-  --text-muted: #94a3b8;
-  /* Slate 400 */
-
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-
-  --radius-md: 0.5rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.5rem;
-
-  --transition-fast: 0.2s ease;
+  --transition-fast: 0.15s ease-out;
 }
 
 * {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Rajdhani', sans-serif;
 }
 
 body {
   background-color: var(--bg-body);
   color: var(--text-main);
   -webkit-font-smoothing: antialiased;
+  letter-spacing: 0.02em;
 }
+
+/* Typography Tools */
+.tech-font {
+  font-family: 'Share Tech Mono', monospace !important;
+}
+.text-neon-purple { color: var(--primary-color) !important; text-shadow: 0 0 5px var(--primary-color); }
+.text-neon-green { color: var(--secondary-color) !important; text-shadow: 0 0 5px var(--secondary-color); }
+.text-neon-red { color: var(--accent-red) !important; text-shadow: 0 0 5px var(--accent-red); }
+
+/* Backgrounds */
+.bg-primary-custom { background-color: var(--primary-color) !important; }
+.bg-surface { background-color: var(--bg-surface) !important; border: 1px solid rgba(255,255,255,0.05); }
 
 /* Utilities */
-.text-primary-custom {
-  color: var(--primary-color) !important;
-}
+.shadow-custom-sm { box-shadow: var(--shadow-sm) !important; }
+.shadow-custom-md { box-shadow: var(--shadow-md) !important; }
+.shadow-custom-lg { box-shadow: var(--shadow-lg) !important; }
+.rounded-custom { border-radius: var(--radius-lg) !important; }
+.rounded-custom-xl { border-radius: var(--radius-xl) !important; }
+.cursor-pointer { cursor: pointer; }
+.hover-scale { transition: transform var(--transition-fast); }
+.hover-scale:hover { transform: scale(1.02); }
+.hover-bg-light:hover { background-color: rgba(255,255,255,0.05) !important; }
+.transition-all { transition: all 0.2s ease-out; }
+.tracking-widest { letter-spacing: 0.15em; }
+.text-accent-red { color: var(--accent-red) !important; }
+.text-neon-green { color: var(--secondary-color) !important; }
 
-.bg-primary-custom {
-  background-color: var(--primary-color) !important;
-}
+/* Custom Scrollbar - Cyber Style */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg-body); }
+::-webkit-scrollbar-thumb { background: rgba(170,0,255,0.3); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--primary-color); }
 
-.bg-surface {
-  background-color: var(--bg-surface) !important;
-}
-
-.shadow-custom-sm {
-  box-shadow: var(--shadow-sm) !important;
-}
-
-.shadow-custom-md {
-  box-shadow: var(--shadow-md) !important;
-}
-
-.shadow-custom-lg {
-  box-shadow: var(--shadow-lg) !important;
-}
-
-.rounded-custom {
-  border-radius: var(--radius-lg) !important;
-}
-
-.rounded-custom-xl {
-  border-radius: var(--radius-xl) !important;
-}
-
-.cursor-pointer {
-  cursor: pointer;
-}
-
-.hover-scale {
-  transition: transform var(--transition-fast);
-}
-
-.hover-scale:hover {
-  transform: scale(1.02);
-}
-
-.hover-bg-light:hover {
-  background-color: #f1f5f9 !important;
-}
-
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-
-/* Glassmorphism card */
+/* Glassmorphism -> HUD Glass */
 .glass-card {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(12, 12, 18, 0.85);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 15px rgba(0,0,0,0.5), 0 4px 24px rgba(0,0,0,0.4);
+  border-radius: var(--radius-lg);
+  /* Ensure glass stays opaque on scroll */
+  will-change: backdrop-filter;
 }
+/* Sticky nav glass fix – keep blur on scroll */
+.glass-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: rgba(9, 9, 11, 0.9) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-bottom: 1px solid rgba(170,0,255,0.2) !important;
+}
+/* Leaflet popup tactical override */
+.leaflet-popup-content-wrapper {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+.leaflet-popup-tip { display: none !important; }
+.leaflet-popup-content { margin: 0 !important; }
 
-/* Sidebar Specifics */
+/* ── Leaflet z-index containment ──
+   Keep ALL Leaflet layers below the sticky nav (z-index 200)
+   and far below dropdowns (z-index 9999).
+   The LiveIncidentMap wrapper uses isolation:isolate + z-index:0,
+   so these are redundant safety overrides. */
+.leaflet-pane         { z-index: 1 !important; }
+.leaflet-tile-pane    { z-index: 2 !important; }
+.leaflet-overlay-pane { z-index: 3 !important; }
+.leaflet-marker-pane  { z-index: 4 !important; }
+.leaflet-popup-pane   { z-index: 5 !important; }
+.leaflet-top,
+.leaflet-bottom       { z-index: 6 !important; }
+
+/* Nav & Sidebars */
 .nav-link-custom {
-  color: var(--secondary-color);
-  font-weight: 500;
+  color: var(--text-muted);
+  font-weight: 600;
   transition: all var(--transition-fast);
   border-radius: var(--radius-md);
+  text-transform: uppercase;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
 }
-
 .nav-link-custom:hover {
   background-color: var(--primary-light);
   color: var(--primary-color);
+  box-shadow: inset 2px 0 0 var(--primary-color);
 }
-
 .nav-link-custom.active {
-  background-color: var(--primary-color) !important;
-  color: #fff !important;
-  box-shadow: var(--shadow-md);
+  background-color: var(--primary-light) !important;
+  color: var(--primary-color) !important;
+  box-shadow: inset 3px 0 0 var(--primary-color);
 }
 
-/* Button Reset/Custom */
+/* Button Refits */
 .btn-primary-custom {
-  background-color: var(--primary-color);
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
   color: white;
-  border: none;
-  padding: 0.6rem 1.2rem;
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 0.7rem 1.4rem;
   border-radius: var(--radius-md);
-  font-weight: 500;
+  font-weight: 700;
+  font-family: 'Share Tech Mono', monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  position: relative;
+  overflow: hidden;
   transition: all var(--transition-fast);
 }
-
 .btn-primary-custom:hover {
-  background-color: var(--primary-hover);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px rgba(170,0,255,0.4);
+  border-color: rgba(255,255,255,0.5);
+}
+
+/* Forms */
+.form-control, .form-select {
+  background-color: rgba(0,0,0,0.4) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  color: var(--text-main) !important;
+  border-radius: var(--radius-md) !important;
+  font-family: 'Rajdhani', sans-serif;
+}
+.form-control:focus, .form-select:focus {
+  background-color: rgba(0,0,0,0.6) !important;
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 2px rgba(170,0,255,0.2) !important;
+}
+
+/* Toastify Theming */
+.Toastify__toast {
+  background-color: rgba(15, 23, 42, 0.95) !important;
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--primary-color) !important;
+  color: var(--text-main) !important;
+  font-family: 'Share Tech Mono', monospace !important;
+  letter-spacing: 0.05em;
+  box-shadow: 0 0 20px rgba(170, 0, 255, 0.2) !important;
+  border-radius: var(--radius-md) !important;
+}
+.Toastify__toast--error {
+  border-color: var(--accent-red) !important;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.2) !important;
+}
+.Toastify__toast--success {
+  border-color: var(--secondary-color) !important;
+  box-shadow: 0 0 20px rgba(163, 230, 53, 0.2) !important;
+}
+.Toastify__close-button {
+  color: var(--text-muted) !important;
 }

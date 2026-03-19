@@ -2,25 +2,25 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     FaSearch, FaEye, FaRobot, FaTimes, FaMapMarkerAlt, FaUser,
-    FaArrowLeft, FaBuilding, FaCheckCircle, FaFilter, FaFileInvoiceDollar, FaRegClock
+    FaArrowLeft, FaTerminal, FaCheckCircle, FaFilter, FaFileInvoiceDollar, FaRegClock, FaCity
 } from 'react-icons/fa';
 import api from '../api/axios';
 import { notify } from '../utils/notify';
 
 /* ─── Status config ──────────────────────────────────────────────────────────── */
 const STATUS_OPTIONS = [
-    { value: 'Pending', color: '#f59e0b', bg: '#fffbeb', border: '#fcd34d' },
-    { value: 'In Progress', color: '#3b82f6', bg: '#eff6ff', border: '#93c5fd' },
-    { value: 'Resolved', color: '#10b981', bg: '#ecfdf5', border: '#6ee7b7' },
-    { value: 'Rejected', color: '#ef4444', bg: '#fef2f2', border: '#fca5a5' },
+    { value: 'Pending', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', border: '#fbbf24' },
+    { value: 'In Progress', color: '#3b82f6', bg: 'rgba(59,130,246,0.1)', border: '#60a5fa' },
+    { value: 'Resolved', color: 'var(--neon-green)', bg: 'rgba(16,185,129,0.1)', border: 'var(--neon-green)' },
+    { value: 'Rejected', color: 'var(--accent-red)', bg: 'rgba(239,68,68,0.1)', border: 'var(--accent-red)' },
 ];
 const getStatusOpt = (val) => STATUS_OPTIONS.find(s => s.value === val) || STATUS_OPTIONS[0];
 
 const PRIORITY_META = {
-    Emergency: { color: '#ef4444', bg: '#fef2f2' },
-    High: { color: '#f97316', bg: '#fff7ed' },
-    Medium: { color: '#f59e0b', bg: '#fffbeb' },
-    Low: { color: '#10b981', bg: '#ecfdf5' },
+    Emergency: { color: 'var(--accent-red)', bg: 'rgba(239,68,68,0.15)' },
+    High: { color: '#f97316', bg: 'rgba(249,115,22,0.15)' },
+    Medium: { color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
+    Low: { color: 'var(--neon-green)', bg: 'rgba(16,185,129,0.15)' },
 };
 
 /* ─── Main Page ──────────────────────────────────────────────────────────────── */
@@ -40,7 +40,7 @@ const ComplaintManagement = () => {
                 setComplaints(response.data.data);
             } catch (error) {
                 console.error('Error fetching complaints:', error);
-                notify('error', 'Failed to fetch complaints');
+                notify('error', 'SYSTEM ERROR: FAILED TO FETCH ANOMALIES');
             } finally {
                 setLoading(false);
             }
@@ -50,13 +50,13 @@ const ComplaintManagement = () => {
 
     const mapComplaint = (c) => ({
         id: c.complaintId || c._id,
-        title: c.complaintDescription.split('\n')[0].replace(/\*\*/g, '') || 'Complaint',
+        title: c.complaintDescription.split('\n')[0].replace(/\*\*/g, '') || 'ANOMALY',
         description: c.complaintDescription.replace(/\*\*/g, ''),
         location: c.complaintLocation,
         status: c.complaintStatus,
         priority: c.complaintPriority,
         date: new Date(c.createdAt).toLocaleDateString(),
-        reporter: c.complaintUser?.userName || 'Anonymous',
+        reporter: c.complaintUser?.userName || 'UNKNOWN',
         category: c.complaintType,
         image: c.complaintImage,
         aiScore: c.complaintAIScore ? Math.round(c.complaintAIScore) : 0,
@@ -84,7 +84,7 @@ const ComplaintManagement = () => {
             expenses: draft.expenses || []
         };
         await api.put(`/complaint/update-status/${draft.id}`, payload);
-        notify('success', 'Ticket updated successfully');
+        notify('success', 'DATALINK SECURED: RECORD UPDATED.');
         setComplaints(prev =>
             prev.map(c =>
                 (c._id === draft.id || c.complaintId === draft.id)
@@ -101,84 +101,84 @@ const ComplaintManagement = () => {
     }, {});
 
     if (loading) return (
-        <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '80vh', background: '#f8fafc' }}>
-            <div className="spinner-border" style={{ color: '#4f46e5' }} role="status"><span className="visually-hidden">Loading…</span></div>
+        <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '80vh', background: 'transparent' }}>
+            <div className="spinner-border text-neon-purple" role="status"><span className="visually-hidden">LOADING...</span></div>
         </div>
     );
 
     return (
-        <div className="d-flex flex-column" style={{ minHeight: '100vh', background: '#f8fafc' }}>
+        <div className="d-flex flex-column" style={{ minHeight: '100vh', background: 'transparent' }}>
 
             {/* ─── UNIFIED HEADER ─────────────────────────────────── */}
-            <div className="px-5 py-4 border-bottom shadow-sm" style={{ background: 'white', position: 'sticky', top: 0, zIndex: 10 }}>
+            <div className="px-5 py-4 border-bottom shadow-sm" style={{ background: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(12px)', position: 'sticky', top: 0, zIndex: 10, borderColor: 'rgba(255,255,255,0.1) !important' }}>
                 <div className="d-flex justify-content-between align-items-center flex-wrap gap-4">
                     <div className="d-flex align-items-center gap-3">
-                        <div className="d-flex align-items-center justify-content-center rounded-3 shadow-sm" style={{ width: '56px', height: '56px', background: 'linear-gradient(135deg, #4f46e5, #6366f1)', color: 'white' }}>
-                            <FaBuilding size={24} />
+                        <div className="d-flex align-items-center justify-content-center border border-primary rounded" style={{ width: '56px', height: '56px', background: 'rgba(170,0,255,0.1)', color: 'var(--primary-color)' }}>
+                            <FaCity size={24} />
                         </div>
                         <div>
-                            <h4 className="fw-bold text-dark mb-1" style={{ letterSpacing: '-0.5px' }}>
-                                {user?.authorityDepartment || 'Department'} Queue
+                            <h4 className="fw-bold text-white tech-font mb-1 text-uppercase tracking-widest" style={{ letterSpacing: '0.1em' }}>
+                                {user?.authorityDepartment || 'SECTOR'} COMMAND
                             </h4>
-                            <small className="text-secondary fw-medium">
-                                {processed.length} Total Complaints &nbsp;·&nbsp; {statusCounts['Pending'] || 0} Pending &nbsp;·&nbsp; {statusCounts['Resolved'] || 0} Resolved
+                            <small className="tech-font text-muted font-monospace text-uppercase" style={{ letterSpacing: '0.1em', fontSize: '0.75rem' }}>
+                                {processed.length} RECORDS &nbsp;·&nbsp; <span style={{ color: '#f59e0b' }}>{statusCounts['Pending'] || 0} PENDING</span> &nbsp;·&nbsp; <span style={{ color: 'var(--neon-green)' }}>{statusCounts['Resolved'] || 0} SECURED</span>
                             </small>
                         </div>
                     </div>
 
                     <div className="d-flex align-items-center gap-3">
                         {/* Live search */}
-                        <div className="d-flex align-items-center gap-2 px-3 py-2 rounded-3 border bg-white shadow-sm" style={{ width: '280px', transition: 'all 0.2s' }}>
-                            <FaSearch size={14} className="text-muted" />
+                        <div className="d-flex align-items-center gap-2 px-3 py-2 rounded border" style={{ width: '280px', background: 'rgba(0,0,0,0.5)', borderColor: 'rgba(255,255,255,0.1) !important' }}>
+                            <FaSearch size={14} className="text-secondary" />
                             <input
                                 type="text"
-                                className="form-control border-0 p-0 shadow-none bg-transparent"
-                                placeholder="Search ID, keyword, name..."
+                                className="form-control border-0 p-0 shadow-none bg-transparent text-white tech-font placeholder-glow"
+                                placeholder="QUERY ARCHIVES..."
                                 value={searchText}
                                 onChange={e => setSearchText(e.target.value)}
-                                style={{ fontSize: '0.9rem' }}
+                                style={{ fontSize: '0.9rem', letterSpacing: '0.05em' }}
                             />
                             {searchText && <button className="btn btn-sm p-0 text-muted border-0" onClick={() => setSearchText('')}><FaTimes size={12} /></button>}
                         </div>
                         {/* AI sort */}
                         <button
                             onClick={() => setSortBy(sortBy === 'ai_priority' ? 'newest' : 'ai_priority')}
-                            className="btn d-flex align-items-center gap-2 fw-bold shadow-sm"
+                            className="btn d-flex align-items-center gap-2 fw-bold tech-font text-uppercase"
                             style={{
-                                borderRadius: '8px',
-                                background: sortBy === 'ai_priority' ? '#fffbeb' : 'white',
-                                color: sortBy === 'ai_priority' ? '#f59e0b' : '#64748b',
-                                border: `1.5px solid ${sortBy === 'ai_priority' ? '#fcd34d' : '#e2e8f0'}`,
-                                fontSize: '0.9rem', padding: '10px 20px',
+                                borderRadius: '4px',
+                                background: sortBy === 'ai_priority' ? 'rgba(170,0,255,0.2)' : 'rgba(255,255,255,0.05)',
+                                color: sortBy === 'ai_priority' ? 'var(--primary-color)' : '#94a3b8',
+                                border: `1px solid ${sortBy === 'ai_priority' ? 'var(--primary-color)' : 'rgba(255,255,255,0.1)'}`,
+                                fontSize: '0.8rem', padding: '10px 20px', letterSpacing: '0.1em',
                                 transition: 'all 0.2s',
                             }}
                         >
                             <FaRobot size={15} />
-                            {sortBy === 'ai_priority' ? 'Sorting: Critical Priority' : 'Sort: AI Priority'}
+                            {sortBy === 'ai_priority' ? 'OVERRIDE: CRITICAL' : 'SORT: AI PRIORITY'}
                         </button>
                     </div>
                 </div>
 
                 {/* Status filter pills */}
-                <div className="d-flex gap-2 mt-4 pb-1 overflow-auto" style={{ scrollbarWidth: 'none' }}>
-                    {[{ value: 'All', color: '#1e293b', bg: '#1e293b', border: '#1e293b', textActive: 'white' }, ...STATUS_OPTIONS].map((s) => {
+                <div className="d-flex gap-2 mt-4 pb-1 overflow-auto custom-scrollbar">
+                    {[{ value: 'All', color: 'var(--text-muted)', bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.1)', textActive: 'white' }, ...STATUS_OPTIONS].map((s) => {
                         const active = statusFilter === s.value;
                         const count = s.value === 'All' ? processed.length : (statusCounts[s.value] || 0);
                         return (
                             <button
                                 key={s.value}
                                 onClick={() => setStatusFilter(s.value)}
-                                className="btn fw-bold px-4 py-2"
+                                className="btn fw-bold px-3 py-1 tech-font text-uppercase"
                                 style={{
-                                    borderRadius: '30px', fontSize: '0.85rem',
-                                    background: active ? (s.bg || '#1e293b') : 'white',
+                                    borderRadius: '4px', fontSize: '0.75rem', letterSpacing: '0.1em',
+                                    background: active ? (s.bg || 'rgba(170,0,255,0.1)') : 'rgba(255,255,255,0.02)',
                                     color: active ? (s.textActive || s.color) : '#64748b',
-                                    border: `1.5px solid ${active ? (s.border || s.bg) : '#e2e8f0'}`,
+                                    border: `1px solid ${active ? (s.border || 'var(--primary-color)') : 'rgba(255,255,255,0.1)'}`,
                                     transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                                    transform: active ? 'scale(1.02)' : 'scale(1)',
+                                    boxShadow: active ? `0 0 10px ${s.border || 'var(--primary-color)'}` : 'none'
                                 }}
                             >
-                                {s.value} <span className="ms-1 opacity-75 fw-normal">({count})</span>
+                                {s.value} <span className="ms-1 opacity-75 font-monospace">({count})</span>
                             </button>
                         );
                     })}
@@ -186,34 +186,34 @@ const ComplaintManagement = () => {
             </div>
 
             {/* ─── CLEAN TABLE ─────────────────────────────────── */}
-            <div className="px-5 py-4 flex-grow-1 d-flex flex-column">
-                <div className="bg-white rounded-4 border shadow-sm d-flex flex-column flex-grow-1" style={{ overflow: 'hidden' }}>
-
+            <div className="px-3 px-md-5 py-4 flex-grow-1 d-flex flex-column">
+                <div className="glass-card d-flex flex-column flex-grow-1 overflow-hidden rounded" style={{ border: '1px solid var(--primary-color)' }}>
+                    
                     {/* Column headers */}
-                    <div className="d-flex align-items-center px-4 py-3 border-bottom" style={{ background: '#f8fafc', minWidth: '960px' }}>
+                    <div className="d-flex align-items-center px-4 py-3 border-bottom border-secondary" style={{ background: 'rgba(170,0,255,0.05)', minWidth: '960px' }}>
                         {[
-                            { label: 'Issue Title', style: { flex: '1 1 0', minWidth: '220px', paddingRight: '20px' } },
-                            { label: 'Tracking ID', style: { width: '120px', minWidth: '120px', flexShrink: 0 } },
-                            { label: 'Reporter', style: { width: '150px', minWidth: '150px', flexShrink: 0 } },
-                            { label: 'Status', style: { width: '130px', minWidth: '130px', flexShrink: 0 } },
-                            { label: 'AI Score', style: { width: '120px', minWidth: '120px', flexShrink: 0 } },
-                            { label: 'Priority', style: { width: '110px', minWidth: '110px', flexShrink: 0 } },
-                            { label: 'Date', style: { width: '120px', minWidth: '120px', flexShrink: 0 } },
+                            { label: 'ANOMALY TITLE', style: { flex: '1 1 0', minWidth: '220px', paddingRight: '20px' } },
+                            { label: 'TRACKING_ID', style: { width: '120px', minWidth: '120px', flexShrink: 0 } },
+                            { label: 'OPERATIVE', style: { width: '150px', minWidth: '150px', flexShrink: 0 } },
+                            { label: 'STATUS', style: { width: '130px', minWidth: '130px', flexShrink: 0 } },
+                            { label: 'AI_CONF', style: { width: '120px', minWidth: '120px', flexShrink: 0 } },
+                            { label: 'PRIORITY', style: { width: '110px', minWidth: '110px', flexShrink: 0 } },
+                            { label: 'SYS_DATE', style: { width: '120px', minWidth: '120px', flexShrink: 0 } },
                             { label: '', style: { width: '60px', minWidth: '60px', flexShrink: 0, textAlign: 'center' } },
                         ].map((h, i) => (
-                            <div key={i} className="text-muted fw-bold text-uppercase" style={{ fontSize: '0.7rem', letterSpacing: '0.08em', ...h.style }}>
+                            <div key={i} className="text-secondary tech-font fw-bold text-uppercase" style={{ fontSize: '0.75rem', letterSpacing: '0.1em', ...h.style }}>
                                 {h.label}
                             </div>
                         ))}
                     </div>
 
                     {/* Table Body */}
-                    <div className="overflow-auto flex-grow-1" style={{ minWidth: '960px' }}>
+                    <div className="overflow-auto flex-grow-1 custom-scrollbar" style={{ minWidth: '960px' }}>
                         {filtered.length === 0 ? (
                             <div className="text-center py-5">
-                                <FaFilter size={32} style={{ color: '#cbd5e1', marginBottom: '16px' }} />
-                                <h5 className="fw-bold text-dark mb-1">No complaints match</h5>
-                                <p className="text-muted">Try removing your search filters to see all complaints.</p>
+                                <FaFilter size={32} style={{ color: 'rgba(255,255,255,0.1)', marginBottom: '16px' }} />
+                                <h5 className="fw-bold text-white tech-font mb-1 text-uppercase tracking-widest">DATA NOT FOUND</h5>
+                                <p className="text-muted font-monospace text-uppercase" style={{ fontSize: '0.8rem' }}>ADJUST FILTERS TO EXPAND QUERY.</p>
                             </div>
                         ) : filtered.map((c, idx) => {
                             const st = getStatusOpt(c.status);
@@ -224,42 +224,39 @@ const ComplaintManagement = () => {
                                     initial={{ opacity: 0, y: 8 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: Math.min(idx * 0.04, 0.3) }}
-                                    className="d-flex align-items-center px-4 py-3 border-bottom"
-                                    style={{ cursor: 'pointer', transition: 'background 0.15s, transform 0.15s' }}
+                                    className="d-flex align-items-center px-4 py-3 border-bottom border-secondary hover-bg-light cursor-pointer"
                                     onClick={() => setSelectedComplaint(c)}
-                                    onMouseEnter={e => e.currentTarget.style.background = '#fefeff'}
-                                    onMouseLeave={e => e.currentTarget.style.background = 'white'}
                                 >
                                     {/* Issue Title & Category */}
                                     <div style={{ flex: '1 1 0', minWidth: '220px', paddingRight: '20px' }}>
                                         <div className="d-flex align-items-center gap-2 mb-1 text-truncate">
-                                            <span className="fw-bold text-dark" style={{ fontSize: '0.95rem' }}>{c.title}</span>
+                                            <span className="fw-bold text-white font-monospace" style={{ fontSize: '0.85rem' }}>{c.title}</span>
                                             {c.isEdited && (
-                                                <span className="badge rounded-pill flex-shrink-0" style={{ background: '#fff3cd', color: '#92400e', border: '1px solid #fcd34d', fontSize: '0.65rem' }}>
-                                                    Edited
+                                                <span className="badge flex-shrink-0 tech-font" style={{ background: 'rgba(245,158,11,0.1)', color: '#f59e0b', border: '1px solid #f59e0b', fontSize: '0.65rem', letterSpacing: '0.1em' }}>
+                                                    REVISED
                                                 </span>
                                             )}
                                         </div>
-                                        <div className="text-muted text-truncate" style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <span className="badge bg-light text-secondary border px-2 py-1" style={{ fontSize: '0.65rem' }}>{c.category}</span>
+                                        <div className="text-muted text-truncate tech-font text-uppercase" style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '8px', letterSpacing: '0.05em' }}>
+                                            <span className="badge text-secondary border px-2 py-1" style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1) !important' }}>{c.category}</span>
                                             <span className="text-truncate">{c.location}</span>
                                         </div>
                                     </div>
 
                                     {/* ID */}
                                     <div style={{ width: '120px', minWidth: '120px', flexShrink: 0 }}>
-                                        <span className="text-muted fw-bold" style={{ fontSize: '0.8rem', fontFamily: 'monospace' }}>#{String(c.id).slice(-6)}</span>
+                                        <span className="text-primary tech-font" style={{ fontSize: '0.85rem', letterSpacing: '0.1em' }}>#{String(c.id).slice(-6)}</span>
                                     </div>
 
                                     {/* Reporter */}
                                     <div style={{ width: '150px', minWidth: '150px', flexShrink: 0, overflow: 'hidden' }}>
-                                        <div className="text-dark fw-medium text-truncate" style={{ fontSize: '0.85rem' }}>{c.reporter}</div>
-                                        <div className="text-muted" style={{ fontSize: '0.7rem' }}>Citizen</div>
+                                        <div className="text-white tech-font text-uppercase text-truncate" style={{ fontSize: '0.8rem', letterSpacing: '0.05em' }}>{c.reporter}</div>
+                                        <div className="text-muted font-monospace" style={{ fontSize: '0.65rem' }}>CITIZEN</div>
                                     </div>
 
                                     {/* Status */}
                                     <div style={{ width: '130px', minWidth: '130px', flexShrink: 0 }}>
-                                        <span className="badge rounded-pill fw-bold" style={{ background: st.bg, color: st.color, border: `1.5px solid ${st.border}`, fontSize: '0.75rem', padding: '6px 12px' }}>
+                                        <span className="badge px-3 py-1 tech-font text-uppercase" style={{ background: st.bg, color: st.color, border: `1px solid ${st.border}`, fontSize: '0.7rem', letterSpacing: '0.1em' }}>
                                             {c.status}
                                         </span>
                                     </div>
@@ -268,30 +265,30 @@ const ComplaintManagement = () => {
                                     <div style={{ width: '120px', minWidth: '120px', flexShrink: 0 }}>
                                         {c.aiScore > 0 ? (
                                             <div className="d-flex align-items-center gap-2">
-                                                <div style={{ width: '45px', height: '6px', borderRadius: '4px', background: '#f1f5f9', overflow: 'hidden' }}>
-                                                    <div style={{ width: `${c.aiScore}%`, height: '100%', background: c.aiScore > 80 ? '#ef4444' : c.aiScore > 50 ? '#f59e0b' : '#10b981' }} />
+                                                <div style={{ width: '45px', height: '4px', background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+                                                    <div style={{ width: `${c.aiScore}%`, height: '100%', background: c.aiScore > 80 ? 'var(--accent-red)' : c.aiScore > 50 ? '#f59e0b' : 'var(--neon-green)', boxShadow: `0 0 5px ${c.aiScore > 80 ? 'var(--accent-red)' : c.aiScore > 50 ? '#f59e0b' : 'var(--neon-green)'}` }} />
                                                 </div>
-                                                <span className="fw-bold" style={{ fontSize: '0.8rem', color: c.aiScore > 80 ? '#ef4444' : c.aiScore > 50 ? '#f59e0b' : '#10b981' }}>{c.aiScore}</span>
+                                                <span className="fw-bold font-monospace" style={{ fontSize: '0.8rem', color: c.aiScore > 80 ? 'var(--accent-red)' : c.aiScore > 50 ? '#f59e0b' : 'var(--neon-green)' }}>{c.aiScore}%</span>
                                             </div>
-                                        ) : <span className="text-muted px-2">—</span>}
+                                        ) : <span className="text-muted px-2 tech-font">—</span>}
                                     </div>
 
                                     {/* Priority */}
                                     <div style={{ width: '110px', minWidth: '110px', flexShrink: 0 }}>
-                                        <span className="badge rounded-pill fw-bold" style={{ background: pm.bg, color: pm.color, fontSize: '0.75rem', padding: '6px 12px' }}>
-                                            {c.priority || 'Low'}
+                                        <span className="tech-font fw-bold" style={{ color: pm.color, fontSize: '0.75rem', letterSpacing: '0.1em' }}>
+                                            {c.priority || 'LOW'}
                                         </span>
                                     </div>
 
                                     {/* Date */}
                                     <div style={{ width: '120px', minWidth: '120px', flexShrink: 0 }}>
-                                        <span className="text-muted fw-medium" style={{ fontSize: '0.8rem' }}>{c.date}</span>
+                                        <span className="text-muted font-monospace" style={{ fontSize: '0.75rem' }}>{c.date}</span>
                                     </div>
 
                                     {/* Action */}
                                     <div style={{ width: '60px', minWidth: '60px', flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
-                                        <div className="d-flex align-items-center justify-content-center" style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#f8fafc', border: '1.5px solid #e2e8f0', color: '#64748b' }}>
-                                            <FaEye size={16} />
+                                        <div className="d-flex align-items-center justify-content-center text-secondary hover-text-primary transition-all">
+                                            <FaTerminal size={16} />
                                         </div>
                                     </div>
                                 </motion.div>
@@ -302,7 +299,7 @@ const ComplaintManagement = () => {
 
                 {filtered.length > 0 && (
                     <div className="text-center py-3">
-                        <small className="text-muted fw-medium">Showing {filtered.length} of {processed.length} department complaints</small>
+                        <small className="tech-font text-muted text-uppercase tracking-widest" style={{ fontSize: '0.7rem' }}>DISPLAYING {filtered.length} OF {processed.length} RECORDS</small>
                     </div>
                 )}
             </div>
@@ -321,7 +318,7 @@ const ComplaintManagement = () => {
     );
 };
 
-/* ─── Immersive Full-Screen Modal Component (Zendesk/Jira Style) ────────────────────── */
+/* ─── Immersive Full-Screen Modal Component (Zendesk/Jira Style in Dark Tactical) ────────────────────── */
 const ComplaintModal = ({ complaint, onClose, onSave }) => {
     const [draft, setDraft] = useState({ ...complaint });
     const [activeTab, setActiveTab] = useState('Workspace');
@@ -339,7 +336,7 @@ const ComplaintModal = ({ complaint, onClose, onSave }) => {
         try {
             await onSave(draft);
         } catch (e) {
-            notify('error', 'Failed to update ticket');
+            notify('error', 'SYSTEM ERROR: UPDATE FAILED.');
         } finally {
             setSaving(false);
         }
@@ -362,9 +359,9 @@ const ComplaintModal = ({ complaint, onClose, onSave }) => {
     const currentStatusOpt = getStatusOpt(draft.status);
 
     const tabs = [
-        { id: 'Workspace', icon: <FaCheckCircle />, label: 'Resolution Workspace' },
-        { id: 'Ledger', icon: <FaFileInvoiceDollar />, label: `Expense Ledger ${(draft.expenses || []).length ? `(${(draft.expenses || []).length})` : ''}` },
-        { id: 'Audit', icon: <FaRegClock />, label: `Audit Trail ${(complaint.activityLog || []).length ? `(${(complaint.activityLog || []).length})` : ''}` },
+        { id: 'Workspace', icon: <FaTerminal />, label: 'CMD/WORKSPACE' },
+        { id: 'Ledger', icon: <FaFileInvoiceDollar />, label: `LEDGER ${(draft.expenses || []).length ? `[${(draft.expenses || []).length}]` : ''}` },
+        { id: 'Audit', icon: <FaRegClock />, label: `AUDIT_LOG ${(complaint.activityLog || []).length ? `[${(complaint.activityLog || []).length}]` : ''}` },
     ];
 
     return (
@@ -374,52 +371,51 @@ const ComplaintModal = ({ complaint, onClose, onSave }) => {
             exit={{ opacity: 0, scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
             className="position-fixed top-0 start-0 w-100 h-100 d-flex flex-column"
-            style={{ backgroundColor: '#f8fafc', zIndex: 1040 }}
+            style={{ backgroundColor: 'rgba(9,9,11,0.95)', backdropFilter: 'blur(30px)', zIndex: 1040 }}
         >
             {/* 1. Global Action Header */}
-            <div className="px-4 py-2 bg-white border-bottom shadow-sm d-flex justify-content-between align-items-center" style={{ zIndex: 10, flexShrink: 0 }}>
+            <div className="px-4 py-3 border-bottom d-flex justify-content-between align-items-center" style={{ background: 'rgba(0,0,0,0.8)', borderColor: 'var(--primary-color) !important', zIndex: 10, flexShrink: 0, boxShadow: '0 0 20px rgba(170,0,255,0.1)' }}>
                 <div className="d-flex align-items-center gap-3">
                     <button
                         onClick={onClose}
-                        className="btn btn-light rounded-circle d-flex align-items-center justify-content-center border shadow-sm"
-                        style={{ width: '44px', height: '44px', transition: 'all 0.2s', background: '#f8fafc' }}
-                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-                        title="Back to Dashboard"
+                        className="btn rounded-0 d-flex align-items-center justify-content-center text-secondary border border-secondary hover-bg-light"
+                        style={{ width: '40px', height: '40px', background: 'rgba(255,255,255,0.05)' }}
+                        title="TERMINATE LINK"
                     >
-                        <FaArrowLeft size={16} className="text-secondary" />
+                        <FaArrowLeft size={16} />
                     </button>
                     <div>
-                        <div className="d-flex align-items-center gap-2 mb-1">
-                            <h6 className="fw-bold mb-0 text-dark" style={{ letterSpacing: '-0.2px' }}>Ticket #{String(complaint.id).slice(-6)}</h6>
-                            <span className="badge rounded-pill px-2 py-1 fw-bold shadow-sm" style={{ background: currentStatusOpt.bg, color: currentStatusOpt.color, border: `1px solid ${currentStatusOpt.border}`, fontSize: '0.75rem' }}>
+                        <div className="d-flex align-items-center gap-3 mb-1">
+                            <h6 className="fw-bold mb-0 text-white tech-font tracking-widest text-uppercase" style={{ letterSpacing: '0.15em' }}>SYS_REF #{String(complaint.id).slice(-6)}</h6>
+                            <span className="badge px-2 py-1 tech-font text-uppercase" style={{ background: currentStatusOpt.bg, color: currentStatusOpt.color, border: `1px solid ${currentStatusOpt.border}`, fontSize: '0.7rem', letterSpacing: '0.1em', boxShadow: `0 0 8px ${currentStatusOpt.border}` }}>
                                 {draft.status}
                             </span>
                         </div>
-                        <div className="text-muted fw-medium d-flex gap-2 align-items-center" style={{ fontSize: '0.8rem' }}>
+                        <div className="text-muted font-monospace text-uppercase d-flex gap-2 align-items-center" style={{ fontSize: '0.7rem' }}>
                             <span>{complaint.category}</span>
-                            <span>•</span>
-                            <span>Reported {complaint.date}</span>
-                            {hasChanges && <><span className="text-primary">•</span><span className="text-primary fw-bold" style={{ fontSize: '0.75rem' }}>Unsaved Changes</span></>}
+                            <span className="text-secondary">//</span>
+                            <span>LOGGED {complaint.date}</span>
+                            {hasChanges && <><span className="text-primary">//</span><span className="text-primary fw-bold blink">UNSAVED_CHANGES</span></>}
                         </div>
                     </div>
                 </div>
 
-                <div className="d-flex align-items-center gap-2">
-                    <button onClick={onClose} className="btn btn-sm fw-bold text-muted px-3" style={{ borderRadius: '8px', fontSize: '0.85rem' }}>Cancel</button>
+                <div className="d-flex align-items-center gap-3">
+                    <button onClick={onClose} className="btn btn-sm tech-font text-muted px-4 text-uppercase fw-bold" style={{ fontSize: '0.8rem', letterSpacing: '0.1em' }}>ABORT</button>
                     <button
                         onClick={handleSave}
                         disabled={saving || !hasChanges}
-                        className="btn btn-sm fw-bold px-3 py-1 text-white shadow"
+                        className="btn btn-sm fw-bold px-4 py-2 text-white tech-font text-uppercase"
                         style={{
-                            background: hasChanges ? 'linear-gradient(135deg, #4f46e5, #6366f1)' : '#cbd5e1',
-                            borderRadius: '8px', transition: 'all 0.2s', border: 'none',
-                            transform: hasChanges ? 'translateY(-1px)' : 'none', fontSize: '0.85rem'
+                            background: hasChanges ? 'var(--primary-color)' : 'rgba(255,255,255,0.1)',
+                            border: `1px solid ${hasChanges ? 'var(--primary-color)' : 'transparent'}`,
+                            boxShadow: hasChanges ? '0 0 15px rgba(170,0,255,0.4)' : 'none',
+                            fontSize: '0.8rem', letterSpacing: '0.1em'
                         }}
                     >
                         {saving ? (
-                            <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Syncing Database...</>
-                        ) : 'Save & Publish Changes'}
+                            <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>ENCRYPTING...</>
+                        ) : 'COMMIT SYSTEM OVERRIDE'}
                     </button>
                 </div>
             </div>
@@ -428,104 +424,116 @@ const ComplaintModal = ({ complaint, onClose, onSave }) => {
             <div className="d-flex flex-grow-1 overflow-hidden">
 
                 {/* ── LEFT SIDEBAR (Read-Only Context) ── */}
-                <div className="bg-white border-end d-flex flex-column" style={{ width: '360px', flexShrink: 0, zIndex: 5 }}>
-                    <div className="p-3 overflow-auto flex-grow-1" style={{ scrollbarWidth: 'thin' }}>
+                <div className="border-end border-secondary d-flex flex-column" style={{ width: '400px', flexShrink: 0, zIndex: 5, background: 'rgba(15,23,42,0.9)' }}>
+                    <div className="p-4 overflow-auto flex-grow-1 custom-scrollbar">
+
+                        <h6 className="fw-bold text-secondary tech-font mb-3 text-uppercase tracking-widest border-bottom border-secondary pb-2">EVIDENCE COM-LINK</h6>
 
                         {/* Evidence Image */}
                         {complaint.image ? (
-                            <div className="rounded-3 overflow-hidden shadow-sm border mb-3 position-relative bg-light">
-                                <img src={complaint.image} alt="Evidence" className="w-100 object-fit-cover" style={{ height: '180px' }} />
-                                <div className="position-absolute bottom-0 start-0 w-100 p-2" style={{ background: 'linear-gradient(0deg, rgba(0,0,0,0.6) 0%, transparent 100%)' }}>
-                                    <span className="badge bg-dark bg-opacity-75 text-white border border-secondary border-opacity-50"><FaEye className="me-2" />Evidence Attached</span>
+                            <div className="overflow-hidden border border-secondary mb-4 position-relative" style={{ boxShadow: 'inset 0 0 20px rgba(0,0,0,0.8)' }}>
+                                <div className="position-absolute top-0 start-0 w-100 h-100 pointer-events-none" style={{ background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(163,230,53,0.05) 2px, rgba(163,230,53,0.05) 4px)', zIndex: 1 }}></div>
+                                <img src={complaint.image} alt="Evidence" className="w-100 object-fit-cover" style={{ height: '220px', filter: 'brightness(0.9) contrast(1.1) sepia(0.2) hue-rotate(180deg)' }} />
+                                <div className="position-absolute bottom-0 start-0 w-100 p-2 d-flex justify-content-between align-items-center" style={{ background: 'linear-gradient(0deg, rgba(0,0,0,0.9) 0%, transparent 100%)', zIndex: 2 }}>
+                                    <span className="badge text-neon-green tech-font text-uppercase" style={{ fontSize: '0.7rem', border: '1px solid var(--neon-green)', background: 'rgba(0,0,0,0.5)' }}><FaEye className="me-2" />EVIDENCE_01</span>
+                                    <small className="tech-font text-muted font-monospace" style={{ fontSize: '0.6rem' }}>{complaint.id}</small>
                                 </div>
                             </div>
                         ) : (
-                            <div className="rounded-3 mb-3 bg-light border d-flex align-items-center justify-content-center" style={{ height: '100px' }}>
-                                <span className="text-muted fw-medium" style={{ fontSize: '0.8rem' }}>No Image Provided</span>
+                            <div className="mb-4 border border-secondary d-flex flex-column align-items-center justify-content-center" style={{ height: '120px', background: 'rgba(0,0,0,0.4)', backgroundImage: 'radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
+                                <FaTerminal size={24} className="text-secondary opacity-50 mb-2" />
+                                <span className="tech-font text-muted text-uppercase" style={{ fontSize: '0.75rem', letterSpacing: '0.1em' }}>VISUAL DATA UNAVAILABLE</span>
                             </div>
                         )}
 
-                        <h6 className="fw-bold text-dark mb-3 lh-sm" style={{ fontSize: '0.95rem' }}>{complaint.title}</h6>
+                        <h6 className="fw-bold text-white mb-4 font-monospace" style={{ fontSize: '0.9rem', lineHeight: '1.4' }}>{complaint.title}</h6>
 
                         {/* Immutable Metadata Blocks */}
-                        <div className="d-flex flex-column gap-2 mb-3">
+                        <div className="d-flex flex-column gap-3 mb-4">
                             {/* AI Priority Matrix */}
                             {complaint.aiScore > 0 && (
-                                <div className="p-2 rounded-3 border bg-white shadow-sm d-flex gap-2 align-items-center">
-                                    <div className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '36px', height: '36px', background: complaint.aiScore > 80 ? '#fef2f2' : complaint.aiScore > 50 ? '#fffbeb' : '#ecfdf5' }}>
-                                        <FaRobot size={16} color={complaint.aiScore > 80 ? '#ef4444' : complaint.aiScore > 50 ? '#f59e0b' : '#10b981'} />
+                                <div className="p-3 border border-secondary d-flex gap-3 align-items-center" style={{ background: 'rgba(0,0,0,0.3)' }}>
+                                    <div className="d-flex align-items-center justify-content-center flex-shrink-0 border" style={{ width: '40px', height: '40px', background: 'rgba(0,0,0,0.5)', borderColor: complaint.aiScore > 80 ? 'var(--accent-red)' : complaint.aiScore > 50 ? '#f59e0b' : 'var(--neon-green)', color: complaint.aiScore > 80 ? 'var(--accent-red)' : complaint.aiScore > 50 ? '#f59e0b' : 'var(--neon-green)', boxShadow: `0 0 10px ${complaint.aiScore > 80 ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)'}` }}>
+                                        <FaRobot size={18} />
                                     </div>
                                     <div className="flex-grow-1">
-                                        <div className="d-flex justify-content-between align-items-center mb-1">
-                                            <span className="fw-bold text-dark" style={{ fontSize: '0.75rem' }}>AI Severity</span>
-                                            <span className={`fw-bold ${complaint.aiScore > 80 ? 'text-danger' : complaint.aiScore > 50 ? 'text-warning' : 'text-success'}`} style={{ fontSize: '0.75rem' }}>{complaint.aiScore}/100</span>
+                                        <div className="d-flex justify-content-between align-items-center mb-1 tech-font text-uppercase tracking-widest">
+                                            <span className="text-muted" style={{ fontSize: '0.7rem' }}>AI_SEVERITY_INDEX</span>
+                                            <span className="fw-bold font-monospace" style={{ color: complaint.aiScore > 80 ? 'var(--accent-red)' : complaint.aiScore > 50 ? '#f59e0b' : 'var(--neon-green)', fontSize: '0.8rem' }}>{complaint.aiScore}%</span>
                                         </div>
-                                        <div className="progress rounded-pill" style={{ height: '4px' }}>
-                                            <div className={`progress-bar rounded-pill ${complaint.aiScore > 80 ? 'bg-danger' : complaint.aiScore > 50 ? 'bg-warning' : 'bg-success'}`} style={{ width: `${complaint.aiScore}%` }} />
+                                        <div className="progress" style={{ height: '2px', background: 'rgba(255,255,255,0.1)' }}>
+                                            <div className="progress-bar" style={{ width: `${complaint.aiScore}%`, background: complaint.aiScore > 80 ? 'var(--accent-red)' : complaint.aiScore > 50 ? '#f59e0b' : 'var(--neon-green)', boxShadow: `0 0 5px ${complaint.aiScore > 80 ? 'var(--accent-red)' : 'var(--neon-green)'}` }} />
                                         </div>
-                                        <p className="mt-1 mb-0 text-muted" style={{ fontSize: '0.7rem' }}>Assigned Priority: <strong>{complaint.priority}</strong></p>
+                                        <p className="mt-2 mb-0 text-muted tech-font text-uppercase" style={{ fontSize: '0.65rem', letterSpacing: '0.1em' }}>FLAGGED: <strong style={{ color: PRIORITY_META[complaint.priority]?.color }}>{complaint.priority}</strong></p>
                                     </div>
                                 </div>
                             )}
 
                             {/* Location */}
-                            <div className="p-2 rounded-3 border bg-white shadow-sm d-flex gap-2 align-items-center">
-                                <div className="rounded-circle d-flex align-items-center justify-content-center bg-danger bg-opacity-10 text-danger flex-shrink-0" style={{ width: '36px', height: '36px' }}>
+                            <div className="p-3 border border-secondary d-flex gap-3 align-items-center" style={{ background: 'rgba(0,0,0,0.3)' }}>
+                                <div className="d-flex align-items-center justify-content-center text-secondary flex-shrink-0 border border-secondary" style={{ width: '40px', height: '40px', background: 'rgba(0,0,0,0.5)' }}>
                                     <FaMapMarkerAlt size={16} />
                                 </div>
-                                <div>
-                                    <small className="text-muted text-uppercase fw-bold d-block mb-0" style={{ fontSize: '0.65rem', letterSpacing: '0.5px' }}>Location</small>
-                                    <span className="text-dark fw-bold text-break" style={{ fontSize: '0.85rem' }}>{complaint.location}</span>
+                                <div className="overflow-hidden">
+                                    <small className="tech-font text-muted text-uppercase d-block mb-1" style={{ fontSize: '0.65rem', letterSpacing: '0.15em' }}>COORDINATES</small>
+                                    <span className="text-white font-monospace text-truncate d-block" style={{ fontSize: '0.8rem' }}>{complaint.location}</span>
                                 </div>
                             </div>
 
                             {/* Reporter */}
-                            <div className="p-2 rounded-3 border bg-white shadow-sm d-flex gap-2 align-items-center">
-                                <div className="rounded-circle d-flex align-items-center justify-content-center bg-info bg-opacity-10 text-info flex-shrink-0" style={{ width: '36px', height: '36px' }}>
+                            <div className="p-3 border border-secondary d-flex gap-3 align-items-center" style={{ background: 'rgba(0,0,0,0.3)' }}>
+                                <div className="d-flex align-items-center justify-content-center text-primary flex-shrink-0 border border-primary" style={{ width: '40px', height: '40px', background: 'rgba(170,0,255,0.1)', boxShadow: '0 0 10px rgba(170,0,255,0.2)' }}>
                                     <FaUser size={16} />
                                 </div>
                                 <div>
-                                    <small className="text-muted text-uppercase fw-bold d-block mb-0" style={{ fontSize: '0.65rem', letterSpacing: '0.5px' }}>Citizen</small>
-                                    <span className="text-dark fw-bold" style={{ fontSize: '0.85rem' }}>{complaint.reporter}</span>
+                                    <small className="tech-font text-muted text-uppercase d-block mb-1" style={{ fontSize: '0.65rem', letterSpacing: '0.15em' }}>OPERATIVE_ALIAS</small>
+                                    <span className="text-white font-monospace text-uppercase" style={{ fontSize: '0.8rem', letterSpacing: '0.05em' }}>{complaint.reporter}</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Full Description Text */}
-                        <div className="pt-3 border-top">
-                            <h6 className="fw-bold text-dark mb-2" style={{ fontSize: '0.85rem' }}>Description</h6>
-                            <p className="text-secondary" style={{ fontSize: '0.85rem', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>
+                        <div className="pt-3 border-top border-secondary opacity-75">
+                            <h6 className="fw-bold text-secondary tech-font mb-2 text-uppercase tracking-widest" style={{ fontSize: '0.75rem' }}>TRANSMISSION_LOG</h6>
+                            <p className="text-white font-monospace" style={{ fontSize: '0.8rem', lineHeight: '1.6', whiteSpace: 'pre-wrap', opacity: 0.9 }}>
                                 {complaint.description}
                             </p>
                         </div>
 
                         {/* Post-Resolution Feedback (If any) */}
                         {complaint.feedback?.message && (
-                            <div className="mt-3 p-3 rounded-3 shadow-sm border border-danger border-opacity-25" style={{ background: '#fffafa' }}>
-                                <h6 className="fw-bold text-danger mb-1" style={{ fontSize: '0.8rem' }}>Feedback</h6>
-                                <p className="mb-1 text-dark fst-italic" style={{ fontSize: '0.8rem' }}>"{complaint.feedback.message}"</p>
-                                <small className="text-muted d-block mt-1" style={{ fontSize: '0.7rem' }}>{new Date(complaint.feedback.date).toLocaleString()}</small>
+                            <div className="mt-4 p-3 border border-secondary" style={{ background: 'rgba(239,68,68,0.05)', borderLeft: '3px solid var(--accent-red) !important' }}>
+                                <h6 className="fw-bold text-neon-red tech-font mb-2 text-uppercase" style={{ fontSize: '0.75rem', letterSpacing: '0.1em' }}>&gt;&gt; CITIZEN_ECHO</h6>
+                                <p className="mb-2 text-white font-monospace fst-italic" style={{ fontSize: '0.8rem' }}>"{complaint.feedback.message}"</p>
+                                <small className="text-muted font-monospace d-block" style={{ fontSize: '0.65rem' }}>[{new Date(complaint.feedback.date).toLocaleString()}]</small>
                             </div>
                         )}
                     </div>
                 </div>
 
                 {/* ── RIGHT MAIN AREA (Dynamic Workspace) ── */}
-                <div className="flex-grow-1 d-flex flex-column" style={{ background: '#f0f4f8' }}>
+                <div className="flex-grow-1 d-flex flex-column position-relative" style={{ background: 'radial-gradient(circle at center, rgba(15,23,42,0.8) 0%, rgba(9,9,11,1) 100%)' }}>
+                    
+                    {/* Background Grid Pattern */}
+                    <div className="position-absolute top-0 start-0 w-100 h-100 pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '40px 40px', zIndex: 0 }}></div>
 
                     {/* Inner Navbar / Pill Tabs */}
-                    <div className="px-4 pt-3 pb-0 mb-2">
-                        <div className="bg-white p-1 rounded-pill shadow-sm d-flex gap-1 border" style={{ width: 'max-content' }}>
+                    <div className="px-5 pt-4 pb-0 mb-4 z-1">
+                        <div className="d-flex gap-2 border-bottom border-secondary pb-2">
                             {tabs.map(tab => (
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
-                                    className="btn btn-sm d-flex align-items-center gap-2 px-3 py-1 rounded-pill"
+                                    className="btn d-flex align-items-center gap-2 px-4 py-2 tech-font text-uppercase"
                                     style={{
-                                        background: activeTab === tab.id ? '#1e293b' : 'transparent',
-                                        color: activeTab === tab.id ? 'white' : '#64748b',
-                                        border: 'none', fontSize: '0.8rem', fontWeight: '600',
-                                        transition: 'all 0.2s'
+                                        background: activeTab === tab.id ? 'var(--primary-color)' : 'transparent',
+                                        color: activeTab === tab.id ? 'white' : 'var(--text-muted)',
+                                        border: activeTab === tab.id ? '1px solid var(--primary-color)' : '1px solid transparent',
+                                        borderBottom: activeTab === tab.id ? 'none' : '1px solid transparent',
+                                        borderRadius: '4px 4px 0 0',
+                                        fontSize: '0.8rem', letterSpacing: '0.1em',
+                                        transition: 'all 0.2s',
+                                        boxShadow: activeTab === tab.id ? '0 -5px 15px rgba(170,0,255,0.1)' : 'none'
                                     }}
                                 >
                                     {tab.icon} {tab.label}
@@ -535,18 +543,20 @@ const ComplaintModal = ({ complaint, onClose, onSave }) => {
                     </div>
 
                     {/* Scrollable Form Content */}
-                    <div className="flex-grow-1 overflow-auto px-4 pt-2 pb-3">
+                    <div className="flex-grow-1 overflow-auto px-5 pt-2 pb-5 z-1 custom-scrollbar">
                         <div style={{ maxWidth: '850px' }}>
                             <AnimatePresence mode="wait">
 
                                 {/* WORKSPACE TAB */}
                                 {activeTab === 'Workspace' && (
-                                    <motion.div key="Workspace" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
-                                        <div className="bg-white p-4 rounded-4 shadow-sm border">
-                                            <h6 className="fw-bold text-dark mb-3">Workspace</h6>
+                                    <motion.div key="Workspace" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
+                                        <div className="glass-card p-5 border border-secondary" style={{ background: 'rgba(15,23,42,0.6)' }}>
+                                            <h5 className="fw-bold text-white tech-font text-uppercase tracking-widest border-bottom border-secondary pb-3 mb-4 d-flex align-items-center gap-3">
+                                                <FaTerminal className="text-secondary" /> PROTOCOL_OVERRIDE
+                                            </h5>
 
-                                            <div className="mb-4">
-                                                <h6 className="fw-bold text-muted mb-2" style={{ fontSize: '0.75rem', letterSpacing: '0.5px', textTransform: 'uppercase' }}>1. Status</h6>
+                                            <div className="mb-5">
+                                                <h6 className="fw-bold text-secondary tech-font mb-3 text-uppercase tracking-widest" style={{ fontSize: '0.8rem' }}>&gt;&gt; ASSIGN_STATE</h6>
                                                 <div className="d-flex flex-wrap gap-3">
                                                     {STATUS_OPTIONS.map(opt => {
                                                         const isSelected = draft.status === opt.value;
@@ -554,15 +564,14 @@ const ComplaintModal = ({ complaint, onClose, onSave }) => {
                                                             <button
                                                                 key={opt.value}
                                                                 onClick={() => setDraft(prev => ({ ...prev, status: opt.value }))}
-                                                                className="btn btn-sm px-3 py-2 d-flex align-items-center gap-2 shadow-sm"
+                                                                className="btn px-4 py-2 d-flex align-items-center gap-2 tech-font text-uppercase"
                                                                 style={{
-                                                                    borderRadius: '12px',
-                                                                    background: isSelected ? opt.bg : '#f8fafc',
-                                                                    color: isSelected ? opt.color : '#64748b',
-                                                                    border: `1.5px solid ${isSelected ? opt.border : '#e2e8f0'}`,
-                                                                    transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+                                                                    background: isSelected ? opt.bg : 'rgba(0,0,0,0.5)',
+                                                                    color: isSelected ? opt.color : 'var(--text-muted)',
+                                                                    border: `1px solid ${isSelected ? opt.border : 'rgba(255,255,255,0.1)'}`,
                                                                     transition: 'all 0.2s',
-                                                                    fontSize: '0.85rem', fontWeight: '600'
+                                                                    fontSize: '0.85rem', letterSpacing: '0.1em',
+                                                                    boxShadow: isSelected ? `0 0 10px ${opt.border}` : 'none'
                                                                 }}
                                                             >
                                                                 {isSelected && <FaCheckCircle size={14} />} {opt.value}
@@ -573,21 +582,24 @@ const ComplaintModal = ({ complaint, onClose, onSave }) => {
                                             </div>
 
                                             <div className="mb-2">
-                                                <h6 className="fw-bold text-muted mb-2" style={{ fontSize: '0.75rem', letterSpacing: '0.5px', textTransform: 'uppercase' }}>2. Public Notice</h6>
-                                                <p className="text-secondary mb-2" style={{ fontSize: '0.8rem' }}>
-                                                    Detail findings. Visible to the citizen.
+                                                <h6 className="fw-bold text-secondary tech-font mb-2 text-uppercase tracking-widest" style={{ fontSize: '0.8rem' }}>&gt;&gt; PUBLIC_BROADCAST_LOG</h6>
+                                                <p className="text-muted font-monospace mb-3" style={{ fontSize: '0.75rem' }}>
+                                                    // VISIBLE TO CITIZEN FACTIONS. KEEP IT CLINICAL.
                                                 </p>
                                                 <textarea
-                                                    className="form-control shadow-sm"
+                                                    className="form-control text-white font-monospace"
                                                     rows={6}
                                                     placeholder="e.g., A designated sanitation team was dispatched..."
                                                     value={draft.adminNotes}
                                                     onChange={e => setDraft(prev => ({ ...prev, adminNotes: e.target.value }))}
                                                     style={{
-                                                        borderRadius: '12px', fontSize: '0.85rem',
-                                                        border: '1.5px solid #e2e8f0', resize: 'vertical',
-                                                        padding: '12px', lineHeight: '1.5',
-                                                        backgroundColor: '#f8fafc'
+                                                        background: 'rgba(0,0,0,0.5)',
+                                                        border: '1px solid rgba(255,255,255,0.1)',
+                                                        color: 'white',
+                                                        fontSize: '0.85rem',
+                                                        resize: 'vertical',
+                                                        padding: '16px',
+                                                        boxShadow: 'inset 0 0 10px rgba(0,0,0,0.8)'
                                                     }}
                                                 />
                                             </div>
@@ -597,38 +609,38 @@ const ComplaintModal = ({ complaint, onClose, onSave }) => {
 
                                 {/* LEDGER TAB */}
                                 {activeTab === 'Ledger' && (
-                                    <motion.div key="Ledger" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
-                                        <div className="bg-white p-4 rounded-4 shadow-sm border">
-                                            <div className="d-flex align-items-center justify-content-between border-bottom pb-3 mb-3">
+                                    <motion.div key="Ledger" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
+                                        <div className="glass-card p-5 border border-secondary" style={{ background: 'rgba(15,23,42,0.6)' }}>
+                                            <div className="d-flex align-items-center justify-content-between border-bottom border-secondary pb-4 mb-4">
                                                 <div>
-                                                    <h6 className="fw-bold text-dark mb-1">Ledger</h6>
-                                                    <p className="text-muted mb-0" style={{ fontSize: '0.8rem' }}>Record costs.</p>
+                                                    <h5 className="fw-bold text-white tech-font mb-1 text-uppercase tracking-widest">EXPENSE_ROUTING</h5>
+                                                    <p className="text-muted font-monospace mb-0" style={{ fontSize: '0.75rem' }}>// ALLOCATE CREDITS TO OPERATION.</p>
                                                 </div>
-                                                <div className="px-3 py-2 rounded-3 shadow-sm" style={{ background: '#ecfdf5', border: '1.5px solid #6ee7b7' }}>
-                                                    <small className="d-block text-success fw-bold text-uppercase mb-0" style={{ fontSize: '0.65rem', letterSpacing: '0.5px' }}>Total</small>
-                                                    <span className="text-success fw-bold fs-5 lh-1">₹{totalExpense.toLocaleString()}</span>
+                                                <div className="px-4 py-3 border" style={{ background: 'rgba(16,185,129,0.05)', borderColor: 'var(--neon-green) !important', boxShadow: '0 0 15px rgba(16,185,129,0.1)' }}>
+                                                    <small className="d-block text-neon-green fw-bold text-uppercase tech-font mb-1 tracking-widest" style={{ fontSize: '0.7rem' }}>NET_BURN</small>
+                                                    <span className="text-white font-monospace fw-bold fs-4 lh-1">₹{totalExpense.toLocaleString()}</span>
                                                 </div>
                                             </div>
 
-                                            <div className="bg-light p-3 rounded-3 border mb-3 shadow-sm">
-                                                <h6 className="fw-bold text-dark mb-2" style={{ fontSize: '0.85rem' }}>Add Edit</h6>
-                                                <div className="d-flex flex-wrap gap-2">
+                                            <div className="p-4 border mb-5" style={{ background: 'rgba(0,0,0,0.4)', borderColor: 'rgba(255,255,255,0.05) !important' }}>
+                                                <h6 className="fw-bold text-secondary tech-font mb-3 text-uppercase tracking-widest" style={{ fontSize: '0.8rem' }}>&gt;&gt; APPEND_LEDGER</h6>
+                                                <div className="d-flex flex-wrap gap-3">
                                                     <input
                                                         type="text"
-                                                        placeholder="Item Description"
-                                                        className="form-control form-control-sm shadow-none flex-grow-1"
-                                                        style={{ borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', padding: '6px 12px' }}
+                                                        placeholder="RESOURCE_NAME //"
+                                                        className="form-control shadow-none flex-grow-1 text-white font-monospace"
+                                                        style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.1)', fontSize: '0.85rem', padding: '10px 16px' }}
                                                         value={newExpenseItem}
                                                         onChange={e => setNewExpenseItem(e.target.value)}
                                                         onKeyDown={e => e.key === 'Enter' && addExpense()}
                                                     />
-                                                    <div className="input-group input-group-sm" style={{ width: '150px' }}>
-                                                        <span className="input-group-text bg-white text-muted fw-bold border-end-0 px-2" style={{ borderRadius: '8px 0 0 8px', border: '1px solid #cbd5e1' }}>₹</span>
+                                                    <div className="input-group" style={{ width: '180px' }}>
+                                                        <span className="input-group-text bg-dark text-muted fw-bold border-0 px-3 font-monospace">₹</span>
                                                         <input
                                                             type="number"
-                                                            placeholder="Amt"
-                                                            className="form-control shadow-none border-start-0 px-2"
-                                                            style={{ borderRadius: '0 8px 8px 0', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                                                            placeholder="AMT"
+                                                            className="form-control shadow-none border-0 text-white font-monospace"
+                                                            style={{ background: 'rgba(255,255,255,0.05)', fontSize: '0.85rem' }}
                                                             value={newExpenseCost}
                                                             onChange={e => setNewExpenseCost(e.target.value)}
                                                             onKeyDown={e => e.key === 'Enter' && addExpense()}
@@ -637,33 +649,31 @@ const ComplaintModal = ({ complaint, onClose, onSave }) => {
                                                     <button
                                                         onClick={addExpense}
                                                         disabled={!newExpenseItem.trim() || !newExpenseCost}
-                                                        className="btn btn-sm fw-bold px-3 text-white shadow-sm"
-                                                        style={{ borderRadius: '8px', background: '#10b981', border: 'none', fontSize: '0.85rem' }}
+                                                        className="btn fw-bold px-4 text-white tech-font tracking-widest"
+                                                        style={{ background: 'var(--neon-green)', border: 'none', fontSize: '0.85rem', color: 'black' }}
                                                     >
-                                                        Add
+                                                        INJECT
                                                     </button>
                                                 </div>
                                             </div>
 
-                                            <h6 className="fw-bold text-muted mb-2" style={{ fontSize: '0.75rem', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Recorded</h6>
+                                            <h6 className="fw-bold text-secondary tech-font mb-3 text-uppercase tracking-widest" style={{ fontSize: '0.8rem' }}>&gt;&gt; COMPILED_LIST</h6>
 
                                             {(draft.expenses || []).length === 0 ? (
-                                                <div className="text-center py-5 rounded-4" style={{ border: '2px dashed #e2e8f0', background: '#f8fafc' }}>
-                                                    <p className="mb-0 fw-bold text-muted fs-5">Ledger is currently empty.</p>
+                                                <div className="text-center py-5 border border-secondary" style={{ background: 'rgba(0,0,0,0.2)', backgroundImage: 'repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 2px, transparent 2px, transparent 10px)' }}>
+                                                    <p className="mb-0 fw-bold text-muted tech-font text-uppercase tracking-widest">LEDGER IS EMPTY.</p>
                                                 </div>
                                             ) : (
                                                 <div className="d-flex flex-column gap-3">
                                                     {(draft.expenses || []).map((exp, idx) => (
-                                                        <div key={idx} className="d-flex justify-content-between align-items-center p-2 rounded-3 shadow-sm border bg-white">
-                                                            <div className="d-flex align-items-center gap-2">
-                                                                <div className="rounded-circle bg-light d-flex align-items-center justify-content-center border" style={{ width: '28px', height: '28px' }}>
-                                                                    <FaCheckCircle className="text-muted" size={12} />
-                                                                </div>
-                                                                <span className="fw-bold text-dark" style={{ fontSize: '0.85rem' }}>{exp.item}</span>
-                                                            </div>
+                                                        <div key={idx} className="d-flex justify-content-between align-items-center p-3 border hover-bg-light transition-all" style={{ background: 'rgba(0,0,0,0.4)', borderColor: 'rgba(255,255,255,0.1) !important' }}>
                                                             <div className="d-flex align-items-center gap-3">
-                                                                <span className="fw-bold text-dark" style={{ fontSize: '0.95rem' }}>₹{Number(exp.cost).toLocaleString()}</span>
-                                                                <button onClick={() => removeExpense(idx)} className="btn btn-light rounded-circle p-2 text-danger border" title="Remove Entry">
+                                                                <FaTerminal className="text-secondary opacity-50" size={12} />
+                                                                <span className="fw-bold text-white font-monospace text-uppercase" style={{ fontSize: '0.85rem', letterSpacing: '0.05em' }}>{exp.item}</span>
+                                                            </div>
+                                                            <div className="d-flex align-items-center gap-4">
+                                                                <span className="fw-bold text-neon-green font-monospace" style={{ fontSize: '1rem' }}>₹{Number(exp.cost).toLocaleString()}</span>
+                                                                <button onClick={() => removeExpense(idx)} className="btn text-accent-red p-1 hover-scale" title="DELETE ENTRY">
                                                                     <FaTimes size={16} />
                                                                 </button>
                                                             </div>
@@ -677,52 +687,49 @@ const ComplaintModal = ({ complaint, onClose, onSave }) => {
 
                                 {/* AUDIT TAB */}
                                 {activeTab === 'Audit' && (
-                                    <motion.div key="Audit" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
-                                        <div className="bg-white p-4 rounded-4 shadow-sm border">
-                                            <h6 className="fw-bold text-dark mb-4 border-bottom pb-2">Audit Trail</h6>
+                                    <motion.div key="Audit" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
+                                        <div className="glass-card p-5 border border-secondary" style={{ background: 'rgba(15,23,42,0.6)' }}>
+                                            <h5 className="fw-bold text-white tech-font mb-4 border-bottom border-secondary pb-3 text-uppercase tracking-widest">SYSTEM_AUDIT_TRAIL</h5>
 
                                             {(!complaint.activityLog || complaint.activityLog.length === 0) ? (
-                                                <div className="text-center py-5 text-muted">
-                                                    <p className="fw-bold fs-5 text-dark mb-1">No Trail Recorded Yet</p>
-                                                    <p className="text-secondary">Tracked event history will populate here automatically.</p>
+                                                <div className="text-center py-5 text-muted border border-secondary" style={{ background: 'rgba(0,0,0,0.2)' }}>
+                                                    <p className="fw-bold text-uppercase tech-font tracking-widest text-muted mb-1">NO LOGS EXTRACTED</p>
+                                                    <p className="text-secondary font-monospace" style={{ fontSize: '0.75rem' }}>// AWAITING SYSTEM EVENTS.</p>
                                                 </div>
                                             ) : (
-                                                <div className="position-relative ms-4 border-start border-4 border-light pb-4">
+                                                <div className="position-relative ms-2 border-start border-secondary pb-4">
                                                     {[...complaint.activityLog].reverse().map((entry, idx) => {
                                                         const a = (entry.action || '').toLowerCase();
                                                         const color =
-                                                            a.includes('filed') ? '#4f46e5' :
+                                                            a.includes('filed') ? 'var(--primary-color)' :
                                                                 a.includes('edited') ? '#f59e0b' :
                                                                     a.includes('status') ? '#3b82f6' :
-                                                                        a.includes('reopened') ? '#ef4444' :
-                                                                            a.includes('accepted') ? '#10b981' : '#94a3b8';
+                                                                        a.includes('reopened') ? 'var(--accent-red)' :
+                                                                            a.includes('accepted') ? 'var(--neon-green)' : '#94a3b8';
 
                                                         return (
                                                             <div key={idx} className="mb-4 position-relative ps-4">
                                                                 <div
-                                                                    className="position-absolute rounded-circle shadow"
-                                                                    style={{ left: '-8px', top: '12px', width: '16px', height: '16px', background: color, border: '3px solid white' }}
+                                                                    className="position-absolute rounded-0"
+                                                                    style={{ left: '-6px', top: '15px', width: '11px', height: '11px', background: 'black', border: `2px solid ${color}`, boxShadow: `0 0 8px ${color}` }}
                                                                 />
-                                                                <div className="bg-white rounded-3 border shadow-sm p-3">
-                                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                <div className="p-3 border hover-bg-light transition-all" style={{ background: 'rgba(0,0,0,0.5)', borderColor: 'rgba(255,255,255,0.05) !important' }}>
+                                                                    <div className="d-flex justify-content-between align-items-start mb-2">
                                                                         <div className="d-flex align-items-center gap-2">
-                                                                            <div className="p-1 rounded-2 bg-light" style={{ color: color }}>
-                                                                                {entry.performedByRole === 'Authority' ? <FaBuilding size={14} /> : <FaUser size={14} />}
-                                                                            </div>
-                                                                            <span className="fw-bold text-dark" style={{ fontSize: '0.85rem' }}>{entry.action}</span>
+                                                                            <span className="fw-bold text-white tech-font text-uppercase tracking-widest" style={{ fontSize: '0.85rem', color: color }}>[ {entry.action} ]</span>
                                                                         </div>
-                                                                        <span className="badge bg-light text-secondary border px-2 py-1 fw-medium shadow-sm font-monospace" style={{ fontSize: '0.7rem' }}>
+                                                                        <span className="text-secondary font-monospace" style={{ fontSize: '0.7rem' }}>
                                                                             {new Date(entry.timestamp).toLocaleString()}
                                                                         </span>
                                                                     </div>
-                                                                    <div className="text-secondary fw-medium px-1" style={{ fontSize: '0.8rem' }}>
-                                                                        By <span className="text-dark fw-bold">{entry.performedByName}</span>
-                                                                        <span className="ms-2 px-2 py-0 bg-light border rounded-pill text-muted" style={{ fontSize: '0.7rem' }}>
+                                                                    <div className="text-muted font-monospace text-uppercase" style={{ fontSize: '0.75rem' }}>
+                                                                        EXECUTED BY: <span className="text-white fw-bold">{entry.performedByName}</span>
+                                                                        <span className="ms-2 px-2 py-0 border rounded text-secondary" style={{ fontSize: '0.65rem', borderColor: 'rgba(255,255,255,0.1) !important', background: 'rgba(255,255,255,0.02)' }}>
                                                                             {entry.performedByRole}
                                                                         </span>
                                                                     </div>
                                                                     {entry.note && (
-                                                                        <div className="mt-2 mx-1 p-2 bg-light border border-secondary border-opacity-10 rounded-3 text-dark fst-italic shadow-sm" style={{ fontSize: '0.85rem', lineHeight: 1.4 }}>
+                                                                        <div className="mt-3 mx-1 p-3 border border-secondary text-white font-monospace fst-italic shadow-sm" style={{ fontSize: '0.8rem', lineHeight: 1.5, background: 'rgba(255,255,255,0.02)', borderLeft: `3px solid ${color} !important` }}>
                                                                             "{entry.note}"
                                                                         </div>
                                                                     )}

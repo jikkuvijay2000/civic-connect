@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     FaBullhorn, FaPen, FaTags, FaImage, FaTimes, FaCheckCircle,
-    FaAlignLeft, FaChevronDown
+    FaTerminal
 } from 'react-icons/fa';
 import api from '../api/axios';
 import { notify } from '../utils/notify';
@@ -10,11 +10,11 @@ import { notify } from '../utils/notify';
 const TAG_OPTIONS = ['Update', 'Alert', 'Event', 'News', 'Notice'];
 
 const TAG_META = {
-    Update: { color: '#3b82f6', bg: '#eff6ff', border: '#93c5fd' },
-    Alert: { color: '#ef4444', bg: '#fef2f2', border: '#fca5a5' },
-    Event: { color: '#10b981', bg: '#ecfdf5', border: '#6ee7b7' },
-    News: { color: '#6366f1', bg: '#eef2ff', border: '#a5b4fc' },
-    Notice: { color: '#f59e0b', bg: '#fffbeb', border: '#fcd34d' },
+    Update: { color: '#00f0ff', bg: 'rgba(0, 240, 255, 0.1)', border: '#00f0ff' },
+    Alert: { color: 'var(--accent-red)', bg: 'rgba(239, 68, 68, 0.1)', border: 'var(--accent-red)' },
+    Event: { color: 'var(--secondary-color)', bg: 'rgba(163, 230, 53, 0.1)', border: 'var(--secondary-color)' },
+    News: { color: 'var(--primary-color)', bg: 'rgba(170, 0, 255, 0.1)', border: 'var(--primary-color)' },
+    Notice: { color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)', border: '#f59e0b' },
 };
 
 const CommunityPost = () => {
@@ -50,7 +50,7 @@ const CommunityPost = () => {
         setLoading(true);
         const user = JSON.parse(localStorage.getItem('user'));
         if (!user) {
-            notify('error', 'You must be logged in.');
+            notify('error', 'AUTHORIZATION FAILED.');
             setLoading(false);
             return;
         }
@@ -58,8 +58,8 @@ const CommunityPost = () => {
         data.append('title', formData.title);
         data.append('content', formData.content);
         data.append('tag', formData.tag);
-        data.append('author', user.userName || 'Authority');
-        data.append('role', user.role || 'Admin');
+        data.append('author', user.userName || 'AUTHORITY');
+        data.append('role', user.role || 'ADMIN');
         if (formData.image) data.append('image', formData.image);
 
         try {
@@ -67,13 +67,13 @@ const CommunityPost = () => {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             if (res.status === 201) {
-                notify('success', 'Community post published successfully!');
+                notify('success', 'BROADCAST TRANSMITTED ACROSS NETWORK.');
                 setFormData({ title: '', content: '', tag: 'Update', image: null });
                 setImagePreview(null);
             }
         } catch (err) {
-            console.error('Error creating post:', err);
-            notify('error', 'Failed to publish post.');
+            console.error('Transmission error:', err);
+            notify('error', 'TRANSMISSION FAILURE.');
         } finally {
             setLoading(false);
         }
@@ -83,74 +83,62 @@ const CommunityPost = () => {
     const charCount = formData.content.length;
 
     return (
-        <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
-
-            {/* ── Page Header ── */}
-            <div className="px-5 pt-5 pb-4">
-                <h2 className="fw-bold text-dark ls-tight mb-1">Community Posts</h2>
-                <p className="text-muted mb-0">Publish updates, alerts, and announcements to citizens.</p>
+        <div style={{ minHeight: '100vh', background: 'transparent' }}>
+            {/* Page Header */}
+            <div className="px-4 px-md-5 pt-4 pb-4">
+                <div className="d-flex align-items-center gap-3">
+                    <FaTerminal size={28} className="text-neon-purple d-none d-md-block" />
+                    <div>
+                        <h2 className="tech-font fw-bold text-white ls-tight mb-0 text-uppercase" style={{ letterSpacing: '0.15em' }}>COMMAND BROADCAST</h2>
+                        <p className="tech-font text-muted mb-0 text-uppercase" style={{ fontSize: '0.8rem', letterSpacing: '0.1em' }}>TRANSMIT ALERTS, LOGS, AND DIRECTIVES ACROSS THE NETWORK.</p>
+                    </div>
+                </div>
             </div>
 
-            {/* ── Two-column layout ── */}
-            <div className="px-5 pb-5 d-flex gap-5 align-items-start">
-
-                {/* ── Left: Form ── */}
-                <div style={{ flex: '1 1 0' }}>
-                    <motion.div
-                        initial={{ opacity: 0, y: 16 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-white rounded-4 border p-5"
-                        style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
-                    >
+            {/* Two-column layout */}
+            <div className="px-4 px-md-5 pb-5 d-flex flex-column flex-xl-row gap-5 align-items-start">
+                {/* Left: Form */}
+                <div className="w-100" style={{ flex: '1 1 0' }}>
+                    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+                        className="glass-card p-4 p-md-5">
                         <form onSubmit={handleSubmit}>
-
                             {/* Title */}
                             <div className="mb-4">
-                                <label className="fw-bold text-dark small mb-2 d-block">
-                                    Post Title <span className="text-danger">*</span>
+                                <label className="tech-font fw-bold text-white mb-2 d-block text-uppercase" style={{ letterSpacing: '0.15em' }}>
+                                    BROADCAST TITLE <span className="text-neon-red">*</span>
                                 </label>
                                 <div className="input-group">
-                                    <span className="input-group-text bg-white" style={{ borderRadius: '12px 0 0 12px', border: '1.5px solid #e2e8f0', borderRight: 'none' }}>
+                                    <span className="input-group-text bg-transparent" style={{ borderRadius: '8px 0 0 8px', border: '1px solid rgba(255,255,255,0.2)', borderRight: 'none' }}>
                                         <FaPen size={13} className="text-muted" />
                                     </span>
-                                    <input
-                                        type="text"
-                                        name="title"
-                                        value={formData.title}
-                                        onChange={handleChange}
-                                        className="form-control shadow-none border-start-0"
-                                        placeholder="e.g., City Clean-up Drive this Saturday"
-                                        required
-                                        style={{ borderRadius: '0 12px 12px 0', border: '1.5px solid #e2e8f0', borderLeft: 'none', fontSize: '0.93rem' }}
+                                    <input type="text" name="title" value={formData.title} onChange={handleChange}
+                                        className="form-control tech-font text-white bg-transparent shadow-none border-start-0"
+                                        placeholder="INPUT DESIGNATION..." required
+                                        style={{ borderRadius: '0 8px 8px 0', border: '1px solid rgba(255,255,255,0.2)', borderLeft: 'none', fontSize: '0.9rem' }}
+                                        onFocus={e => e.currentTarget.parentNode.style.boxShadow = '0 0 10px rgba(170,0,255,0.1)'}
+                                        onBlur={e => e.currentTarget.parentNode.style.boxShadow = 'none'}
                                     />
                                 </div>
                             </div>
 
                             {/* Tag selector */}
                             <div className="mb-4">
-                                <label className="fw-bold text-dark small mb-2 d-block">Tag / Category</label>
+                                <label className="tech-font fw-bold text-white mb-2 d-block text-uppercase" style={{ letterSpacing: '0.15em' }}>CATEGORIZE SIGNAL</label>
                                 <div className="d-flex flex-wrap gap-2">
                                     {TAG_OPTIONS.map(tag => {
                                         const m = TAG_META[tag];
                                         const active = formData.tag === tag;
                                         return (
-                                            <button
-                                                key={tag}
-                                                type="button"
-                                                onClick={() => setFormData(prev => ({ ...prev, tag }))}
-                                                className="btn btn-sm fw-medium"
+                                            <button key={tag} type="button" onClick={() => setFormData(prev => ({ ...prev, tag }))}
+                                                className="btn tech-font fw-bold text-uppercase"
                                                 style={{
-                                                    borderRadius: '10px',
-                                                    padding: '7px 16px',
-                                                    background: active ? m.bg : 'white',
-                                                    color: active ? m.color : '#64748b',
-                                                    border: `1.5px solid ${active ? m.border : '#e2e8f0'}`,
-                                                    boxShadow: active ? `0 0 0 3px ${m.bg}` : 'none',
-                                                    transform: active ? 'scale(1.04)' : 'scale(1)',
-                                                    transition: 'all 0.15s ease',
-                                                    fontSize: '0.83rem',
-                                                }}
-                                            >
+                                                    borderRadius: '4px', padding: '7px 16px',
+                                                    background: active ? m.bg : 'transparent',
+                                                    color: active ? m.color : 'var(--text-muted)',
+                                                    border: `1px solid ${active ? m.border : 'rgba(255,255,255,0.1)'}`,
+                                                    boxShadow: active ? `0 0 10px ${m.bg}` : 'none',
+                                                    fontSize: '0.75rem', letterSpacing: '0.1em', transition: 'all 0.15s ease'
+                                                }}>
                                                 {tag}
                                             </button>
                                         );
@@ -161,75 +149,44 @@ const CommunityPost = () => {
                             {/* Content */}
                             <div className="mb-4">
                                 <div className="d-flex justify-content-between align-items-center mb-2">
-                                    <label className="fw-bold text-dark small mb-0">
-                                        Content <span className="text-danger">*</span>
+                                    <label className="tech-font fw-bold text-white mb-0 text-uppercase" style={{ letterSpacing: '0.15em' }}>
+                                        MESSAGE PAYLOAD <span className="text-neon-red">*</span>
                                     </label>
-                                    <small className="text-muted">{charCount} chars</small>
+                                    <small className="tech-font text-muted fw-bold">{charCount} BYTES</small>
                                 </div>
-                                <textarea
-                                    name="content"
-                                    value={formData.content}
-                                    onChange={handleChange}
-                                    className="form-control shadow-none"
-                                    rows={7}
-                                    placeholder="Write your announcement, event details, or community update here..."
-                                    required
-                                    style={{ borderRadius: '12px', border: '1.5px solid #e2e8f0', fontSize: '0.93rem', resize: 'none', lineHeight: 1.7 }}
+                                <textarea name="content" value={formData.content} onChange={handleChange}
+                                    className="form-control font-monospace text-white bg-transparent shadow-none" rows={7}
+                                    placeholder="COMPILE TRANSMISSION LOGS..." required
+                                    style={{ borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', fontSize: '0.85rem', resize: 'none', lineHeight: 1.7 }}
+                                    onFocus={e => { e.currentTarget.style.borderColor = 'var(--primary-color)'; e.currentTarget.style.boxShadow = '0 0 10px rgba(170,0,255,0.1)'; }}
+                                    onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.boxShadow = 'none'; }}
                                 />
                             </div>
 
                             {/* Image Upload */}
                             <div className="mb-5">
-                                <label className="fw-bold text-dark small mb-2 d-block">
-                                    Attach Image
-                                    <span className="ms-2 text-muted fw-normal" style={{ fontSize: '0.78rem' }}>Optional</span>
+                                <label className="tech-font fw-bold text-white mb-2 d-block text-uppercase" style={{ letterSpacing: '0.15em' }}>
+                                    ATTACH INTEL
+                                    <span className="ms-2 badge rounded" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.1)' }}>(OPTIONAL)</span>
                                 </label>
                                 <input type="file" ref={imageInputRef} onChange={handleImageChange} className="d-none" id="postImage" accept="image/*" />
                                 {!imagePreview ? (
-                                    <label
-                                        htmlFor="postImage"
-                                        className="d-flex align-items-center gap-3 cursor-pointer"
-                                        style={{
-                                            border: '2px dashed #e2e8f0',
-                                            borderRadius: '14px',
-                                            padding: '20px 28px',
-                                            background: '#fafafa',
-                                            cursor: 'pointer',
-                                            transition: 'all 0.2s'
-                                        }}
-                                        onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
-                                        onMouseLeave={e => e.currentTarget.style.background = '#fafafa'}
-                                    >
-                                        <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                            <FaImage size={18} className="text-muted" />
+                                    <label htmlFor="postImage" className="d-flex align-items-center gap-3 cursor-pointer hover-bg-light"
+                                        style={{ border: '1px dashed rgba(255,255,255,0.3)', borderRadius: '8px', padding: '20px 28px', background: 'transparent', transition: 'all 0.2s' }}>
+                                        <div style={{ width: '44px', height: '44px', borderRadius: '8px', background: 'rgba(170,0,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            <FaImage size={18} className="text-neon-purple" />
                                         </div>
                                         <div>
-                                            <p className="fw-bold text-dark mb-0 small">Click to upload image</p>
-                                            <small className="text-muted">JPG, PNG up to 5MB</small>
+                                            <p className="tech-font fw-bold text-white mb-0 text-uppercase" style={{ letterSpacing: '0.1em' }}>UPLOAD ENCRYPTED IMAGE</p>
                                         </div>
                                     </label>
                                 ) : (
-                                    <motion.div
-                                        initial={{ opacity: 0, scale: 0.98 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        className="position-relative rounded-3 overflow-hidden border"
-                                        style={{ maxHeight: '260px' }}
-                                    >
-                                        <img src={imagePreview} alt="Preview" className="w-100 object-fit-cover" style={{ maxHeight: '260px' }} />
-                                        <div
-                                            className="position-absolute bottom-0 start-0 end-0 d-flex align-items-center justify-content-between px-3 py-2"
-                                            style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.65), transparent)' }}
-                                        >
-                                            <small className="text-white fw-medium text-truncate" style={{ maxWidth: '240px' }}>
-                                                {formData.image?.name}
-                                            </small>
-                                            <button
-                                                type="button"
-                                                onClick={removeImage}
-                                                className="btn btn-sm rounded-circle d-flex align-items-center justify-content-center"
-                                                style={{ width: '26px', height: '26px', background: 'rgba(239,68,68,0.9)', border: 'none' }}
-                                            >
-                                                <FaTimes size={10} className="text-white" />
+                                    <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="position-relative rounded overflow-hidden border" style={{ maxHeight: '260px', borderColor: 'var(--primary-color) !important' }}>
+                                        <img src={imagePreview} alt="Intel Preview" className="w-100 object-fit-cover" style={{ maxHeight: '260px', filter: 'brightness(0.8) contrast(1.1)' }} />
+                                        <div className="position-absolute bottom-0 start-0 end-0 d-flex align-items-center justify-content-between px-3 py-2" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)' }}>
+                                            <small className="tech-font text-white fw-bold text-truncate" style={{ maxWidth: '240px', letterSpacing: '0.1em' }}>{formData.image?.name}</small>
+                                            <button type="button" onClick={removeImage} className="btn btn-sm rounded d-flex align-items-center justify-content-center" style={{ width: '26px', height: '26px', background: 'rgba(239,68,68,0.2)', border: '1px solid var(--accent-red)' }}>
+                                                <FaTimes size={10} className="text-neon-red" />
                                             </button>
                                         </div>
                                     </motion.div>
@@ -237,99 +194,54 @@ const CommunityPost = () => {
                             </div>
 
                             {/* Submit */}
-                            <div className="d-flex justify-content-end gap-3">
-                                <button
-                                    type="button"
-                                    onClick={() => { setFormData({ title: '', content: '', tag: 'Update', image: null }); setImagePreview(null); }}
-                                    className="btn btn-light border fw-medium px-4"
-                                    style={{ borderRadius: '10px' }}
-                                >
-                                    Clear
+                            <div className="d-flex justify-content-end gap-3 flex-wrap">
+                                <button type="button" onClick={() => { setFormData({ title: '', content: '', tag: 'Update', image: null }); setImagePreview(null); }}
+                                    className="btn tech-font fw-bold text-uppercase" style={{ borderRadius: '4px', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', letterSpacing: '0.1em' }}>
+                                    WIPE
                                 </button>
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="btn fw-bold px-5 py-2 d-flex align-items-center gap-2"
-                                    style={{ borderRadius: '10px', background: 'linear-gradient(135deg, #6366f1, #4f46e5)', color: 'white', border: 'none', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}
-                                >
-                                    {loading
-                                        ? <><span className="spinner-border spinner-border-sm" /> Publishing...</>
-                                        : <><FaBullhorn size={14} /> Publish Post</>
-                                    }
+                                <button type="submit" disabled={loading} className="btn tech-font fw-bold text-uppercase d-flex align-items-center gap-2"
+                                    style={{ borderRadius: '4px', background: 'rgba(170,0,255,0.1)', color: 'var(--primary-color)', border: '1px solid var(--primary-color)', letterSpacing: '0.1em' }}>
+                                    {loading ? <><span className="spinner-border spinner-border-sm" /> TRANSMITTING...</> : <><FaBullhorn size={14} /> TRANSMIT LOG</>}
                                 </button>
                             </div>
                         </form>
                     </motion.div>
                 </div>
 
-                {/* ── Right: Preview Card ── */}
-                <div style={{ flex: '0 0 320px', width: '320px', position: 'sticky', top: '24px' }}>
-                    <label className="fw-bold text-muted text-uppercase mb-3 d-block" style={{ fontSize: '0.72rem', letterSpacing: '0.08em' }}>Post Preview</label>
-                    <motion.div
-                        layout
-                        className="bg-white rounded-4 border overflow-hidden"
-                        style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
-                    >
+                {/* Right: Preview Card */}
+                <div style={{ flex: '0 0 320px', width: '320px', position: 'sticky', top: '80px' }} className="d-none d-xl-block">
+                    <label className="tech-font fw-bold text-secondary text-uppercase mb-3 d-flex align-items-center gap-2" style={{ fontSize: '0.72rem', letterSpacing: '0.15em' }}>
+                        <FaTerminal /> INITIATE PREVIEW
+                    </label>
+                    <motion.div layout className="glass-card overflow-hidden" style={{ borderLeft: `3px solid ${tagMeta.border}` }}>
                         {/* Image preview */}
                         {imagePreview ? (
-                            <div style={{ height: '160px', overflow: 'hidden' }}>
-                                <img src={imagePreview} alt="Preview" className="w-100 h-100 object-fit-cover" />
+                            <div style={{ height: '160px', overflow: 'hidden', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                                <img src={imagePreview} alt="Preview" className="w-100 h-100 object-fit-cover" style={{ filter: 'brightness(0.85) sepia(0.2)' }} />
                             </div>
                         ) : (
-                            <div className="d-flex align-items-center justify-content-center" style={{ height: '120px', background: '#f8fafc' }}>
-                                <FaImage size={32} style={{ color: '#cbd5e1', opacity: 0.6 }} />
+                            <div className="d-flex align-items-center justify-content-center" style={{ height: '120px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                <FaImage size={32} style={{ color: 'rgba(255,255,255,0.1)' }} />
                             </div>
                         )}
 
                         <div className="p-4">
                             {/* Tag badge */}
-                            <span
-                                className="badge rounded-pill fw-medium mb-3 px-3 py-1"
-                                style={{ background: tagMeta.bg, color: tagMeta.color, border: `1px solid ${tagMeta.border}`, fontSize: '0.75rem' }}
-                            >
-                                {formData.tag}
-                            </span>
-
-                            <h6 className="fw-bold text-dark mb-2" style={{ fontSize: '0.95rem' }}>
-                                {formData.title || <span className="text-muted fst-italic fw-normal">Post title will appear here</span>}
+                            <span className="badge tech-font fw-bold mb-3 px-3 py-1 text-uppercase" style={{ background: tagMeta.bg, color: tagMeta.color, border: `1px solid ${tagMeta.border}`, fontSize: '0.65rem', letterSpacing: '0.1em' }}>{formData.tag}</span>
+                            <h6 className="tech-font fw-bold text-white mb-2 text-uppercase tracking-widest" style={{ fontSize: '0.9rem' }}>
+                                {formData.title || <span className="text-muted fst-italic fw-normal">AWAITING DESIGNATION</span>}
                             </h6>
-
-                            <p className="text-muted small mb-3" style={{
-                                display: '-webkit-box',
-                                WebkitLineClamp: 4,
-                                WebkitBoxOrient: 'vertical',
-                                overflow: 'hidden',
-                                lineHeight: 1.6
-                            }}>
-                                {formData.content || <span className="fst-italic">Content preview...</span>}
+                            <p className="text-muted font-monospace small mb-3" style={{ display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.6, fontSize: '0.75rem' }}>
+                                {formData.content || <span className="fst-italic">AWAITING PAYLOAD...</span>}
                             </p>
-
-                            <div className="d-flex align-items-center gap-2 pt-3 border-top">
-                                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <FaBullhorn size={12} style={{ color: '#6366f1' }} />
+                            <div className="d-flex align-items-center gap-2 pt-3 border-top" style={{ borderColor: 'rgba(255,255,255,0.1) !important' }}>
+                                <div style={{ width: '28px', height: '28px', borderRadius: '4px', background: 'rgba(170,0,255,0.1)', border: '1px solid var(--primary-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <FaTerminal size={12} className="text-neon-purple" />
                                 </div>
-                                <small className="text-muted">Authority · Just now</small>
+                                <small className="tech-font text-muted text-uppercase fw-bold" style={{ fontSize: '0.65rem', letterSpacing: '0.1em' }}>AUTHORITY · T-MINUS 00:00</small>
                             </div>
                         </div>
                     </motion.div>
-
-                    {/* Tips */}
-                    <div className="mt-4 p-4 rounded-3 border" style={{ background: '#f8fafc' }}>
-                        <p className="fw-bold small text-dark mb-2">Tips for a good post</p>
-                        <ul className="list-unstyled mb-0 d-flex flex-column gap-2">
-                            {[
-                                'Keep titles short and specific',
-                                'Use the right tag for visibility',
-                                'Add an image to increase engagement',
-                                'Proofread before publishing',
-                            ].map((tip, i) => (
-                                <li key={i} className="d-flex align-items-start gap-2">
-                                    <FaCheckCircle size={11} style={{ color: '#10b981', marginTop: '3px', flexShrink: 0 }} />
-                                    <small className="text-muted">{tip}</small>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
                 </div>
             </div>
         </div>

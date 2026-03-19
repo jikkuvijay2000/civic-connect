@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
     FaClipboardCheck, FaExclamationCircle, FaHourglassHalf, FaRobot,
-    FaCheckCircle, FaCircle, FaArrowUp, FaBell
+    FaCheckCircle, FaCircle, FaArrowUp, FaBell, FaTerminal, FaNetworkWired
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -14,21 +14,21 @@ import AIAnimation from '../Components/AIAnimation';
 
 /* ── Stat card config ─────────────────────────────────────────────── */
 const STAT_META = [
-    { key: 'total', label: 'Total Complaints', icon: FaExclamationCircle, color: '#6366f1', bg: '#eef2ff', border: '#a5b4fc' },
-    { key: 'resolved', label: 'Resolved', icon: FaClipboardCheck, color: '#10b981', bg: '#ecfdf5', border: '#6ee7b7' },
-    { key: 'pending', label: 'Pending', icon: FaHourglassHalf, color: '#f59e0b', bg: '#fffbeb', border: '#fcd34d' },
-    { key: 'avgConf', label: 'Avg AI Confidence', icon: FaRobot, color: '#3b82f6', bg: '#eff6ff', border: '#93c5fd' },
+    { key: 'total', label: 'INCIDENTS LOGGED', icon: FaExclamationCircle, color: '#a855f7', bg: 'rgba(168,85,247,0.1)', border: '#c084fc' },
+    { key: 'resolved', label: 'ANOMALIES RESOLVED', icon: FaClipboardCheck, color: '#10b981', bg: 'rgba(16,185,129,0.1)', border: '#34d399' },
+    { key: 'pending', label: 'AWAITING DISPATCH', icon: FaHourglassHalf, color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', border: '#fbbf24' },
+    { key: 'avgConf', label: 'AI CONFIDENCE', icon: FaRobot, color: '#3b82f6', bg: 'rgba(59,130,246,0.1)', border: '#60a5fa' },
 ];
 
-const PIE_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+const PIE_COLORS = ['#a855f7', '#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#06b6d4'];
 
 const AuthorityDashboard = () => {
     const [statsData, setStatsData] = useState({ total: 0, resolved: 0, pending: 0, avgConfidence: 0 });
     const [loading, setLoading] = useState(true);
     const [aiHealth, setAiHealth] = useState({
-        classifier: { status: 'Checking...', latency: null, color: '#94a3b8' },
-        fakeDetection: { status: 'Checking...', latency: null, color: '#94a3b8' },
-        captioning: { status: 'Checking...', latency: null, color: '#94a3b8' },
+        classifier: { status: 'SCANNING...', latency: null, color: '#64748b' },
+        fakeDetection: { status: 'SCANNING...', latency: null, color: '#64748b' },
+        captioning: { status: 'SCANNING...', latency: null, color: '#64748b' },
         avgLatency: null,
         allOnline: true
     });
@@ -74,17 +74,17 @@ const AuthorityDashboard = () => {
                 const avgLat = onlineCount > 0 ? Math.round(data.filter(s => s.latency !== null).reduce((acc, curr) => acc + curr.latency, 0) / onlineCount) : null;
 
                 setAiHealth({
-                    classifier: { status: c?.status || 'Unknown', latency: c?.latency, color: c?.status === 'Online' ? '#10b981' : '#ef4444' },
-                    fakeDetection: { status: f?.status || 'Unknown', latency: f?.latency, color: f?.status === 'Online' ? '#10b981' : '#ef4444' },
-                    captioning: { status: i?.status || 'Unknown', latency: i?.latency, color: i?.status === 'Online' ? '#10b981' : '#ef4444' },
+                    classifier: { status: c?.status || 'UNKNOWN', latency: c?.latency, color: c?.status === 'Online' ? '#10b981' : '#ef4444' },
+                    fakeDetection: { status: f?.status || 'UNKNOWN', latency: f?.latency, color: f?.status === 'Online' ? '#10b981' : '#ef4444' },
+                    captioning: { status: i?.status || 'UNKNOWN', latency: i?.latency, color: i?.status === 'Online' ? '#10b981' : '#ef4444' },
                     avgLatency: avgLat,
                     allOnline: onlineCount === data.length
                 });
             } else {
                 setAiHealth({
-                    classifier: { status: 'Offline', latency: null, color: '#ef4444' },
-                    fakeDetection: { status: 'Offline', latency: null, color: '#ef4444' },
-                    captioning: { status: 'Offline', latency: null, color: '#ef4444' },
+                    classifier: { status: 'OFFLINE', latency: null, color: '#ef4444' },
+                    fakeDetection: { status: 'OFFLINE', latency: null, color: '#ef4444' },
+                    captioning: { status: 'OFFLINE', latency: null, color: '#ef4444' },
                     avgLatency: null,
                     allOnline: false
                 });
@@ -104,7 +104,6 @@ const AuthorityDashboard = () => {
             }
         });
 
-        // Close notif panel on outside click
         const handleOutside = (e) => {
             if (notifRef.current && !notifRef.current.contains(e.target)) setIsNotifOpen(false);
         };
@@ -128,36 +127,48 @@ const AuthorityDashboard = () => {
         ? Math.round((statsData.resolved / statsData.total) * 100) : 0;
 
     if (loading) return (
-        <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
-            <div className="spinner-border" style={{ color: '#6366f1' }} role="status"><span className="visually-hidden">Loading...</span></div>
+        <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh', background: 'transparent' }}>
+            <div className="spinner-border text-neon-purple" role="status"><span className="visually-hidden">INITIALIZING SECURE LINK...</span></div>
         </div>
     );
 
     return (
-        <div style={{ background: '#f8fafc', minHeight: '100vh' }}>
+        <div style={{ background: 'transparent', minHeight: '100vh' }}>
 
             {/* ── Top bar ── */}
             <div className="d-flex justify-content-between align-items-center px-4 px-md-5 py-4 border-bottom"
-                style={{ background: 'white', position: 'sticky', top: 0, zIndex: 10 }}>
-                <div>
-                    <h4 className="fw-bold mb-0 text-dark">Dashboard</h4>
-                    <small className="text-muted">
-                        Welcome back, <strong>{user?.userName || 'Authority'}</strong> · {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                    </small>
+                style={{ background: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(12px)', position: 'sticky', top: 0, zIndex: 10, borderColor: 'rgba(255,255,255,0.1) !important' }}>
+                <div className="d-flex align-items-center gap-3">
+                    <FaTerminal size={24} className="text-secondary d-none d-md-block" />
+                    <div>
+                        <h4 className="fw-bold mb-0 text-white tech-font text-uppercase tracking-widest" style={{ letterSpacing: '0.15em' }}>COMMAND DASHBOARD</h4>
+                        <small className="tech-font text-muted text-uppercase tracking-widest font-monospace" style={{ fontSize: '0.75rem' }}>
+                            OPERATIVE: <span className="text-secondary fw-bold">{user?.userName || 'AUTHORITY'}</span> // {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: '2-digit', year: 'numeric' })}
+                        </small>
+                    </div>
                 </div>
                 <div className="d-flex align-items-center gap-3">
+
+                    {/* ── System Operational ── */}
+                    <div className="d-none d-md-flex align-items-center gap-2 px-3 py-2 rounded border tech-font text-uppercase"
+                        style={{ background: aiHealth.allOnline ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', borderColor: aiHealth.allOnline ? '#10b981 !important' : '#ef4444 !important' }}>
+                        {aiHealth.allOnline ? <FaCheckCircle size={13} className="text-neon-green" /> : <FaExclamationCircle size={13} className="text-neon-red" />}
+                        <small className="fw-bold" style={{ color: aiHealth.allOnline ? '#10b981' : '#ef4444', letterSpacing: '0.1em' }}>
+                            {aiHealth.allOnline ? 'SYSTEM STABLE' : 'LINK DISRUPTION'}
+                        </small>
+                    </div>
 
                     {/* ── Notifications Bell ── */}
                     <div className="position-relative" ref={notifRef}>
                         <button
                             onClick={() => { setIsNotifOpen(!isNotifOpen); if (!isNotifOpen) setUnreadCount(0); }}
-                            className="border-0 position-relative d-flex align-items-center justify-content-center"
-                            style={{ width: '38px', height: '38px', borderRadius: '12px', background: isNotifOpen ? '#fef2f2' : '#f8fafc', border: `1.5px solid ${isNotifOpen ? '#fca5a5' : '#e2e8f0'}`, cursor: 'pointer', transition: 'all 0.15s' }}
+                            className="border-0 position-relative d-flex align-items-center justify-content-center hover-scale"
+                            style={{ width: '42px', height: '42px', borderRadius: '4px', background: isNotifOpen ? 'rgba(170,0,255,0.2)' : 'rgba(255,255,255,0.05)', border: `1px solid ${isNotifOpen ? 'var(--primary-color)' : 'rgba(255,255,255,0.1)'}`, cursor: 'pointer', transition: 'all 0.15s' }}
                         >
-                            <FaBell size={15} style={{ color: isNotifOpen ? '#ef4444' : '#64748b' }} />
+                            <FaBell size={16} className={isNotifOpen ? 'text-primary' : 'text-muted'} />
                             {unreadCount > 0 && (
-                                <span className="position-absolute d-flex align-items-center justify-content-center"
-                                    style={{ top: '-5px', right: '-5px', minWidth: '18px', height: '18px', borderRadius: '9px', background: '#ef4444', color: 'white', fontSize: '0.6rem', fontWeight: 700, padding: '0 4px', border: '2px solid white' }}>
+                                <span className="position-absolute d-flex align-items-center justify-content-center tech-font text-uppercase"
+                                    style={{ top: '-6px', right: '-6px', minWidth: '20px', height: '20px', borderRadius: '10px', background: 'var(--accent-red)', color: 'white', fontSize: '0.65rem', fontWeight: 700, padding: '0 4px', border: '1px solid black' }}>
                                     {unreadCount > 9 ? '9+' : unreadCount}
                                 </span>
                             )}
@@ -170,25 +181,25 @@ const AuthorityDashboard = () => {
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     exit={{ opacity: 0, y: 6, scale: 0.97 }}
                                     transition={{ duration: 0.15 }}
-                                    className="position-absolute top-100 end-0 mt-2 rounded-3 overflow-hidden"
-                                    style={{ width: '300px', maxHeight: '340px', overflowY: 'auto', zIndex: 1000, background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 12px 40px rgba(0,0,0,0.35)' }}
+                                    className="position-absolute top-100 end-0 mt-3 rounded overflow-hidden"
+                                    style={{ width: '320px', maxHeight: '380px', overflowY: 'auto', zIndex: 1000, background: 'rgba(15,23,42,0.95)', backdropFilter: 'blur(20px)', border: '1px solid var(--primary-color)', boxShadow: '0 0 30px rgba(170,0,255,0.2)' }}
                                 >
-                                    <div className="px-4 py-3 border-bottom d-flex justify-content-between align-items-center" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
-                                        <small className="fw-bold text-uppercase" style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.65rem', letterSpacing: '0.1em' }}>Notifications</small>
-                                        {notifications.length > 0 && <span className="badge rounded-pill" style={{ background: '#ef4444', fontSize: '0.65rem' }}>{notifications.length}</span>}
+                                    <div className="px-4 py-3 border-bottom d-flex justify-content-between align-items-center" style={{ borderColor: 'rgba(255,255,255,0.1) !important' }}>
+                                        <small className="fw-bold tech-font text-uppercase tracking-widest text-primary" style={{ fontSize: '0.75rem', letterSpacing: '0.15em' }}>ALERTS</small>
+                                        {notifications.length > 0 && <span className="badge rounded px-2 tech-font" style={{ background: 'var(--accent-red)', fontSize: '0.65rem', letterSpacing: '0.1em' }}>{notifications.length} NEW</span>}
                                     </div>
                                     {notifications.length === 0 ? (
                                         <div className="text-center py-5">
-                                            <FaBell size={24} style={{ color: 'rgba(255,255,255,0.12)', marginBottom: '10px' }} />
-                                            <p className="mb-0" style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem' }}>No new alerts</p>
+                                            <FaNetworkWired size={28} style={{ color: 'rgba(255,255,255,0.1)', marginBottom: '12px' }} />
+                                            <p className="mb-0 tech-font text-uppercase" style={{ color: 'var(--text-muted)', fontSize: '0.8rem', letterSpacing: '0.1em' }}>NETWORK CLEAR</p>
                                         </div>
                                     ) : notifications.map((notif, i) => (
-                                        <div key={i} className="px-4 py-3 border-bottom" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+                                        <div key={i} className="px-4 py-3 border-bottom hover-bg-light" style={{ borderColor: 'rgba(255,255,255,0.05) !important', cursor: 'pointer' }}>
                                             <div className="d-flex align-items-start gap-3">
-                                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444', marginTop: '5px', flexShrink: 0 }} />
+                                                <div style={{ width: '6px', height: '6px', background: 'var(--accent-red)', marginTop: '6px', flexShrink: 0, boxShadow: '0 0 8px var(--accent-red)' }} />
                                                 <div>
-                                                    <p className="mb-1 fw-medium" style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.78rem', lineHeight: 1.4 }}>{notif.message}</p>
-                                                    <small style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.68rem' }}>{notif.time ? new Date(notif.time).toLocaleTimeString() : 'Just now'}</small>
+                                                    <p className="mb-1 fw-bold font-monospace text-white" style={{ fontSize: '0.75rem', lineHeight: 1.5, letterSpacing: '0.05em' }}>{notif.message}</p>
+                                                    <small className="tech-font text-muted text-uppercase" style={{ fontSize: '0.65rem', letterSpacing: '0.1em' }}>{notif.time ? new Date(notif.time).toLocaleTimeString() : 'JUST NOW'}</small>
                                                 </div>
                                             </div>
                                         </div>
@@ -198,18 +209,10 @@ const AuthorityDashboard = () => {
                         </AnimatePresence>
                     </div>
 
-                    {/* System Operational */}
-                    <div className="d-flex align-items-center gap-2 px-3 py-2 rounded-3"
-                        style={{ background: aiHealth.allOnline ? '#ecfdf5' : '#fef2f2', border: `1px solid ${aiHealth.allOnline ? '#6ee7b7' : '#fca5a5'}` }}>
-                        {aiHealth.allOnline ? <FaCheckCircle size={13} style={{ color: '#10b981' }} /> : <FaExclamationCircle size={13} style={{ color: '#ef4444' }} />}
-                        <small className="fw-bold" style={{ color: aiHealth.allOnline ? '#065f46' : '#991b1b' }}>
-                            {aiHealth.allOnline ? 'System Operational' : 'AI Service Disruption'}
-                        </small>
-                    </div>
                 </div>
             </div>
 
-            <div className="px-5 py-5">
+            <div className="px-3 px-md-5 py-5 overflow-auto custom-scrollbar h-100">
 
                 {/* ── Stat cards ── */}
                 <div className="row g-4 mb-5">
@@ -217,27 +220,26 @@ const AuthorityDashboard = () => {
                         const Icon = s.icon;
                         return (
                             <div className="col-md-6 col-xl-3" key={i}>
-                                <motion.div
-                                    initial={{ opacity: 0, y: 18 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: i * 0.08 }}
-                                    className="bg-white rounded-4 border p-4 h-100"
-                                    style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.05)', borderLeft: `4px solid ${s.color} !important` }}
-                                >
-                                    <div className="d-flex justify-content-between align-items-start mb-3">
-                                        <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: s.bg, border: `1px solid ${s.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            <Icon size={17} style={{ color: s.color }} />
+                                <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
+                                    className="glass-card p-4 h-100 position-relative overflow-hidden"
+                                    style={{ borderLeft: `3px solid ${s.color} !important`, borderRadius: '4px' }}>
+                                    <div className="position-absolute top-0 end-0 w-50 h-100" style={{ background: `linear-gradient(90deg, transparent, ${s.bg})`, zIndex: 0, pointerEvents: 'none', opacity: 0.3 }} />
+                                    <div className="position-relative z-1">
+                                        <div className="d-flex justify-content-between align-items-start mb-4">
+                                            <div style={{ width: '42px', height: '42px', borderRadius: '4px', background: s.bg, border: `1px solid ${s.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <Icon size={18} style={{ color: s.color }} />
+                                            </div>
+                                            {s.key === 'resolved' && statsData.total > 0 && (
+                                                <span className="badge d-flex align-items-center gap-1 tech-font fw-bold" style={{ background: 'rgba(16,185,129,0.1)', color: '#34d399', border: '1px solid #34d399', fontSize: '0.7rem', letterSpacing: '0.1em' }}>
+                                                    <FaArrowUp size={8} /> {resolutionRate}%
+                                                </span>
+                                            )}
                                         </div>
-                                        {s.key === 'resolved' && statsData.total > 0 && (
-                                            <span className="badge rounded-pill d-flex align-items-center gap-1" style={{ background: '#ecfdf5', color: '#059669', border: '1px solid #6ee7b7', fontSize: '0.68rem' }}>
-                                                <FaArrowUp size={8} /> {resolutionRate}%
-                                            </span>
-                                        )}
+                                        <div className="fw-bold text-white tech-font mb-1" style={{ fontSize: '2rem', letterSpacing: '0.05em' }}>
+                                            {typeof s.value === 'number' ? s.value.toLocaleString() : s.value}
+                                        </div>
+                                        <div className="text-secondary tech-font text-uppercase fw-bold" style={{ fontSize: '0.75rem', letterSpacing: '0.15em' }}>{s.label}</div>
                                     </div>
-                                    <div className="fw-bold text-dark mb-1" style={{ fontSize: '1.75rem', letterSpacing: '-0.5px' }}>
-                                        {typeof s.value === 'number' ? s.value.toLocaleString() : s.value}
-                                    </div>
-                                    <div className="text-muted" style={{ fontSize: '0.82rem' }}>{s.label}</div>
                                 </motion.div>
                             </div>
                         );
@@ -245,124 +247,142 @@ const AuthorityDashboard = () => {
                 </div>
 
                 {/* ── Charts row ── */}
-                <div className="row g-4 mb-4">
+                <div className="row g-4 mb-5">
 
                     {/* AI Confidence Distribution */}
                     <div className="col-lg-5">
-                        <div className="bg-white rounded-4 border p-4 h-100" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-                            <div className="d-flex justify-content-between align-items-center mb-4">
+                        <div className="glass-card p-4 h-100 rounded">
+                            <div className="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary opacity-75 pb-2">
                                 <div>
-                                    <h6 className="fw-bold text-dark mb-0">AI Confidence Map</h6>
-                                    <small className="text-muted">Complaint severity distribution</small>
+                                    <h6 className="fw-bold text-white tech-font mb-1 text-uppercase tracking-widest">CONFIDENCE MAP</h6>
+                                    <small className="text-muted font-monospace text-uppercase" style={{ fontSize: '0.7rem' }}>ANOMALY SEVERITY DISTRIBUTION</small>
                                 </div>
-                                <span className="badge rounded-pill px-3 py-2 fw-medium" style={{ background: '#eef2ff', color: '#6366f1', border: '1px solid #a5b4fc', fontSize: '0.72rem' }}>Live</span>
+                                <span className="badge px-3 py-1 fw-bold tech-font text-uppercase" style={{ background: 'var(--primary-color)', color: 'white', border: '1px solid var(--primary-color)', fontSize: '0.7rem', letterSpacing: '0.1em' }}>LIVE FEED</span>
                             </div>
-                            <ResponsiveContainer width="100%" height={220}>
-                                <BarChart data={statsData.confidenceDistribution || []} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                                    <Tooltip
-                                        cursor={{ fill: 'rgba(99,102,241,0.06)' }}
-                                        contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', fontSize: '0.82rem' }}
-                                        formatter={(v) => [`${v} issues`, 'Count']}
-                                    />
-                                    <Bar dataKey="value" fill="#6366f1" radius={[6, 6, 0, 0]} barSize={34} />
-                                </BarChart>
-                            </ResponsiveContainer>
+                            <div style={{ height: '240px' }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={statsData.confidenceDistribution || []} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="2 4" vertical={false} stroke="rgba(255,255,255,0.1)" />
+                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--text-muted)', fontFamily: 'Share Tech Mono' }} />
+                                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--text-muted)', fontFamily: 'Share Tech Mono' }} />
+                                        <Tooltip
+                                            cursor={{ fill: 'rgba(170,0,255,0.1)' }}
+                                            contentStyle={{ backgroundColor: 'rgba(15,23,42,0.95)', border: '1px solid var(--primary-color)', color: 'white', fontFamily: 'Share Tech Mono', fontSize: '0.8rem', borderRadius: '4px' }}
+                                            itemStyle={{ color: 'var(--primary-color)' }}
+                                        />
+                                        <Bar dataKey="value" fill="url(#colorUv)" radius={[2, 2, 0, 0]} barSize={28}>
+                                            <defs>
+                                                <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="var(--primary-color)" stopOpacity={1} />
+                                                    <stop offset="95%" stopColor="var(--primary-color)" stopOpacity={0.3} />
+                                                </linearGradient>
+                                            </defs>
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
                         </div>
                     </div>
 
                     {/* Category Donut */}
                     <div className="col-lg-3">
-                        <div className="bg-white rounded-4 border p-4 h-100" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-                            <h6 className="fw-bold text-dark mb-1">By Category</h6>
-                            <small className="text-muted d-block mb-3">Complaint type breakdown</small>
-                            <ResponsiveContainer width="100%" height={200}>
-                                <PieChart>
-                                    <Pie
-                                        data={statsData.categoryStats || []}
-                                        cx="50%" cy="45%"
-                                        innerRadius={48} outerRadius={72}
-                                        paddingAngle={4}
-                                        dataKey="count" nameKey="_id"
-                                    >
-                                        {(statsData.categoryStats || []).map((_, i) => (
-                                            <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip
-                                        contentStyle={{ borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '0.8rem' }}
-                                        formatter={(v) => [v, 'Complaints']}
-                                    />
-                                    <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
-                                </PieChart>
-                            </ResponsiveContainer>
+                        <div className="glass-card p-4 h-100 rounded d-flex flex-column">
+                            <div className="border-bottom border-secondary opacity-75 pb-2 mb-3">
+                                <h6 className="fw-bold text-white tech-font mb-1 text-uppercase tracking-widest">CATEGORY SCAN</h6>
+                                <small className="text-muted font-monospace text-uppercase" style={{ fontSize: '0.7rem' }}>TYPE CLASSIFICATION</small>
+                            </div>
+                            <div className="flex-grow-1" style={{ minHeight: '200px' }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={statsData.categoryStats || []}
+                                            cx="50%" cy="45%"
+                                            innerRadius={55} outerRadius={75}
+                                            paddingAngle={4}
+                                            dataKey="count" nameKey="_id"
+                                            stroke="none"
+                                        >
+                                            {(statsData.categoryStats || []).map((_, i) => (
+                                                <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip
+                                            contentStyle={{ backgroundColor: 'rgba(15,23,42,0.95)', border: '1px solid var(--primary-color)', color: 'white', fontFamily: 'Share Tech Mono', fontSize: '0.8rem', borderRadius: '4px' }}
+                                        />
+                                        <Legend iconType="square" wrapperStyle={{ fontFamily: 'Share Tech Mono', fontSize: '10px', paddingTop: '15px', color: 'var(--text-muted)' }} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
                         </div>
                     </div>
 
                     {/* Priority horizontal bar */}
                     <div className="col-lg-4">
-                        <div className="bg-white rounded-4 border p-4 h-100" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-                            <div className="d-flex align-items-center gap-2 mb-1">
-                                <FaExclamationCircle size={13} style={{ color: '#ef4444' }} />
-                                <h6 className="fw-bold text-dark mb-0">Priority & Emergency</h6>
+                        <div className="glass-card p-4 h-100 rounded d-flex flex-column">
+                            <div className="border-bottom border-secondary opacity-75 pb-2 mb-3">
+                                <div className="d-flex align-items-center gap-2 mb-1">
+                                    <FaExclamationCircle size={14} className="text-neon-red" />
+                                    <h6 className="fw-bold text-white tech-font mb-0 text-uppercase tracking-widest">PRIORITY QUEUE</h6>
+                                </div>
+                                <small className="text-muted font-monospace text-uppercase" style={{ fontSize: '0.7rem' }}>SEVERITY ANALYSIS</small>
                             </div>
-                            <small className="text-muted d-block mb-3">Complaints by severity level</small>
-                            <ResponsiveContainer width="100%" height={200}>
-                                <BarChart data={statsData.priorityStats || []} layout="vertical" margin={{ top: 0, right: 20, left: 10, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                                    <XAxis type="number" hide />
-                                    <YAxis dataKey="_id" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }} width={70} />
-                                    <Tooltip
-                                        contentStyle={{ borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '0.8rem' }}
-                                        formatter={(v) => [`${v} complaints`, 'Count']}
-                                    />
-                                    <Bar dataKey="count" radius={[0, 8, 8, 0]} barSize={20}>
-                                        {(statsData.priorityStats || []).map((entry, i) => (
-                                            <Cell key={i} fill={
-                                                entry._id === 'Emergency' ? '#ef4444' :
-                                                    entry._id === 'High' ? '#f97316' :
-                                                        entry._id === 'Medium' ? '#f59e0b' : '#10b981'
-                                            } />
-                                        ))}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
+                            <div className="flex-grow-1" style={{ minHeight: '200px' }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={statsData.priorityStats || []} layout="vertical" margin={{ top: 0, right: 10, left: 10, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="2 4" horizontal={false} stroke="rgba(255,255,255,0.05)" />
+                                        <XAxis type="number" hide />
+                                        <YAxis dataKey="_id" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--text-muted)', fontFamily: 'Share Tech Mono', fontWeight: 'bold' }} width={80} />
+                                        <Tooltip
+                                            cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                                            contentStyle={{ backgroundColor: 'rgba(15,23,42,0.95)', border: '1px solid var(--text-muted)', color: 'white', fontFamily: 'Share Tech Mono', fontSize: '0.8rem', borderRadius: '4px' }}
+                                        />
+                                        <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={22}>
+                                            {(statsData.priorityStats || []).map((entry, i) => (
+                                                <Cell key={i} fill={
+                                                    entry._id === 'Emergency' ? 'var(--accent-red)' :
+                                                        entry._id === 'High' ? '#f97316' :
+                                                            entry._id === 'Medium' ? '#f59e0b' : 'var(--neon-green)'
+                                                } />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 {/* ── AI System Status (horizontal row card) ── */}
-                <div className="bg-white rounded-4 border p-4" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-                    <div className="d-flex align-items-center gap-5 flex-wrap">
-                        <div className="d-flex align-items-center gap-4">
+                <div className="glass-card p-4 rounded" style={{ border: '1px solid var(--primary-color)' }}>
+                    <div className="d-flex align-items-center gap-4 flex-wrap flex-md-nowrap">
+                        <div className="d-flex align-items-center gap-4 pe-md-4 border-end-md border-secondary">
                             <AIAnimation size="small" />
                             <div>
-                                <h6 className="fw-bold text-dark mb-1">Civic AI System</h6>
-                                <small className={aiHealth.allOnline ? "text-muted" : "text-danger fw-medium"}>
-                                    Model v2.1 · {aiHealth.allOnline ? 'All services operational' : 'Some services offline'}
+                                <h6 className="fw-bold text-white tech-font mb-1 text-uppercase tracking-widest">AI SURVEILLANCE</h6>
+                                <small className={`tech-font fw-bold text-uppercase ${aiHealth.allOnline ? "text-muted" : "text-neon-red"}`} style={{ fontSize: '0.75rem', letterSpacing: '0.1em' }}>
+                                    CORE v2.1 // {aiHealth.allOnline ? 'ALL NODES STABLE' : 'NODE OFFLINE'}
                                 </small>
                             </div>
                         </div>
-                        <div style={{ height: '40px', width: '1px', background: '#e2e8f0' }} className="d-none d-md-block" />
-                        {[
-                            { label: 'Complaint Classifier', status: aiHealth.classifier.status, detail: aiHealth.classifier.latency ? `${aiHealth.classifier.latency}ms` : '', color: aiHealth.classifier.color },
-                            { label: 'Fake Detection', status: aiHealth.fakeDetection.status, detail: aiHealth.fakeDetection.latency ? `${aiHealth.fakeDetection.latency}ms` : '', color: aiHealth.fakeDetection.color },
-                            { label: 'Image Captioning', status: aiHealth.captioning.status, detail: aiHealth.captioning.latency ? `${aiHealth.captioning.latency}ms` : '', color: aiHealth.captioning.color },
-                            { label: 'Avg Latency', status: aiHealth.avgLatency ? `${aiHealth.avgLatency}ms` : 'N/A', detail: '', color: aiHealth.avgLatency ? '#6366f1' : '#94a3b8' },
-                        ].map((s, i) => (
-                            <div key={i} className="d-flex align-items-center gap-2">
-                                <FaCircle size={8} style={{ color: s.color }} />
-                                <div>
-                                    <p className="fw-bold text-dark mb-0 d-flex justify-content-between gap-3" style={{ fontSize: '0.78rem' }}>
-                                        {s.label}
-                                        {s.detail && <span className="text-muted fw-normal" style={{ fontSize: '0.7rem' }}>{s.detail}</span>}
+                        
+                        <div className="d-flex align-items-center gap-4 flex-wrap flex-grow-1 justify-content-md-between px-md-3">
+                            {[
+                                { label: 'TEXT_SCANNER', status: aiHealth.classifier.status, detail: aiHealth.classifier.latency ? `${aiHealth.classifier.latency}ms` : '', color: aiHealth.classifier.color },
+                                { label: 'DEEP_FAKE_DETECTOR', status: aiHealth.fakeDetection.status, detail: aiHealth.fakeDetection.latency ? `${aiHealth.fakeDetection.latency}ms` : '', color: aiHealth.fakeDetection.color },
+                                { label: 'IMG_PROCESSOR', status: aiHealth.captioning.status, detail: aiHealth.captioning.latency ? `${aiHealth.captioning.latency}ms` : '', color: aiHealth.captioning.color },
+                                { label: 'AVG_LATENCY', status: aiHealth.avgLatency ? `${aiHealth.avgLatency}ms` : 'N/A', detail: '', color: aiHealth.avgLatency ? 'var(--primary-color)' : 'var(--text-muted)' },
+                            ].map((s, i) => (
+                                <div key={i} className="d-flex flex-column align-items-start border p-3 rounded" style={{ background: 'rgba(0,0,0,0.3)', borderColor: 'rgba(255,255,255,0.05) !important' }}>
+                                    <p className="fw-bold text-muted tech-font mb-1 d-flex align-items-center gap-2 text-uppercase" style={{ fontSize: '0.7rem', letterSpacing: '0.1em' }}>
+                                        <FaCircle size={6} style={{ color: s.color, boxShadow: `0 0 5px ${s.color}` }} /> {s.label}
                                     </p>
-                                    <small style={{ color: s.color, fontSize: '0.7rem', fontWeight: 600 }}>{s.status}</small>
+                                    <div className="d-flex align-items-end gap-3 w-100">
+                                        <span className="tech-font fw-bold text-white" style={{ fontSize: '1rem' }}>{s.status}</span>
+                                        {s.detail && <span className="tech-font text-secondary" style={{ fontSize: '0.7rem' }}>{s.detail}</span>}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>

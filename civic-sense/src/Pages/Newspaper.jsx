@@ -2,20 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     FaRegClock, FaGlobe, FaTimes, FaSearch, FaExternalLinkAlt,
-    FaUser, FaChevronRight, FaBookmark, FaRegBookmark, FaMapMarkerAlt
+    FaChevronRight, FaBookmark, FaRegBookmark, FaMapMarkerAlt, FaTerminal
 } from 'react-icons/fa';
 
 const CATEGORIES = ['All', 'Local', 'Politics', 'Environment', 'Infrastructure', 'Community'];
 
 const CAT_META = {
-    Local: { color: '#6366f1', bg: '#eef2ff', border: '#a5b4fc' },
-    Politics: { color: '#ef4444', bg: '#fef2f2', border: '#fca5a5' },
-    Environment: { color: '#10b981', bg: '#ecfdf5', border: '#6ee7b7' },
-    Infrastructure: { color: '#f59e0b', bg: '#fffbeb', border: '#fcd34d' },
-    Community: { color: '#8b5cf6', bg: '#f5f3ff', border: '#c4b5fd' },
-    'World News': { color: '#3b82f6', bg: '#eff6ff', border: '#93c5fd' },
+    Local: { color: 'var(--primary-color)', bg: 'rgba(170,0,255,0.1)', border: 'var(--primary-color)' },
+    Politics: { color: 'var(--accent-red)', bg: 'rgba(239, 68, 68, 0.1)', border: 'var(--accent-red)' },
+    Environment: { color: 'var(--secondary-color)', bg: 'rgba(163, 230, 53, 0.1)', border: 'var(--secondary-color)' },
+    Infrastructure: { color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)', border: '#f59e0b' },
+    Community: { color: '#00f0ff', bg: 'rgba(0, 240, 255, 0.1)', border: '#00f0ff' },
+    'World News': { color: 'var(--primary-color)', bg: 'rgba(170,0,255,0.1)', border: 'var(--primary-color)' },
 };
-const getCM = (cat) => CAT_META[cat] || { color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb' };
+const getCM = (cat) => CAT_META[cat] || { color: '#6b7280', bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.2)' };
 
 const FALLBACK_IMGS = [
     'https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=600&auto=format&fit=crop',
@@ -26,11 +26,11 @@ const FALLBACK_IMGS = [
 ];
 
 const getMockNews = (city = 'Your City') => [
-    { id: 1, title: `City Council Approves New Green Space Initiative in ${city}`, description: 'In a unanimous vote, the city council approved a $5 million initiative to transform abandoned lots into community gardens and parks over the next two years.', link: '#', pubDate: '09:00 AM', author: 'Sarah Jenkins', image: FALLBACK_IMGS[0], category: 'Local' },
-    { id: 2, title: 'Major Road Repairs to Begin Next Week Downtown', description: 'Commuters should expect delays as the public works department begins a comprehensive overhaul of main street infrastructure starting Monday.', link: '#', pubDate: '10:30 AM', author: 'Michael Chang', image: FALLBACK_IMGS[1], category: 'Infrastructure' },
-    { id: 3, title: 'Local High School Wins National Science Competition', description: 'A team of seniors has taken home the grand prize at the National STEM challenge with their innovative water purification device.', link: '#', pubDate: '11:45 AM', author: 'Elena Rodriguez', image: FALLBACK_IMGS[2], category: 'Community' },
-    { id: 4, title: 'New Public Transit Routes Announced for Suburban Areas', description: 'The transit authority unveiled expanded bus routes aimed at connecting underserved suburban neighborhoods to the city center.', link: '#', pubDate: '01:15 PM', author: 'David Kim', image: FALLBACK_IMGS[3], category: 'Infrastructure' },
-    { id: 5, title: 'Environmental Report Shows 20% Drop in City Pollution', description: 'The annual environmental report shows air quality has improved significantly thanks to new clean energy policies adopted last year.', link: '#', pubDate: '02:00 PM', author: 'Priya Nair', image: FALLBACK_IMGS[4], category: 'Environment' },
+    { id: 1, title: `CITY COUNCIL APPROVES NEW GREEN SPACE INITIATIVE IN ${city.toUpperCase()}`, description: 'IN A UNANIMOUS VOTE, THE CITY COUNCIL APPROVED A $5 MILLION INITIATIVE TO TRANSFORM ABANDONED LOTS INTO COMMUNITY GARDENS AND PARKS OVER THE NEXT TWO YEARS.', link: '#', pubDate: '09:00 AM', author: 'S. JENKINS', image: FALLBACK_IMGS[0], category: 'Local' },
+    { id: 2, title: 'MAJOR ROAD REPAIRS TO BEGIN NEXT WEEK DOWNTOWN', description: 'COMMUTERS SHOULD EXPECT DELAYS AS THE PUBLIC WORKS DEPARTMENT BEGINS A COMPREHENSIVE OVERHAUL OF MAIN STREET INFRASTRUCTURE STARTING MONDAY.', link: '#', pubDate: '10:30 AM', author: 'M. CHANG', image: FALLBACK_IMGS[1], category: 'Infrastructure' },
+    { id: 3, title: 'LOCAL HIGH SCHOOL WINS NATIONAL SCIENCE COMPETITION', description: 'A TEAM OF SENIORS HAS TAKEN HOME THE GRAND PRIZE AT THE NATIONAL STEM CHALLENGE WITH THEIR INNOVATIVE WATER PURIFICATION DEVICE.', link: '#', pubDate: '11:45 AM', author: 'E. RODRIGUEZ', image: FALLBACK_IMGS[2], category: 'Community' },
+    { id: 4, title: 'NEW PUBLIC TRANSIT ROUTES ANNOUNCED FOR SUBURBAN AREAS', description: 'THE TRANSIT AUTHORITY UNVEILED EXPANDED BUS ROUTES AIMED AT CONNECTING UNDERSERVED SUBURBAN NEIGHBORHOODS TO THE CITY CENTER.', link: '#', pubDate: '01:15 PM', author: 'D. KIM', image: FALLBACK_IMGS[3], category: 'Infrastructure' },
+    { id: 5, title: 'ENVIRONMENTAL REPORT SHOWS 20% DROP IN CITY POLLUTION', description: 'THE ANNUAL ENVIRONMENTAL REPORT SHOWS AIR QUALITY HAS IMPROVED SIGNIFICANTLY THANKS TO NEW CLEAN ENERGY POLICIES ADOPTED LAST YEAR.', link: '#', pubDate: '02:00 PM', author: 'P. NAIR', image: FALLBACK_IMGS[4], category: 'Environment' },
 ];
 
 const Newspaper = () => {
@@ -41,16 +41,16 @@ const Newspaper = () => {
     const [search, setSearch] = useState('');
     const [saved, setSaved] = useState(new Set());
     const [currentDate, setCurrentDate] = useState('');
-    const [userLocation, setUserLocation] = useState('Detecting location...');
+    const [userLocation, setUserLocation] = useState('ESTABLISHING UPLINK...');
 
     useEffect(() => {
-        setCurrentDate(new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
+        setCurrentDate(new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase());
         getUserLocationAndNews();
     }, []);
 
     const getUserLocationAndNews = () => {
         if (!navigator.geolocation) {
-            setUserLocation('Global News');
+            setUserLocation('GLOBAL NETWORK');
             fetchNews('Global');
             return;
         }
@@ -62,18 +62,18 @@ const Newspaper = () => {
                     const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
                     const geoData = await geoRes.json();
 
-                    const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county || 'Local';
-                    setUserLocation(city);
+                    const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county || 'LOCAL NODE';
+                    setUserLocation(city.toUpperCase());
                     fetchNews(city);
                 } catch (err) {
                     console.error("Geocoding failed:", err);
-                    setUserLocation('Global News');
+                    setUserLocation('GLOBAL NETWORK');
                     fetchNews('Global');
                 }
             },
             (err) => {
                 console.warn("Geolocation blocked or failed:", err.message);
-                setUserLocation('Global News');
+                setUserLocation('GLOBAL NETWORK');
                 fetchNews('Global');
             },
             { timeout: 10000 }
@@ -83,9 +83,7 @@ const Newspaper = () => {
     const fetchNews = async (locationQuery) => {
         setLoading(true);
         try {
-            // Using The Guardian Open API ("test" key) for reliable, CORS-friendly, unmetered news fetching
             const query = locationQuery === 'Global' ? 'civic OR community OR city' : locationQuery;
-
             const res = await fetch(`https://content.guardianapis.com/search?q=${encodeURIComponent(query)}&show-fields=thumbnail,trailText,byline&api-key=test&page-size=12`);
             const data = await res.json();
 
@@ -98,16 +96,16 @@ const Newspaper = () => {
                     else if (text.includes('road') || text.includes('infrastructure') || text.includes('transit') || text.includes('build')) cat = 'Infrastructure';
                     else if (text.includes('school') || text.includes('community') || text.includes('health')) cat = 'Community';
 
-                    const rawDesc = item.fields?.trailText || 'Click to read full story on The Guardian.';
-                    const cleanDesc = rawDesc.replace(/<[^>]*>?/gm, '');
+                    const rawDesc = item.fields?.trailText || 'DATA STREAM AVAILABLE. ACCESS REQUIRED FOR FULL DECRYPTION.';
+                    const cleanDesc = rawDesc.replace(/<[^>]*>?/gm, '').toUpperCase();
 
                     return {
                         id: item.id || i,
-                        title: item.webTitle,
+                        title: item.webTitle.toUpperCase(),
                         description: cleanDesc,
                         link: item.webUrl,
-                        pubDate: new Date(item.webPublicationDate).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
-                        author: item.fields?.byline || 'Guardian Staff',
+                        pubDate: new Date(item.webPublicationDate).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).toUpperCase(),
+                        author: (item.fields?.byline || 'SYSADMIN').toUpperCase(),
                         image: item.fields?.thumbnail || FALLBACK_IMGS[i % FALLBACK_IMGS.length],
                         category: cat,
                     };
@@ -125,7 +123,7 @@ const Newspaper = () => {
 
     const filtered = news.filter(n => {
         const matchCat = category === 'All' || n.category === category;
-        const matchSearch = !search || n.title.toLowerCase().includes(search.toLowerCase()) || n.description.toLowerCase().includes(search.toLowerCase());
+        const matchSearch = !search || n.title.includes(search.toUpperCase()) || n.description.includes(search.toUpperCase());
         return matchCat && matchSearch;
     });
 
@@ -140,65 +138,50 @@ const Newspaper = () => {
     });
 
     return (
-        <div style={{ background: '#f8fafc', minHeight: '100vh' }}>
-
-            {/* ── Masthead / Header ── */}
-            <header
-                className="border-bottom px-5 pt-5 pb-4"
-                style={{ background: 'white', position: 'sticky', top: 0, zIndex: 100 }}
-            >
+        <div style={{ background: 'transparent', minHeight: '100vh' }}>
+            {/* Header */}
+            <header className="border-bottom px-4 px-md-5 pt-4 pb-3 glass-card" style={{ position: 'sticky', top: 0, zIndex: 100, borderLeft: 'none', borderRight: 'none', borderTop: 'none', borderRadius: 0 }}>
                 <div style={{ maxWidth: '1140px', margin: '0 auto' }}>
-                    {/* Sub-header row */}
-                    <div className="d-flex justify-content-between align-items-center mb-3" style={{ fontSize: '0.77rem', color: '#94a3b8' }}>
+                    <div className="d-flex justify-content-between align-items-center mb-3 tech-font text-uppercase fw-bold text-muted" style={{ fontSize: '0.7rem', letterSpacing: '0.15em' }}>
                         <span>{currentDate}</span>
-                        <span className="fw-medium d-flex align-items-center gap-2">
-                            <FaMapMarkerAlt size={11} className="text-danger" />
-                            {userLocation === 'Detecting location...' ? userLocation : `Local News for ${userLocation}`}
+                        <span className="d-flex align-items-center gap-2">
+                            <FaMapMarkerAlt size={11} className="text-neon-red" />
+                            {userLocation === 'ESTABLISHING UPLINK...' ? userLocation : `NODE: ${userLocation}`}
                         </span>
                     </div>
 
-                    {/* Title + search row */}
-                    <div className="d-flex align-items-center justify-content-between gap-4 mb-4">
-                        <div>
-                            <h1 className="fw-bold text-dark mb-0" style={{ fontFamily: "'Georgia', serif", fontSize: '2rem', letterSpacing: '-0.5px' }}>
-                                The Civic Chronicle
-                            </h1>
-                            <p className="text-muted mb-0 fst-italic" style={{ fontSize: '0.85rem' }}>"Truth and Transparency for Our Community"</p>
+                    <div className="d-flex align-items-center justify-content-between gap-4 mb-3 flex-wrap">
+                        <div className="d-flex align-items-center gap-3">
+                            <FaTerminal size={32} className="text-neon-purple d-none d-md-block" />
+                            <div>
+                                <h1 className="fw-bold mb-0 tech-font text-white text-uppercase" style={{ fontSize: '1.8rem', letterSpacing: '0.2em' }}>
+                                    GLOBAL INTEL
+                                </h1>
+                                <p className="text-muted tech-font mb-0 text-uppercase" style={{ fontSize: '0.7rem', letterSpacing: '0.1em' }}>DECRYPTED NETWORK BROADCASTS</p>
+                            </div>
                         </div>
-                        <div className="d-none d-md-flex align-items-center bg-white rounded-3 border px-3 py-2" style={{ width: '280px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                        <div className="d-none d-md-flex align-items-center rounded border px-3 py-2" style={{ width: '280px', background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)' }}>
                             <FaSearch className="text-muted me-2" size={13} />
-                            <input
-                                type="text"
-                                className="form-control border-0 p-0 shadow-none bg-transparent"
-                                placeholder="Search stories..."
-                                value={search}
-                                onChange={e => setSearch(e.target.value)}
-                                style={{ fontSize: '0.87rem' }}
-                            />
-                            {search && <button className="btn btn-sm p-0 text-muted ms-1" onClick={() => setSearch('')}>&times;</button>}
+                            <input type="text" className="form-control tech-font text-white border-0 p-0 shadow-none bg-transparent text-uppercase"
+                                placeholder="QUERY ARCHIVES..." value={search} onChange={e => setSearch(e.target.value)}
+                                style={{ fontSize: '0.8rem', letterSpacing: '0.1em' }} />
+                            {search && <button className="btn btn-sm p-0 text-neon-red ms-1" onClick={() => setSearch('')}>&times;</button>}
                         </div>
                     </div>
 
-                    {/* Category nav */}
-                    <div className="d-flex gap-1 flex-wrap">
+                    <div className="d-flex gap-2 flex-wrap pb-1">
                         {CATEGORIES.map(cat => {
                             const cm = getCM(cat);
                             const active = category === cat;
                             return (
-                                <button
-                                    key={cat}
-                                    onClick={() => setCategory(cat)}
-                                    className="btn btn-sm fw-medium"
+                                <button key={cat} onClick={() => setCategory(cat)} className="btn tech-font fw-bold text-uppercase"
                                     style={{
-                                        borderRadius: '10px',
-                                        padding: '5px 16px',
+                                        borderRadius: '4px', padding: '5px 14px',
                                         background: active ? cm.bg : 'transparent',
-                                        color: active ? cm.color : '#64748b',
-                                        border: `1.5px solid ${active ? cm.border : '#e2e8f0'}`,
-                                        fontSize: '0.82rem',
-                                        transition: 'all 0.15s',
-                                    }}
-                                >
+                                        color: active ? cm.color : 'var(--text-muted)',
+                                        border: `1px solid ${active ? cm.border : 'rgba(255,255,255,0.1)'}`,
+                                        fontSize: '0.7rem', letterSpacing: '0.1em', transition: 'all 0.15s'
+                                    }}>
                                     {cat}
                                 </button>
                             );
@@ -207,114 +190,75 @@ const Newspaper = () => {
                 </div>
             </header>
 
-            {/* ── Main content ── */}
-            <div className="px-5 py-5" style={{ maxWidth: '1140px', margin: '0 auto' }}>
+            {/* Main content */}
+            <div className="px-4 px-md-5 py-5" style={{ maxWidth: '1140px', margin: '0 auto' }}>
                 {loading ? (
                     <div className="text-center py-5">
-                        <div className="spinner-border text-primary" role="status"><span className="visually-hidden">Loading...</span></div>
-                        <p className="text-muted mt-3 small">Curating local news for {userLocation}...</p>
+                        <span className="spinner-border text-neon-purple" role="status" />
+                        <p className="tech-font mt-3 text-muted text-uppercase" style={{ letterSpacing: '0.2em', fontSize: '0.8rem' }}>INTERCEPTING SIGNALS FOR {userLocation}...</p>
                     </div>
                 ) : filtered.length === 0 ? (
-                    <div className="text-center py-5 bg-white rounded-4 border">
+                    <div className="text-center py-5 glass-card">
                         <FaSearch size={36} className="text-muted mb-3" style={{ opacity: 0.3 }} />
-                        <h6 className="fw-bold text-dark">No stories found</h6>
-                        <p className="text-muted small mb-0">Try a different category or search term.</p>
+                        <h6 className="tech-font fw-bold text-white text-uppercase" style={{ letterSpacing: '0.15em' }}>NO TRANSMISSIONS DECODED</h6>
+                        <p className="tech-font text-muted small mb-0 text-uppercase" style={{ letterSpacing: '0.1em' }}>ADJUST FILTERS OR SEARCH PARAMETERS.</p>
                     </div>
                 ) : (
                     <div className="row g-5">
-                        {/* ── Left: hero + secondary ── */}
-                        <div className="col-lg-8">
-                            {/* Hero article */}
+                        {/* Left: hero + secondary */}
+                        <div className="col-lg-8 border-end border-secondary pe-lg-5" style={{ borderColor: 'rgba(255,255,255,0.1) !important' }}>
                             {hero && (
-                                <motion.article
-                                    initial={{ opacity: 0, y: 16 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="mb-5 cursor-pointer"
-                                    onClick={() => setSelectedArticle(hero)}
-                                    style={{ cursor: 'pointer' }}
-                                >
+                                <motion.article initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="mb-5 cursor-pointer hover-scale" onClick={() => setSelectedArticle(hero)} style={{ cursor: 'pointer' }}>
                                     {hero.image && (
-                                        <div className="rounded-4 overflow-hidden mb-4 position-relative" style={{ height: '380px', backgroundColor: '#e2e8f0' }}>
-                                            <img
-                                                src={hero.image}
-                                                alt={hero.title}
-                                                className="w-100 h-100 object-fit-cover"
-                                                style={{ transition: 'transform 0.4s' }}
-                                                onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.03)'}
-                                                onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                                                onError={(e) => {
-                                                    if (e.currentTarget.src !== FALLBACK_IMGS[0]) e.currentTarget.src = FALLBACK_IMGS[0];
-                                                }}
-                                            />
+                                        <div className="rounded overflow-hidden mb-4 position-relative border" style={{ height: '380px', background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)' }}>
+                                            <img src={hero.image} alt="Intel" className="w-100 h-100 object-fit-cover" style={{ transition: 'transform 0.4s', filter: 'brightness(0.85) contrast(1.15) sepia(0.2) hue-rotate(220deg)' }}
+                                                onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.03)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                                                onError={(e) => { if (e.currentTarget.src !== FALLBACK_IMGS[0]) e.currentTarget.src = FALLBACK_IMGS[0]; }} />
                                             <div className="position-absolute top-0 start-0 m-3">
-                                                {(() => { const cm = getCM(hero.category); return <span className="badge rounded-pill fw-medium px-3 py-2" style={{ background: cm.bg, color: cm.color, border: `1px solid ${cm.border}`, fontSize: '0.75rem', backdropFilter: 'blur(4px)' }}>{hero.category}</span>; })()}
+                                                {(() => { const cm = getCM(hero.category); return <span className="badge tech-font fw-bold px-3 py-2 text-uppercase" style={{ background: 'rgba(0,0,0,0.6)', color: cm.color, border: `1px solid ${cm.border}`, fontSize: '0.7rem', letterSpacing: '0.1em', backdropFilter: 'blur(4px)' }}>{hero.category}</span>; })()}
                                             </div>
-                                            <button
-                                                onClick={e => { e.stopPropagation(); toggleSave(hero.id); }}
-                                                className="position-absolute top-0 end-0 m-3 btn btn-sm rounded-circle d-flex align-items-center justify-content-center"
-                                                style={{ width: '34px', height: '34px', background: 'rgba(255,255,255,0.9)' }}
-                                            >
-                                                {saved.has(hero.id) ? <FaBookmark size={13} style={{ color: '#6366f1' }} /> : <FaRegBookmark size={13} className="text-muted" />}
+                                            <button onClick={e => { e.stopPropagation(); toggleSave(hero.id); }} className="position-absolute top-0 end-0 m-3 btn btn-sm rounded d-flex align-items-center justify-content-center" style={{ width: '34px', height: '34px', background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.2)' }}>
+                                                {saved.has(hero.id) ? <FaBookmark size={13} className="text-neon-purple" /> : <FaRegBookmark size={13} className="text-white" />}
                                             </button>
                                         </div>
                                     )}
-                                    <h2 className="fw-bold text-dark mb-3" style={{ fontFamily: "'Georgia', serif", fontSize: '1.75rem', lineHeight: 1.25, letterSpacing: '-0.3px' }}>
-                                        {hero.title}
-                                    </h2>
-                                    <p className="text-secondary mb-3" style={{ fontSize: '0.98rem', lineHeight: 1.7 }}>{hero.description}</p>
-                                    <div className="d-flex align-items-center gap-3 text-muted" style={{ fontSize: '0.79rem' }}>
-                                        <span className="d-flex align-items-center gap-1"><FaGlobe size={10} /> {hero.author}</span>
-                                        <span>·</span>
+                                    <h2 className="tech-font fw-bold text-white mb-3 text-uppercase tracking-widest" style={{ fontSize: '1.6rem', lineHeight: 1.3 }}>{hero.title}</h2>
+                                    <p className="text-secondary font-monospace mb-3" style={{ fontSize: '0.85rem', lineHeight: 1.7 }}>{hero.description}</p>
+                                    <div className="d-flex align-items-center gap-3 text-muted tech-font text-uppercase fw-bold" style={{ fontSize: '0.7rem', letterSpacing: '0.1em' }}>
+                                        <span className="d-flex align-items-center gap-1"><FaGlobe size={10} className="text-neon-green" /> {hero.author}</span>
                                         <span className="d-flex align-items-center gap-1"><FaRegClock size={10} /> {hero.pubDate}</span>
-                                        <span className="ms-auto d-flex align-items-center gap-1 fw-medium" style={{ color: '#6366f1' }}>
-                                            Read full story <FaChevronRight size={10} />
-                                        </span>
+                                        <span className="ms-auto d-flex align-items-center gap-1 text-neon-purple">DECRYPT FULL <FaChevronRight size={10} /></span>
                                     </div>
                                 </motion.article>
                             )}
 
-                            {/* Divider */}
                             {secondary.length > 0 && (
                                 <div className="d-flex align-items-center gap-3 mb-4">
-                                    <span className="fw-bold text-muted text-uppercase" style={{ fontSize: '0.7rem', letterSpacing: '0.1em', whiteSpace: 'nowrap' }}>More Stories</span>
-                                    <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
+                                    <FaTerminal size={14} className="text-secondary" />
+                                    <span className="fw-bold text-secondary text-uppercase tech-font" style={{ fontSize: '0.8rem', letterSpacing: '0.2em', whiteSpace: 'nowrap' }}>ADDITIONAL LOGS</span>
+                                    <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
                                 </div>
                             )}
 
-                            {/* Secondary stories */}
-                            <div className="row g-4">
+                            <div className="row g-4 border-top-0">
                                 {secondary.map((item, i) => {
                                     const cm = getCM(item.category);
                                     return (
-                                        <div className="col-md-4" key={item.id}>
-                                            <motion.article
-                                                initial={{ opacity: 0, y: 14 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                transition={{ delay: i * 0.08 }}
-                                                className="bg-white rounded-4 border overflow-hidden h-100 d-flex flex-column cursor-pointer"
-                                                style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.05)', cursor: 'pointer', transition: 'all 0.18s' }}
+                                        <div className="col-md-6" key={item.id}>
+                                            <motion.article initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
+                                                className="glass-card overflow-hidden h-100 d-flex flex-column cursor-pointer"
                                                 onClick={() => setSelectedArticle(item)}
-                                                onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.09)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                                                onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)'; e.currentTarget.style.transform = 'translateY(0)'; }}
-                                            >
+                                                style={{ borderTop: `2px solid ${cm.border}` }}>
                                                 {item.image && (
-                                                    <div style={{ height: '140px', overflow: 'hidden', backgroundColor: '#e2e8f0' }}>
-                                                        <img
-                                                            src={item.image}
-                                                            alt={item.title}
-                                                            className="w-100 h-100 object-fit-cover"
-                                                            onError={(e) => {
-                                                                if (e.currentTarget.src !== FALLBACK_IMGS[(i + 1) % FALLBACK_IMGS.length]) {
-                                                                    e.currentTarget.src = FALLBACK_IMGS[(i + 1) % FALLBACK_IMGS.length];
-                                                                }
-                                                            }}
-                                                        />
+                                                    <div style={{ height: '160px', overflow: 'hidden', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                                                        <img src={item.image} alt={item.title} className="w-100 h-100 object-fit-cover" style={{ filter: 'brightness(0.8) sepia(0.3) hue-rotate(200deg)' }}
+                                                            onError={(e) => { if (e.currentTarget.src !== FALLBACK_IMGS[(i + 1) % FALLBACK_IMGS.length]) e.currentTarget.src = FALLBACK_IMGS[(i + 1) % FALLBACK_IMGS.length]; }} />
                                                     </div>
                                                 )}
-                                                <div className="p-3 d-flex flex-column flex-grow-1">
-                                                    <span className="badge rounded-pill fw-medium mb-2 align-self-start" style={{ background: cm.bg, color: cm.color, border: `1px solid ${cm.border}`, fontSize: '0.68rem' }}>{item.category}</span>
-                                                    <h6 className="fw-bold text-dark mb-2" style={{ fontFamily: "'Georgia', serif", fontSize: '0.92rem', lineHeight: 1.4 }}>{item.title}</h6>
-                                                    <p className="text-muted small mb-0 mt-auto" style={{ fontSize: '0.76rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{item.description}</p>
+                                                <div className="p-4 d-flex flex-column flex-grow-1">
+                                                    <span className="badge tech-font fw-bold mb-3 px-3 py-1 align-self-start text-uppercase" style={{ background: cm.bg, color: cm.color, border: `1px solid ${cm.border}`, fontSize: '0.65rem', letterSpacing: '0.1em' }}>{item.category}</span>
+                                                    <h6 className="tech-font fw-bold text-white mb-2 text-uppercase tracking-widest" style={{ fontSize: '0.9rem', lineHeight: 1.4 }}>{item.title}</h6>
+                                                    <p className="font-monospace text-muted small mb-0 mt-auto" style={{ fontSize: '0.75rem', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{item.description}</p>
                                                 </div>
                                             </motion.article>
                                         </div>
@@ -323,12 +267,12 @@ const Newspaper = () => {
                             </div>
                         </div>
 
-                        {/* ── Right: briefs sidebar ── */}
+                        {/* Right: briefs sidebar */}
                         <div className="col-lg-4">
                             <div className="position-sticky" style={{ top: '160px' }}>
                                 <div className="d-flex align-items-center gap-3 mb-4">
-                                    <span className="fw-bold text-dark" style={{ fontSize: '0.88rem' }}>Civic Briefs</span>
-                                    <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
+                                    <span className="fw-bold text-secondary text-uppercase tech-font" style={{ fontSize: '0.8rem', letterSpacing: '0.2em', whiteSpace: 'nowrap' }}>NETWORK BRIEFS</span>
+                                    <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
                                 </div>
 
                                 <div className="d-flex flex-column gap-3">
@@ -336,44 +280,26 @@ const Newspaper = () => {
                                         const cm = getCM(item.category);
                                         const isSaved = saved.has(item.id);
                                         return (
-                                            <motion.div
-                                                key={item.id}
-                                                initial={{ opacity: 0, x: 12 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                transition={{ delay: i * 0.07 }}
-                                                className="bg-white rounded-4 border p-3 d-flex gap-3 cursor-pointer"
-                                                style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)', cursor: 'pointer', transition: 'all 0.15s' }}
+                                            <motion.div key={item.id} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.07 }}
+                                                className="glass-card p-3 d-flex gap-3 cursor-pointer hover-bg-light"
                                                 onClick={() => setSelectedArticle(item)}
-                                                onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 14px rgba(0,0,0,0.08)'}
-                                                onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'}
-                                            >
+                                                style={{ borderLeft: `2px solid ${cm.border}` }}>
                                                 {item.image && (
-                                                    <div className="rounded-3 overflow-hidden flex-shrink-0" style={{ width: '64px', height: '64px', backgroundColor: '#e2e8f0' }}>
-                                                        <img
-                                                            src={item.image}
-                                                            alt=""
-                                                            className="w-100 h-100 object-fit-cover"
-                                                            onError={(e) => {
-                                                                if (e.currentTarget.src !== FALLBACK_IMGS[(i + 4) % FALLBACK_IMGS.length]) {
-                                                                    e.currentTarget.src = FALLBACK_IMGS[(i + 4) % FALLBACK_IMGS.length];
-                                                                }
-                                                            }}
-                                                        />
+                                                    <div className="rounded overflow-hidden flex-shrink-0 border" style={{ width: '48px', height: '48px', borderColor: 'rgba(255,255,255,0.1)' }}>
+                                                        <img src={item.image} alt="Brief" className="w-100 h-100 object-fit-cover" style={{ filter: 'grayscale(0.5)' }} onError={(e) => { if (e.currentTarget.src !== FALLBACK_IMGS[(i + 4) % FALLBACK_IMGS.length]) e.currentTarget.src = FALLBACK_IMGS[(i + 4) % FALLBACK_IMGS.length]; }} />
                                                     </div>
                                                 )}
                                                 <div className="flex-grow-1 min-width-0">
-                                                    <span className="badge rounded-pill mb-1" style={{ background: cm.bg, color: cm.color, fontSize: '0.63rem', padding: '2px 7px' }}>{item.category}</span>
-                                                    <p className="fw-bold text-dark mb-1" style={{ fontSize: '0.83rem', lineHeight: 1.35, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{item.title}</p>
-                                                    <small className="text-muted d-flex align-items-center gap-1" style={{ fontSize: '0.7rem' }}>
-                                                        <FaRegClock size={9} /> {item.pubDate}
-                                                    </small>
+                                                    <div className="d-flex align-items-center gap-2 mb-1">
+                                                        <span className="badge tech-font" style={{ background: cm.bg, color: cm.color, fontSize: '0.55rem', padding: '2px 5px', border: `1px solid ${cm.border}` }}>{item.category.toUpperCase()}</span>
+                                                        <small className="text-muted tech-font d-flex align-items-center gap-1" style={{ fontSize: '0.65rem' }}>
+                                                            <FaRegClock size={8} /> {item.pubDate}
+                                                        </small>
+                                                    </div>
+                                                    <p className="tech-font fw-bold text-white mb-0 text-uppercase" style={{ fontSize: '0.75rem', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', letterSpacing: '0.1em' }}>{item.title}</p>
                                                 </div>
-                                                <button
-                                                    onClick={e => { e.stopPropagation(); toggleSave(item.id); }}
-                                                    className="btn btn-sm p-0 flex-shrink-0 align-self-start"
-                                                    style={{ background: 'none', border: 'none' }}
-                                                >
-                                                    {isSaved ? <FaBookmark size={12} style={{ color: '#6366f1' }} /> : <FaRegBookmark size={12} className="text-muted" />}
+                                                <button onClick={e => { e.stopPropagation(); toggleSave(item.id); }} className="btn btn-sm p-0 flex-shrink-0 align-self-start" style={{ background: 'none', border: 'none' }}>
+                                                    {isSaved ? <FaBookmark size={12} className="text-neon-purple" /> : <FaRegBookmark size={12} className="text-muted" />}
                                                 </button>
                                             </motion.div>
                                         );
@@ -385,67 +311,44 @@ const Newspaper = () => {
                 )}
             </div>
 
-            {/* ── Article Details Modal ── */}
+            {/* Article Details Modal */}
             <AnimatePresence>
                 {selectedArticle && (
-                    <div
-                        className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
-                        style={{ background: 'rgba(15,23,42,0.7)', backdropFilter: 'blur(6px)', zIndex: 9999 }}
-                        onClick={e => e.target === e.currentTarget && setSelectedArticle(null)}
-                    >
-                        <motion.div
-                            initial={{ opacity: 0, y: 24, scale: 0.97 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 16, scale: 0.97 }}
-                            transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-                            className="bg-white overflow-hidden d-flex flex-column"
-                            style={{ width: '90vw', maxWidth: '780px', maxHeight: '88vh', borderRadius: '20px', boxShadow: '0 24px 80px rgba(0,0,0,0.22)' }}
-                        >
+                    <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+                        style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 9999 }}
+                        onClick={e => e.target === e.currentTarget && setSelectedArticle(null)}>
+                        <motion.div initial={{ opacity: 0, y: 24, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 16, scale: 0.97 }} transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+                            className="glass-card overflow-hidden d-flex flex-column"
+                            style={{ width: '90vw', maxWidth: '780px', maxHeight: '88vh', border: '1px solid rgba(255,255,255,0.2)', boxShadow: '0 0 40px rgba(170,0,255,0.1)' }}>
                             {/* Modal header */}
-                            <div className="px-5 py-4 border-bottom d-flex justify-content-between align-items-center" style={{ background: '#f8fafc' }}>
-                                {(() => { const cm = getCM(selectedArticle.category); return <span className="badge rounded-pill fw-medium px-3 py-2" style={{ background: cm.bg, color: cm.color, border: `1px solid ${cm.border}`, fontSize: '0.75rem' }}>{selectedArticle.category}</span>; })()}
-                                <button
-                                    onClick={() => setSelectedArticle(null)}
-                                    className="btn btn-sm rounded-circle border d-flex align-items-center justify-content-center"
-                                    style={{ width: '34px', height: '34px', background: 'white' }}
-                                >
-                                    <FaTimes size={13} className="text-secondary" />
+                            <div className="px-4 py-3 border-bottom d-flex justify-content-between align-items-center" style={{ background: 'rgba(0,0,0,0.4)', borderColor: 'rgba(255,255,255,0.1) !important' }}>
+                                {(() => { const cm = getCM(selectedArticle.category); return <span className="badge tech-font fw-bold px-3 py-2 text-uppercase" style={{ background: cm.bg, color: cm.color, border: `1px solid ${cm.border}`, fontSize: '0.7rem', letterSpacing: '0.1em' }}>{selectedArticle.category}</span>; })()}
+                                <button onClick={() => setSelectedArticle(null)} className="btn btn-sm d-flex align-items-center justify-content-center rounded" style={{ width: '34px', height: '34px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid var(--accent-red)' }}>
+                                    <FaTimes size={13} className="text-neon-red" />
                                 </button>
                             </div>
 
                             {/* Modal body */}
-                            <div className="overflow-auto px-5 py-4">
+                            <div className="overflow-auto px-4 px-md-5 py-4">
                                 {selectedArticle.image && (
-                                    <div className="rounded-3 overflow-hidden mb-4" style={{ maxHeight: '300px', backgroundColor: '#e2e8f0' }}>
-                                        <img
-                                            src={selectedArticle.image}
-                                            alt={selectedArticle.title}
-                                            className="w-100 object-fit-cover"
-                                            style={{ maxHeight: '300px' }}
-                                            onError={(e) => {
-                                                if (e.currentTarget.src !== FALLBACK_IMGS[0]) e.currentTarget.src = FALLBACK_IMGS[0];
-                                            }}
-                                        />
+                                    <div className="rounded overflow-hidden mb-4 border" style={{ maxHeight: '340px', borderColor: 'rgba(255,255,255,0.1)' }}>
+                                        <img src={selectedArticle.image} alt="Intel" className="w-100 object-fit-cover" style={{ maxHeight: '340px', filter: 'brightness(0.8) contrast(1.2)' }}
+                                            onError={(e) => { if (e.currentTarget.src !== FALLBACK_IMGS[0]) e.currentTarget.src = FALLBACK_IMGS[0]; }} />
                                     </div>
                                 )}
-                                <h3 className="fw-bold text-dark mb-3" style={{ fontFamily: "'Georgia', serif", lineHeight: 1.3 }}>{selectedArticle.title}</h3>
-                                <div className="d-flex align-items-center gap-3 text-muted mb-4 pb-4 border-bottom" style={{ fontSize: '0.8rem' }}>
-                                    <span className="d-flex align-items-center gap-1"><FaGlobe size={11} /> {selectedArticle.author}</span>
-                                    <span>·</span>
+                                <h3 className="tech-font fw-bold text-white mb-3 text-uppercase tracking-widest">{selectedArticle.title}</h3>
+                                <div className="d-flex align-items-center gap-3 text-muted tech-font text-uppercase mb-4 pb-4 border-bottom" style={{ fontSize: '0.8rem', letterSpacing: '0.1em', borderColor: 'rgba(255,255,255,0.1) !important' }}>
+                                    <span className="d-flex align-items-center gap-1"><FaGlobe size={11} className="text-neon-green" /> {selectedArticle.author}</span>
                                     <span className="d-flex align-items-center gap-1"><FaRegClock size={11} /> {selectedArticle.pubDate}</span>
                                 </div>
-                                <p className="text-secondary" style={{ fontSize: '1rem', lineHeight: 1.75 }}>{selectedArticle.description}</p>
+                                <p className="font-monospace text-secondary" style={{ fontSize: '0.9rem', lineHeight: 1.8 }}>{selectedArticle.description}</p>
 
-                                <div className="mt-5 p-4 rounded-3 border" style={{ background: '#f8fafc' }}>
-                                    <p className="text-muted small mb-3">This is a snippet preview. Read the full original article on the source website.</p>
-                                    <a
-                                        href={selectedArticle.link}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="btn fw-bold d-inline-flex align-items-center gap-2"
-                                        style={{ borderRadius: '10px', background: '#1e293b', color: 'white', border: 'none', padding: '10px 24px', fontSize: '0.88rem' }}
-                                    >
-                                        <FaExternalLinkAlt size={12} /> Read Full Original Article
+                                <div className="mt-5 p-4 rounded border" style={{ background: 'rgba(170,0,255,0.05)', borderColor: 'var(--primary-color) !important' }}>
+                                    <p className="tech-font text-neon-purple fw-bold mb-3 text-uppercase" style={{ letterSpacing: '0.15em' }}><FaTerminal size={12} className="me-2" />ACCESS RESTRICTED: PARTIAL LOG DISPLAYED</p>
+                                    <p className="text-secondary small font-monospace mb-4">TO DECRYPT THE FULL MESSAGE, PROCEED TO EXTERNAL SECURE NODE.</p>
+                                    <a href={selectedArticle.link} target="_blank" rel="noopener noreferrer" className="btn text-uppercase tech-font fw-bold d-inline-flex align-items-center gap-2"
+                                        style={{ border: '1px solid var(--primary-color)', background: 'rgba(170,0,255,0.1)', color: 'white', padding: '10px 24px', fontSize: '0.8rem', letterSpacing: '0.2em' }}>
+                                        <FaExternalLinkAlt size={12} /> ESTABLISH SECURE LINK
                                     </a>
                                 </div>
                             </div>

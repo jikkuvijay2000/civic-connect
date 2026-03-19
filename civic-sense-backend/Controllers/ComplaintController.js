@@ -24,7 +24,7 @@ const getDepartmentFromCategory = (category) => {
 
 const createComplaint = async (req, res) => {
     try {
-        const { title, description, category, location, priority, aiScore } = req.body;
+        const { title, description, category, location, priority, aiScore, lat, lng } = req.body;
         console.log("Create Complaint Body:", req.body);
         console.log("Received AI Score:", aiScore); // Debug log
         const userId = req.user._id; // From authMiddleware (payload has userId)
@@ -197,7 +197,9 @@ const createComplaint = async (req, res) => {
                 performedByRole: 'Citizen',
                 note: `Complaint filed under category: ${category} | Priority: ${priority}`,
                 timestamp: new Date()
-            }]
+            }],
+            complaintLat: (lat && !isNaN(parseFloat(lat))) ? parseFloat(lat) : null,
+            complaintLng: (lng && !isNaN(parseFloat(lng))) ? parseFloat(lng) : null,
         });
 
         // Re-mapping to match model
@@ -208,6 +210,21 @@ const createComplaint = async (req, res) => {
         newComplaint.complaintDescription = finalDescription;
 
         await newComplaint.save();
+
+        // Emit live map update to all connected clients
+        const ioMap = req.app.get('io');
+        if (ioMap && newComplaint.complaintLat && newComplaint.complaintLng) {
+            ioMap.emit('map_update', {
+                _id: newComplaint._id,
+                complaintId: newComplaint.complaintId,
+                title: title,
+                category: newComplaint.complaintType,
+                lat: newComplaint.complaintLat,
+                lng: newComplaint.complaintLng,
+                status: newComplaint.complaintStatus,
+                priority: newComplaint.complaintPriority,
+            });
+        }
 
         // Check for High Priority / Emergency
         if (priority === 'High' || priority === 'Emergency') {
@@ -497,6 +514,15 @@ const updateComplaintStatus = async (req, res) => {
         if (io) {
             io.to(complaint.complaintUser.toString()).emit('notification', newNotification);
             console.log(`Notification emitted to user ${complaint.complaintUser}`);
+            // Emit global map update so all connected clients update the marker color
+            if (complaint.complaintLat && complaint.complaintLng) {
+                io.emit('map_status_update', {
+                    id: complaint.complaintId,
+                    status: complaint.complaintStatus,
+                    lat: complaint.complaintLat,
+                    lng: complaint.complaintLng,
+                });
+            }
         }
 
         res.status(200).json({ message: "Status updated successfully", complaint });
@@ -788,4 +814,30 @@ const getAiHealth = async (req, res) => {
     }
 };
 
-module.exports = { createComplaint, getUserContributions, predictComplaint, generateCaption, getAuthorityComplaints, getAuthorityStats, updateComplaintStatus, addFeedback, getResolvedComplaints, analyzeVideo, editComplaint, getAiHealth };
+/* ── Map Points: Returns geocoded complaint data for the live incident map ── */
+const getMapPoints = async (req, res) => {
+    try {
+        const complaints = await Complaint.find(
+            { complaintLat: { $ne: null }, complaintLng: { $ne: null } },
+            'complaintId complaintType complaintStatus complaintPriority complaintLat complaintLng complaintDescription complaintResolvedDate'
+        ).sort({ createdAt: -1 }).limit(500);
+
+        const points = complaints.map(c => ({
+            id: c.complaintId,
+            title: c.complaintDescription?.split('\n')[0]?.replace(/\*\*/g, '') || 'Incident',
+            category: c.complaintType,
+            status: c.complaintStatus,
+            priority: c.complaintPriority,
+            lat: c.complaintLat,
+            lng: c.complaintLng,
+            resolvedAt: c.complaintResolvedDate,
+        }));
+
+        res.status(200).json({ status: 'success', data: points });
+    } catch (error) {
+        console.error('Error fetching map points:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+module.exports = { createComplaint, getUserContributions, predictComplaint, generateCaption, getAuthorityComplaints, getAuthorityStats, updateComplaintStatus, addFeedback, getResolvedComplaints, analyzeVideo, editComplaint, getAiHealth, getMapPoints };
