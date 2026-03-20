@@ -218,8 +218,6 @@ const getLeaderboard = async (req, res) => {
     }
 };
 
-
-
 const forgotPassword = async (req, res) => {
     const { userEmail } = req.body;
 
@@ -315,8 +313,6 @@ const resetPassword = async (req, res) => {
         res.status(500).json({ message: "Server error", error: error.message });
     }
 };
-
-
 
 // --- New Controllers ---
 
@@ -460,6 +456,36 @@ const changePassword = async (req, res) => {
     }
 };
 
+const getAllUsersAdmin = async (req, res) => {
+    try {
+        const users = await userModel.find({ isDeleted: false }).select("-userPassword").sort({ createdAt: -1 });
+        res.status(200).json({ status: "success", data: users });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+const updateUserAdmin = async (req, res) => {
+    const { id } = req.params;
+    const { userRole, userDepartment } = req.body;
+
+    try {
+        const user = await userModel.findById(id);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        if (userRole) user.userRole = userRole;
+        if (userDepartment !== undefined) user.userDepartment = userDepartment;
+
+        await user.save();
+
+        res.status(200).json({ status: "success", message: "User updated successfully", data: user });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
 module.exports = {
     registerUser,
     loginUser,
@@ -474,4 +500,6 @@ module.exports = {
     verifyEmail,
     resendOtp,
     changePassword,
+    getAllUsersAdmin,
+    updateUserAdmin,
 };

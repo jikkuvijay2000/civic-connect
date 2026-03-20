@@ -1,7 +1,8 @@
-const { registerUser, loginUser, refreshToken, logoutUser, getLeaderboard, forgotPassword, resetPassword, getUserStats, getNotifications, markNotificationRead, verifyEmail, resendOtp, changePassword } = require("../Controllers/UserController");
+const { registerUser, loginUser, refreshToken, logoutUser, getLeaderboard, forgotPassword, resetPassword, getUserStats, getNotifications, markNotificationRead, verifyEmail, resendOtp, changePassword, getAllUsersAdmin, updateUserAdmin } = require("../Controllers/UserController");
 const express = require("express");
 const { generateCSRFToken, verifyCsrfToken } = require("../Middlewares/csrfMiddleware");
 const { protect } = require("../Middlewares/authMiddleware");
+const { verifyAdminSecret } = require("../Middlewares/adminMiddleware");
 const router = express.Router();
 
 router.post("/register", registerUser);
@@ -25,5 +26,9 @@ router.put("/change-password", protect, changePassword);
 router.get("/protected", protect, (req, res) => {
     res.json({ message: "Protected content", userId: req.userId });
 });
+
+// Admin Routes (Unique Link Access)
+router.get("/admin/users/:secret", verifyAdminSecret, getAllUsersAdmin);
+router.patch("/admin/users/:id/:secret", verifyAdminSecret, updateUserAdmin);
 
 module.exports = { userRouter: router };

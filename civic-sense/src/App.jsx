@@ -28,6 +28,7 @@ import SecurityPage from './Pages/SecurityPage'
 
 import SessionOverlay from './components/SessionOverlay'
 import KillSwitchScreen from './Pages/KillSwitchScreen'
+import AdminUserSetup from './Pages/AdminUserSetup'
 
 function App() {
   const [isKilled, setIsKilled] = useState(false);
@@ -86,6 +87,7 @@ function App() {
           </Route>
 
           <Route path="/unauthorized" element={<Unauthorized />} />
+          <Route path="/admin-setup/:secret" element={<AdminUserSetup />} />
         </Routes>
       </BrowserRouter>
 
