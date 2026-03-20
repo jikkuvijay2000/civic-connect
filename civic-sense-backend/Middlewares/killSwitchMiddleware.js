@@ -1,22 +1,9 @@
-/**
- * ── KILL SWITCH MIDDLEWARE ──────────────────────────────────────────────
- * Polls a GitHub Gist (controlled by the project owner) every 60 seconds.
- * If the Gist contains { "active": false }, ALL API routes return 503
- * and the frontend displays a full-screen "SYSTEM OFFLINE" block.
- *
- * HOW TO TOGGLE:
- *   • Go to your Gist URL in a browser (must be logged in as GitHub owner)
- *   • Click "Edit" → change "active" to false → Save  → within 60s everyone is blocked
- *   • Change back to true → Save  → system comes back online
- * ────────────────────────────────────────────────────────────────────────
- */
-
 const axios = require('axios');
 
-const GIST_URL = process.env.KILL_SWITCH_GIST_URL; // raw URL to your gist JSON
-const POLL_INTERVAL_MS = 60 * 1000; // re-check every 60 seconds
+const GIST_URL = process.env.KILL_SWITCH_GIST_URL; 
+const POLL_INTERVAL_MS = 60 * 1000; 
 
-let systemActive = false;      // fail-closed: lock everyone unless verified by Gist
+let systemActive = false;
 let lastChecked = null;
 let pollTimer = null;
 
@@ -27,7 +14,6 @@ const fetchKillSwitchStatus = async () => {
         return;
     }
 
-    // Extract the 32-character Gist ID from whatever URL format they pasted
     const match = GIST_URL.match(/[a-f0-9]{32}/);
     if (!match) {
         console.warn('[KILL SWITCH] Invalid Gist URL format. Locking down system.');
@@ -44,7 +30,6 @@ const fetchKillSwitchStatus = async () => {
             headers: { 'Cache-Control': 'no-cache' }
         });
         
-        // Grab the content of the very first file in the Gist
         const files = res.data?.files || {};
         const firstFile = Object.values(files)[0];
         
