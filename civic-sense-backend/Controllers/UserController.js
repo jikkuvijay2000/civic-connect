@@ -9,7 +9,7 @@ const crypto = require("crypto");
 const sendEmail = require("../Utils/emailService");
 
 const registerUser = async (req, res) => {
-    const { userName, userEmail, userAddress, userPassword, userConfirmPassword } = req.body;
+    const { userName, userEmail, userAddress, userPassword, userConfirmPassword, userRole, userDepartment, authorityKey } = req.body;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
 
@@ -23,6 +23,17 @@ const registerUser = async (req, res) => {
 
     if (userPassword != userConfirmPassword) {
         return res.status(400).json({ status: "error", message: "Password does not match" });
+    }
+
+    // Role Validation
+    if (userRole === 'Authority') {
+        const registrationKey = process.env.AUTHORITY_REGISTRATION_KEY || "civic-auth-2026-secure-key";
+        if (!authorityKey || authorityKey !== registrationKey) {
+            return res.status(401).json({ status: "error", message: "Invalid authority registration key" });
+        }
+        if (!userDepartment) {
+            return res.status(400).json({ status: "error", message: "Authorities must belong to a department" });
+        }
     }
 
     try {
@@ -44,6 +55,8 @@ const registerUser = async (req, res) => {
             userEmail: userEmail,
             userAddress: userAddress,
             userPassword: hashedPassword,
+            userRole: userRole || "Citizen",
+            userDepartment: userDepartment || null,
             verificationOTP: otp
         });
 

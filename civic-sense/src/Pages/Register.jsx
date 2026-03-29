@@ -11,7 +11,7 @@ import axios from 'axios';
 import { BASE_URL } from '../services/baseUrl';
 import {
     FaEye, FaEyeSlash, FaUser, FaEnvelope, FaLock,
-    FaMapMarkerAlt, FaArrowRight, FaShieldAlt, FaCheckCircle
+    FaMapMarkerAlt, FaArrowRight, FaShieldAlt, FaCheckCircle, FaBuilding, FaUserShield
 } from 'react-icons/fa';
 
 const SLIDES = [
@@ -66,6 +66,31 @@ const Field = ({ icon: Icon, label, id, type = 'text', placeholder, value, onCha
                         {show ? <FaEyeSlash size={13} /> : <FaEye size={13} />}
                     </button>
                 )}
+            </div>
+            {error && <p style={{ color: '#ef4444', fontSize: '0.72rem', marginTop: '5px', marginBottom: 0 }}>{error}</p>}
+        </div>
+    );
+};
+
+/* Select input */
+const SelectField = ({ icon: Icon, label, id, options, value, onChange, error }) => {
+    const inputStyle = {
+        width: '100%', background: '#f8fafc', border: `1.5px solid ${error ? 'rgba(239,68,68,0.6)' : '#e2e8f0'}`,
+        borderRadius: '12px', padding: `12px 14px 12px ${Icon ? '42px' : '14px'}`,
+        color: '#0f172a', fontSize: '0.88rem', outline: 'none', appearance: 'none', cursor: 'pointer', fontFamily: 'inherit',
+    };
+    return (
+        <div style={{ marginBottom: '16px' }}>
+            <label htmlFor={id} style={{ display: 'block', fontSize: '0.72rem', fontWeight: 600, color: '#64748b', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '7px' }}>{label}</label>
+            <div style={{ position: 'relative' }}>
+                {Icon && <Icon size={13} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }} />}
+                <select id={id} value={value} onChange={onChange} style={inputStyle}>
+                    <option value="" disabled>Select {label.toLowerCase()}</option>
+                    {options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                </select>
+                <div style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#94a3b8' }}>
+                    <FaArrowRight size={10} style={{ transform: 'rotate(90deg)' }} />
+                </div>
             </div>
             {error && <p style={{ color: '#ef4444', fontSize: '0.72rem', marginTop: '5px', marginBottom: 0 }}>{error}</p>}
         </div>
@@ -158,7 +183,17 @@ const Register = () => {
     const [touched, setTouched] = useState({});
     const [userDetails, setUserDetails] = useState({
         userName: '', userEmail: '', userAddress: '', userPassword: '', userConfirmPassword: '', termsChecked: false,
+        userRole: 'Citizen', userDepartment: '', authorityKey: '',
     });
+
+    const DEPARTMENTS = [
+        { label: 'Fire Department', value: 'Fire Department' },
+        { label: 'Water Department', value: 'Water Department' },
+        { label: 'Cleaning Department', value: 'Cleaning Department' },
+        { label: 'Public Works Department', value: 'Public Works Department' },
+        { label: 'Police Department', value: 'Police Department' },
+        { label: 'Others', value: 'Others' },
+    ];
 
     useEffect(() => {
         const t = setInterval(() => setCurrentSlide(p => (p + 1) % SLIDES.length), 4000);
@@ -174,7 +209,19 @@ const Register = () => {
     const isEmailValid = emailRegex.test(userDetails.userEmail);
     const isPasswordValid = passwordRegex.test(userDetails.userPassword);
     const doPasswordsMatch = userDetails.userPassword === userDetails.userConfirmPassword;
-    const isFormValid = userDetails.userName && userDetails.userAddress && isEmailValid && isPasswordValid && doPasswordsMatch && userDetails.termsChecked;
+    
+    // Updated validation
+    const isRoleValid = userDetails.userRole === 'Authority' 
+        ? (userDetails.userDepartment && userDetails.authorityKey) 
+        : (userDetails.userRole === 'Citizen');
+
+    const isFormValid = userDetails.userName && 
+                       userDetails.userAddress && 
+                       isEmailValid && 
+                       isPasswordValid && 
+                       doPasswordsMatch && 
+                       isRoleValid &&
+                       userDetails.termsChecked;
 
     const handleRegister = async (e) => {
         e.preventDefault();
@@ -244,6 +291,42 @@ const Register = () => {
                                         <Field icon={FaUser} label="Full Name" id="name" placeholder="John Doe"
                                             value={userDetails.userName} onChange={e => set('userName', e.target.value)} />
                                     </div>
+
+                                    {/* Role and Department Selection */}
+                                    <div style={{ gridColumn: userDetails.userRole === 'Authority' ? '1 / 2' : '1 / -1' }}>
+                                        <SelectField icon={FaUserShield} label="I am a..." id="role"
+                                            value={userDetails.userRole}
+                                            onChange={e => {
+                                                const role = e.target.value;
+                                                setUserDetails(p => ({
+                                                    ...p,
+                                                    userRole: role,
+                                                    userDepartment: role === 'Citizen' ? '' : p.userDepartment,
+                                                    authorityKey: role === 'Citizen' ? '' : p.authorityKey
+                                                }));
+                                            }}
+                                            options={[
+                                                { label: 'Citizen', value: 'Citizen' },
+                                                { label: 'Authority', value: 'Authority' },
+                                            ]} />
+                                    </div>
+                                    <div style={{ gridColumn: userDetails.userRole === 'Authority' ? '2 / 3' : '1 / -1' }}>
+                                        {userDetails.userRole === 'Authority' && (
+                                            <SelectField icon={FaBuilding} label="Authority/Dept" id="dept"
+                                                value={userDetails.userDepartment}
+                                                onChange={e => set('userDepartment', e.target.value)}
+                                                options={DEPARTMENTS} />
+                                        )}
+                                    </div>
+
+                                    {/* Authority Access Key */}
+                                    {userDetails.userRole === 'Authority' && (
+                                        <div style={{ gridColumn: '1 / -1' }}>
+                                            <Field icon={FaShieldAlt} label="Authority Access Key" id="authKey" type="password" placeholder="Enter Registration Key"
+                                                value={userDetails.authorityKey} onChange={e => set('authorityKey', e.target.value)} />
+                                        </div>
+                                    )}
+
                                     <div style={{ gridColumn: '1 / -1' }}>
                                         <Field icon={FaEnvelope} label="Email address" id="email" type="email" placeholder="name@example.com"
                                             value={userDetails.userEmail} autoComplete="username"
