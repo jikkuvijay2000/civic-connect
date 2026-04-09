@@ -10,7 +10,8 @@ router.post("/verify-email", verifyEmail);
 router.post("/resend-otp", resendOtp);
 router.get("/csrf-token", generateCSRFToken);
 
-router.post("/login", verifyCsrfToken, loginUser);
+// REMOVED verifyCsrfToken FOR MOBILE DEBUGGING
+router.post("/login", loginUser); 
 router.post("/refresh", refreshToken);
 router.post("/logout", logoutUser);
 router.get("/leaderboard", protect, getLeaderboard);

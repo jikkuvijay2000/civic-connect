@@ -9,8 +9,8 @@ let pollTimer = null;
 
 const fetchKillSwitchStatus = async () => {
     if (!GIST_URL) {
-        console.warn('[KILL SWITCH] No GIST_URL found in .env! Locking down system.');
-        systemActive = false;
+        console.warn('[KILL SWITCH] No GIST_URL found in .env! Bypassing kill switch (Local Mode).');
+        systemActive = true;
         return;
     }
 

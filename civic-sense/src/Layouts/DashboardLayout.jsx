@@ -15,7 +15,7 @@ const DashboardLayout = () => {
     // Role Guard Check
     const rawUser = localStorage.getItem('user');
     const user = rawUser ? JSON.parse(rawUser) : null;
-    const isCitizen = user?.role?.toLowerCase() === 'citizen';
+    const isCitizen = user?.userRole?.toLowerCase() === 'citizen';
 
     useEffect(() => {
         initiateSocketConnection();

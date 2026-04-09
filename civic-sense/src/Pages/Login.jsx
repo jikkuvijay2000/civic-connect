@@ -166,7 +166,7 @@ const Login = () => {
                 localStorage.setItem('user', JSON.stringify(user));
                 if (accessToken) localStorage.setItem('accessToken', accessToken);
                 notify('success', 'Login successful!');
-                setTimeout(() => navigate(user.role === 'Authority' ? '/authority' : '/dashboard'), 800);
+                setTimeout(() => navigate(user.userRole === 'Authority' ? '/authority' : '/dashboard'), 800);
             }
         } catch (err) {
             if (err.response?.status === 403 && err.response?.data?.unverified) {

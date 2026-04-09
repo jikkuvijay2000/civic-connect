@@ -56,7 +56,8 @@ const createComplaint = async (req, res) => {
                 const fakeFormData = new FormData();
                 fakeFormData.append('image', fs.createReadStream(req.files.image[0].path));
 
-                const fakeResponse = await axios.post('http://localhost:5004/detect_fake_image', fakeFormData, {
+                const aiFakeDetectUrl = process.env.AI_FAKE_DETECT_URL || 'http://localhost:5004/detect_fake_image';
+                const fakeResponse = await axios.post(aiFakeDetectUrl, fakeFormData, {
                     headers: { ...fakeFormData.getHeaders() }
                 });
 
@@ -109,7 +110,8 @@ const createComplaint = async (req, res) => {
                 const fakeVideoForm = new FormData();
                 fakeVideoForm.append('video', fs.createReadStream(videoPath));
 
-                const fakeVideoResponse = await axios.post('http://localhost:5004/detect_fake_video', fakeVideoForm, {
+                const aiFakeVideoUrl = process.env.AI_FAKE_VIDEO_URL || 'http://localhost:5004/detect_fake_video';
+                const fakeVideoResponse = await axios.post(aiFakeVideoUrl, fakeVideoForm, {
                     headers: { ...fakeVideoForm.getHeaders() }
                 });
 
@@ -137,7 +139,8 @@ const createComplaint = async (req, res) => {
                 const aiFormData = new FormData();
                 aiFormData.append('video', fs.createReadStream(videoPath));
 
-                const aiResponse = await axios.post('http://localhost:5003/analyze_video', aiFormData, {
+                const aiVideoAnalyzeUrl = process.env.AI_VIDEO_ANALYZE_URL || 'http://localhost:5003/analyze_video';
+                const aiResponse = await axios.post(aiVideoAnalyzeUrl, aiFormData, {
                     headers: {
                         ...aiFormData.getHeaders()
                     }
@@ -299,7 +302,8 @@ const predictComplaint = async (req, res) => {
         }
 
         // Call Python AI Microservice
-        const response = await axios.post('http://localhost:5001/predict', { text });
+        const aiPredictUrl = process.env.AI_PREDICT_URL || 'http://localhost:5001/predict';
+        const response = await axios.post(aiPredictUrl, { text });
 
         res.json(response.data);
     } catch (error) {
@@ -318,12 +322,19 @@ const generateCaption = async (req, res) => {
         const formData = new FormData();
         formData.append('image', fs.createReadStream(req.file.path));
 
+        // Forward emergency and priority flags so the AI calibrates urgency language
+        const emergencyFlag = req.body.emergency || 'false';
+        const priorityFlag  = req.body.priority  || '';
+        formData.append('emergency', emergencyFlag);
+        formData.append('priority',  priorityFlag);
+
         // 1. Detect Fake Image
         try {
             const fakeFormData = new FormData();
             fakeFormData.append('image', fs.createReadStream(req.file.path));
 
-            const fakeResponse = await axios.post('http://localhost:5004/detect_fake_image', fakeFormData, {
+            const aiFakeDetectUrl = process.env.AI_FAKE_DETECT_URL || 'http://localhost:5004/detect_fake_image';
+            const fakeResponse = await axios.post(aiFakeDetectUrl, fakeFormData, {
                 headers: { ...fakeFormData.getHeaders() }
             });
 
@@ -338,7 +349,8 @@ const generateCaption = async (req, res) => {
         }
 
         // 2. Call Python Image Captioning Service
-        const response = await axios.post('http://localhost:5002/caption', formData, {
+        const aiCaptionUrl = process.env.AI_CAPTION_URL || 'http://localhost:5002/caption';
+        const response = await axios.post(aiCaptionUrl, formData, {
             headers: {
                 ...formData.getHeaders()
             }
@@ -741,7 +753,8 @@ const analyzeVideo = async (req, res) => {
             const fakeVideoForm = new FormData();
             fakeVideoForm.append('video', fs.createReadStream(videoPath));
 
-            const fakeResponse = await axios.post('http://localhost:5004/detect_fake_video', fakeVideoForm, {
+            const aiFakeVideoUrl = process.env.AI_FAKE_VIDEO_URL || 'http://localhost:5004/detect_fake_video';
+            const fakeResponse = await axios.post(aiFakeVideoUrl, fakeVideoForm, {
                 headers: { ...fakeVideoForm.getHeaders() }
             });
 
@@ -757,7 +770,8 @@ const analyzeVideo = async (req, res) => {
 
         // 2. Analyze Video
 
-        const response = await axios.post('http://localhost:5003/analyze_video', aiFormData, {
+        const aiVideoAnalyzeUrl = process.env.AI_VIDEO_ANALYZE_URL || 'http://localhost:5003/analyze_video';
+        const response = await axios.post(aiVideoAnalyzeUrl, aiFormData, {
             headers: {
                 ...aiFormData.getHeaders()
             }
@@ -781,10 +795,14 @@ const analyzeVideo = async (req, res) => {
 
 /* ── AI Services Health Check ── */
 const getAiHealth = async (req, res) => {
+    const aiPredictUrlHealth = process.env.AI_PREDICT_URL ? process.env.AI_PREDICT_URL.replace('/predict', '/health') : 'http://127.0.0.1:5001/health';
+    const aiCaptionUrlHealth = process.env.AI_CAPTION_URL ? process.env.AI_CAPTION_URL.replace('/caption', '/health') : 'http://127.0.0.1:5002/health';
+    const aiFakeDetectUrlHealth = process.env.AI_FAKE_DETECT_URL ? process.env.AI_FAKE_DETECT_URL.replace('/detect_fake_image', '/health') : 'http://127.0.0.1:5004/health';
+    
     const services = [
-        { name: 'Complaint Classifier', url: 'http://127.0.0.1:5001/health' },
-        { name: 'Image Captioning', url: 'http://127.0.0.1:5002/health' },
-        { name: 'Fake Detection', url: 'http://127.0.0.1:5004/health' }
+        { name: 'Complaint Classifier', url: aiPredictUrlHealth },
+        { name: 'Image Captioning', url: aiCaptionUrlHealth },
+        { name: 'Fake Detection', url: aiFakeDetectUrlHealth }
     ];
 
     try {

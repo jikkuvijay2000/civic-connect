@@ -93,6 +93,10 @@ const ReportIssue = () => {
         setIsCaptioning(true);
         const data = new FormData();
         data.append('image', file);
+        // Pass the current priority so the AI can calibrate urgency.
+        // Note: priority may not yet be set when the image is first uploaded —
+        // the Python service will also infer urgency from the image itself.
+        data.append('priority', formData.priority || '');
         try {
             const minDelay = new Promise(r => setTimeout(r, 3000));
             const res = await api.post('/complaint/caption', data, { headers: { 'Content-Type': 'multipart/form-data' } });

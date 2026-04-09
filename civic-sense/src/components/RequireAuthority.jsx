@@ -9,7 +9,7 @@ const RequireAuthority = () => {
         return <Navigate to="/" replace />;
     }
 
-    if (user.role !== 'Authority') {
+    if (user.userRole !== 'Authority') {
         // Instead of a silent redirect, show the blocking popup
         return (
             <div style={{ position: 'relative', minHeight: '100vh', background: '#f8fafc' }}>

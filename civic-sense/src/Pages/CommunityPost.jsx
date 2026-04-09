@@ -59,7 +59,7 @@ const CommunityPost = () => {
         data.append('content', formData.content);
         data.append('tag', formData.tag);
         data.append('author', user.userName || 'Authority');
-        data.append('role', user.role || 'Admin');
+        data.append('role', user.userRole || 'Admin');
         if (formData.image) data.append('image', formData.image);
 
         try {

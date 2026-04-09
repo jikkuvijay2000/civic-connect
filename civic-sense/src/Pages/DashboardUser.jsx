@@ -106,7 +106,7 @@ const DashboardUser = () => {
                         <FaUserCircle size={40} className="text-secondary" />
                         <div>
                             <h6 className="mb-0 fw-bold text-dark">{user?.userName || 'User'}</h6>
-                            <small className="text-muted">{user?.role || 'Citizen'}</small>
+                            <small className="text-muted">{user?.userRole || 'Citizen'}</small>
                         </div>
                     </div>
                 </div>

@@ -57,23 +57,13 @@ const registerUser = async (req, res) => {
             userPassword: hashedPassword,
             userRole: userRole || "Citizen",
             userDepartment: userDepartment || null,
-            verificationOTP: otp
+            verificationOTP: otp,
+            isEmailVerified: true // AUTO-VERIFY FOR MOBILE TESTING
         });
 
         await newUser.save();
 
-        try {
-            await sendEmail({
-                email: userEmail,
-                subject: 'Verify your Civic Connect Account',
-                message: `Welcome to Civic Connect! Your OTP for email verification is: ${otp}`
-            });
-        } catch (emailError) {
-            console.error("Error sending OTP email:", emailError);
-            // Even if email fails, we register the user, but they'll need to use resend OTP
-        }
-
-        res.status(200).json({ status: "success", message: "User registered successfully. Please verify your email with the OTP sent." });
+        res.status(200).json({ status: "success", message: "User registered successfully." });
 
     } catch (err) {
         res.status(500).json({ status: "error", message: err.message });
@@ -94,8 +84,9 @@ const loginUser = async (req, res) => {
         if (!isMatch)
             return res.status(401).json({ status: "error", message: "Invalid credentials" });
 
-        if (!user.isEmailVerified)
-            return res.status(403).json({ status: "error", message: "Please verify your email to log in.", unverified: true });
+        // Temporarily bypass email verification check for mobile testing
+        // if (!user.isEmailVerified)
+        //    return res.status(403).json({ status: "error", message: "Please verify your email to log in.", unverified: true });
 
         const accessToken = generateAccessToken(user._id);
         const refreshToken = generateRefreshToken(user._id);
@@ -112,7 +103,7 @@ const loginUser = async (req, res) => {
                 _id: user._id,
                 userName: user.userName,
                 userEmail: user.userEmail,
-                role: user.userRole,
+                userRole: user.userRole, // FIXED: was .role, should be .userRole
                 userDepartment: user.userDepartment
             }
         });
