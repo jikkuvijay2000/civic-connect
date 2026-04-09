@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { FaHome, FaExclamationTriangle, FaHandsHelping, FaTrophy, FaUserCircle, FaSearch, FaBell, FaComment, FaHeart, FaShare } from 'react-icons/fa';
 import civicLogo from '../assets/civic_sense_symbolic_logo.png';
-import Calendar from '../Components/Calendar';
+import Calendar from '../components/Calendar';
 import { notify } from '../utils/notify';
 
 const DashboardUser = () => {

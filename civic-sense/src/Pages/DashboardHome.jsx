@@ -5,12 +5,12 @@ import {
     FaMapMarkerAlt, FaTag, FaRegClock, FaArrowUp, FaChartLine,
     FaHandsHelping
 } from 'react-icons/fa';
-import Calendar from '../Components/Calendar';
+import Calendar from '../components/Calendar';
 import NotificationDropdown from '../components/NotificationDropdown';
 import ComplaintDetailsModal from '../components/ComplaintDetailsModal';
 import { notify } from '../utils/notify';
 import { initiateSocketConnection, subscribeToNotifications, subscribeToAlerts, disconnectSocket } from '../utils/socketService';
-import AIAnimation from '../Components/AIAnimation';
+import AIAnimation from '../components/AIAnimation';
 import api from '../api/axios';
 import LiveIncidentMap from '../components/LiveIncidentMap';
 

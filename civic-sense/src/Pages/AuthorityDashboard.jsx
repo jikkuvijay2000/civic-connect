@@ -10,7 +10,7 @@ import {
 } from 'recharts';
 import api from '../api/axios';
 import { initiateSocketConnection, subscribeToEmergency, subscribeToAuthorityNotifications, subscribeToAiHealth } from '../utils/socketService';
-import AIAnimation from '../Components/AIAnimation';
+import AIAnimation from '../components/AIAnimation';
 
 /* ── Stat card config ─────────────────────────────────────────────── */
 const STAT_META = [
