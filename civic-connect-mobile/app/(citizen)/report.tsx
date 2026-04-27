@@ -10,7 +10,11 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '../../constants/Colors';
 import { Ionicons } from '@expo/vector-icons';
 
-const CATEGORIES = ['Pothole', 'Streetlight', 'Water Leak', 'Garbage', 'Drainage', 'Other'];
+const CATEGORIES = [
+  'Sanitation Department', 'Traffic Department', 'Public Works Department',
+  'Water Department', 'Electricity Department', 'Fire Department',
+  'Health Department', 'General Administration'
+];
 const PRIORITIES = ['Low', 'Medium', 'High', 'Emergency'];
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -23,7 +27,7 @@ const PRIORITY_COLORS: Record<string, string> = {
 export default function ReportIssueScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('Other');
+  const [category, setCategory] = useState('General Administration');
   const [priority, setPriority] = useState('Medium');
   const [image, setImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);

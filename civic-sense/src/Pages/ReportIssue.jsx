@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     FaArrowLeft, FaCamera, FaVideo, FaMapMarkerAlt, FaRobot,
     FaCloudUploadAlt, FaTimes, FaCheckCircle, FaExclamationTriangle,
-    FaFire, FaTint, FaBroom, FaHardHat, FaShieldAlt, FaEllipsisH
+    FaFire, FaTint, FaBroom, FaHardHat, FaShieldAlt, FaEllipsisH,
+    FaBolt, FaHeartbeat, FaBuilding, FaCar
 } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { notify } from '../utils/notify';
@@ -12,12 +13,14 @@ import api from '../api/axios';
 
 /* ── Department icon map ─────────────────────────────────────────── */
 const DEPT_META = {
-    'Fire Department': { icon: FaFire, color: '#ef4444', bg: '#fef2f2' },
-    'Water Department': { icon: FaTint, color: '#3b82f6', bg: '#eff6ff' },
-    'Cleaning Department': { icon: FaBroom, color: '#10b981', bg: '#ecfdf5' },
+    'Sanitation Department': { icon: FaBroom, color: '#10b981', bg: '#ecfdf5' },
+    'Traffic Department': { icon: FaCar, color: '#6366f1', bg: '#eef2ff' },
     'Public Works Department': { icon: FaHardHat, color: '#f59e0b', bg: '#fffbeb' },
-    'Police Department': { icon: FaShieldAlt, color: '#6366f1', bg: '#eef2ff' },
-    'Others': { icon: FaEllipsisH, color: '#6b7280', bg: '#f9fafb' },
+    'Water Department': { icon: FaTint, color: '#3b82f6', bg: '#eff6ff' },
+    'Electricity Department': { icon: FaBolt, color: '#eab308', bg: '#fefce8' },
+    'Fire Department': { icon: FaFire, color: '#ef4444', bg: '#fef2f2' },
+    'Health Department': { icon: FaHeartbeat, color: '#ec4899', bg: '#fdf2f8' },
+    'General Administration': { icon: FaBuilding, color: '#64748b', bg: '#f8fafc' }
 };
 
 const PRIORITY_META = {
@@ -25,15 +28,6 @@ const PRIORITY_META = {
     'Medium': { color: '#f59e0b', bg: '#fffbeb', border: '#fcd34d', label: '🟡 Medium' },
     'High': { color: '#f97316', bg: '#fff7ed', border: '#fed7aa', label: '🟠 High' },
     'Emergency': { color: '#ef4444', bg: '#fef2f2', border: '#fca5a5', label: '🔴 Emergency' },
-};
-
-const departmentMapping = {
-    'Cleaning Department': 'Cleaning Department',
-    'Sanitation Department': 'Cleaning Department',
-    'Electricity Department': 'Public Works Department',
-    'Public Works Department': 'Public Works Department',
-    'Water Department': 'Water Department',
-    'Fire Department': 'Fire Department',
 };
 
 /* ════════════════════════════════════════════════════════════════════
@@ -71,7 +65,7 @@ const ReportIssue = () => {
             const res = await api.post('/complaint/predict', { text: formData.description });
             await minDelay;
             if (res.data) {
-                const cat = departmentMapping[res.data.department] || 'Others';
+                const cat = res.data.department || 'General Administration';
                 setFormData(prev => ({ ...prev, category: cat, priority: res.data.priority, aiScore: res.data.severity_score }));
             }
         } catch (e) {
@@ -125,6 +119,7 @@ const ReportIssue = () => {
         setIsVideoAnalyzing(true);
         const data = new FormData();
         data.append('video', file);
+        data.append('priority', formData.priority || '');
         try {
             const minDelay = new Promise(r => setTimeout(r, 3000));
             const res = await api.post('/complaint/analyze-video', data, { headers: { 'Content-Type': 'multipart/form-data' } });

@@ -34,7 +34,7 @@ except Exception as e:
 
 # ----------------- HELPER FUNCTIONS -----------------
 
-def is_blurry(image_pil, threshold=50.0):
+def is_blurry(image_pil, threshold=30.0):
     image_cv = np.array(image_pil)
     image_cv = image_cv[:, :, ::-1].copy()
     gray = cv2.cvtColor(image_cv, cv2.COLOR_BGR2GRAY)
@@ -169,6 +169,7 @@ def predict():
         department, priority = label.split(" | ")
         department = department.title()
         if department == "Roads Department": department = "Public Works Department"
+        if department == "Power Department": department = "Electricity Department"
 
         bands = {"Low": (1, 25), "Medium": (26, 50), "High": (51, 80), "Emergency": (81, 100)}
         band_min, band_max = bands.get(priority, (26, 50))
@@ -191,7 +192,7 @@ def detect_fake_image():
         results = fake_detector(image)
         is_fake, confidence = False, 0.0
         for result in results:
-            if result['label'].lower() in ['artificial', 'fake', 'ai'] and result['score'] > 0.75:
+            if result['label'].lower() in ['artificial', 'fake', 'ai'] and result['score'] > 0.92:
                 is_fake, confidence = True, result['score']
                 break
 
@@ -227,7 +228,7 @@ def detect_fake_video():
                 continue
             
             results = fake_detector(img)
-            if any(r['label'].lower() in ['artificial', 'fake', 'ai'] and r['score'] > 0.75 for r in results):
+            if any(r['label'].lower() in ['artificial', 'fake', 'ai'] and r['score'] > 0.92 for r in results):
                 fake_count += 1
 
         total = len(sampled_frames)
@@ -261,21 +262,41 @@ def analyze_video():
     video_path = None
     try:
         if "video" not in request.files: return jsonify({"error": "No video uploaded"}), 400
-        video_path = "temp_video.mp4"
+        is_emergency = request.form.get("emergency", "false").lower() in ("true", "1", "yes") or request.form.get("priority", "").lower() in ("high", "emergency")
+        
+        video_path = f"temp_video_analyze_{os.getpid()}.mp4"
         request.files["video"].save(video_path)
 
         cap = cv2.VideoCapture(video_path)
-        cap.set(cv2.CAP_PROP_POS_FRAMES, int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) // 2)
-        ret, frame = cap.read()
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        
+        best_frame = None
+        max_variance = -1
+        
+        # Sample frames at 25%, 50%, and 75%
+        for pos in [total_frames // 4, total_frames // 2, total_frames * 3 // 4]:
+            if pos < 0: continue
+            cap.set(cv2.CAP_PROP_POS_FRAMES, pos)
+            ret, frame = cap.read()
+            if ret:
+                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                variance = cv2.Laplacian(gray, cv2.CV_64F).var()
+                if variance > max_variance:
+                    max_variance = variance
+                    best_frame = frame
+                    
         cap.release()
         if os.path.exists(video_path): os.remove(video_path)
 
-        image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-        inputs = blip_processor(images=image, text="a photograph of", return_tensors="pt").to(device)
-        outputs = blip_model.generate(**inputs, max_new_tokens=80, min_new_tokens=20, num_beams=3, repetition_penalty=1.2, early_stopping=True)
+        if best_frame is None:
+            return jsonify({"error": "Could not read video frames"}), 400
 
-        clean_caption = blip_processor.decode(outputs[0], skip_special_tokens=True).lower().replace("a photograph of ", "")
-        return jsonify({"description": f"Video analysis shows: {clean_caption}.", "raw_caption": clean_caption})
+        image = Image.fromarray(cv2.cvtColor(best_frame, cv2.COLOR_BGR2RGB))
+        details = extract_all_details(image)
+        domain = detect_issue_domain(" ".join(details.values()))
+        description = build_dynamic_description(details, domain, is_emergency)
+
+        return jsonify({"description": f"Video Analysis: {description}", "raw_caption": details.get("scene", ""), "domain": domain})
     except Exception as e:
         if video_path and os.path.exists(video_path): os.remove(video_path)
         return jsonify({"error": str(e)}), 500

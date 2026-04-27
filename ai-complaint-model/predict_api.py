@@ -37,6 +37,8 @@ def predict():
     # Rename Roads to Public Works as requested
     if department == "Roads Department":
         department = "Public Works Department"
+    if department == "Power Department":
+        department = "Electricity Department"
 
     # Strict non-overlapping severity bands per priority level:
     #   Low       →  1 – 25
