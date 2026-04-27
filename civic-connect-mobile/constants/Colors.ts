@@ -1,37 +1,49 @@
-const tintColorLight = '#8A2BE2';
-const tintColorDark = '#D4FF00'; // Neon Green from screenshots
+const primaryOrange = '#FF6B35';
+const accentBlue = '#4A9FF5';
 
 export const Colors = {
   light: {
-    text: '#1e293b',
-    background: '#f8fafc',
-    tint: tintColorLight,
-    icon: '#64748b',
-    tabIconDefault: '#94a3b8',
-    tabIconSelected: tintColorLight,
-    surface: '#ffffff',
-    border: '#e2e8f0',
-    primary: '#8A2BE2',
-    accent: '#D4FF00', // added missing property
-    secondary: '#64748b',
-    success: '#10b981',
-    danger: '#ef4444',
-    error: '#ef4444', // added missing property
+    text: '#1A1A2E',
+    background: '#F5F5F7',
+    tint: primaryOrange,
+    icon: '#6B7280',
+    tabIconDefault: '#C7C7CC',
+    tabIconSelected: accentBlue,
+    surface: '#FFFFFF',
+    border: 'rgba(0,0,0,0.07)',
+    primary: primaryOrange,
+    accent: accentBlue,
+    secondary: '#8E8E93',
+    success: '#34C759',
+    danger: '#FF3B30',
+    error: '#FF3B30',
+    orange: primaryOrange,
+    blue: accentBlue,
+    green: '#34C759',
+    purple: '#AF52DE',
+    cardBg: '#FFFFFF',
+    heroBackground: '#FFF0E8',
   },
   dark: {
-    text: '#f8fafc',
-    background: '#0A0A0A', // Deep black
-    tint: tintColorDark,
-    icon: '#94a3b8',
-    tabIconDefault: '#334155',
-    tabIconSelected: tintColorDark,
-    surface: '#121212', // Slightly lighter black for cards
-    border: '#1F1F1F',
-    primary: '#8A2BE2', // Purple from the scan button
-    accent: '#D4FF00', // Neon Green
-    secondary: '#94a3b8',
-    success: '#10b981',
-    danger: '#FF3B30',
-    error: '#FF3B30', // added missing property
+    text: '#F2F2F7',
+    background: '#1C1C2E',
+    tint: primaryOrange,
+    icon: '#AEAEB2',
+    tabIconDefault: '#48484A',
+    tabIconSelected: accentBlue,
+    surface: '#2C2C3E',
+    border: 'rgba(255,255,255,0.08)',
+    primary: primaryOrange,
+    accent: accentBlue,
+    secondary: '#8E8E93',
+    success: '#30D158',
+    danger: '#FF453A',
+    error: '#FF453A',
+    orange: primaryOrange,
+    blue: accentBlue,
+    green: '#30D158',
+    purple: '#BF5AF2',
+    cardBg: '#2C2C3E',
+    heroBackground: '#2A1810',
   },
 };

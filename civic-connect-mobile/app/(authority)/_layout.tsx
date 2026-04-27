@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { useColorScheme, TouchableOpacity, View } from 'react-native';
+import { useColorScheme, TouchableOpacity, View, StyleSheet } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
@@ -13,62 +13,87 @@ export default function AuthorityTabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: theme.tint,
+        tabBarActiveTintColor: '#4A9FF5',
+        tabBarInactiveTintColor: '#C7C7CC',
         headerShown: true,
         headerStyle: {
           backgroundColor: theme.background,
           elevation: 0,
           shadowOpacity: 0,
-          borderBottomWidth: 1,
-          borderBottomColor: theme.border,
+          borderBottomWidth: 0,
         },
         headerTitleStyle: {
-          fontWeight: '900',
-          fontSize: 16,
-          textTransform: 'uppercase',
-          letterSpacing: 2,
-          color: theme.accent || theme.primary,
+          fontWeight: '700',
+          fontSize: 18,
+          color: theme.text,
+          letterSpacing: -0.3,
         },
         headerRight: () => (
-          <TouchableOpacity onPress={logout} style={{ marginRight: 16 }}>
-            <Ionicons name="log-out-outline" size={24} color={theme.text} />
+          <TouchableOpacity onPress={logout} style={{ marginRight: 20, padding: 4 }}>
+            <Ionicons name="log-out-outline" size={22} color={theme.secondary} />
           </TouchableOpacity>
         ),
-        headerTintColor: theme.text,
         tabBarStyle: {
-          backgroundColor: 'rgba(10, 10, 10, 0.95)',
+          backgroundColor: theme.surface,
           borderTopWidth: 0,
-          height: 70,
+          height: 72,
           position: 'absolute',
-          bottom: 20,
+          bottom: 16,
           left: 20,
           right: 20,
-          borderRadius: 35,
+          borderRadius: 40,
           paddingBottom: 0,
-          elevation: 10,
+          paddingTop: 0,
+          elevation: 24,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 10 },
-          shadowOpacity: 0.5,
-          shadowRadius: 10,
+          shadowOpacity: 0.14,
+          shadowRadius: 24,
         },
         tabBarShowLabel: false,
-      }}>
+        tabBarItemStyle: {
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Hub',
-          headerTitle: 'Command Center',
-          tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "stats-chart" : "stats-chart-outline"} size={24} color={color} />,
+          title: 'Dashboard',
+          headerTitle: 'Authority Hub',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
+              <Ionicons name={focused ? 'stats-chart' : 'stats-chart-outline'} size={22} color={focused ? '#fff' : color} />
+            </View>
+          ),
         }}
       />
       <Tabs.Screen
         name="complaints"
         options={{
-          title: 'Issues',
-          headerTitle: 'Alpha Team Dispatch',
-          tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "shield" : "shield-outline"} size={24} color={color} />,
+          title: 'Incidents',
+          headerTitle: 'Incident Management',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
+              <Ionicons name={focused ? 'shield' : 'shield-outline'} size={22} color={focused ? '#fff' : color} />
+            </View>
+          ),
         }}
       />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  iconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconWrapActive: {
+    backgroundColor: '#4A9FF5',
+  },
+});

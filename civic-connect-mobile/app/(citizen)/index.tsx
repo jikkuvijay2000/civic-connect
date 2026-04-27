@@ -1,22 +1,36 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, ScrollView, RefreshControl, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import {
+  View, Text, ScrollView, RefreshControl, TouchableOpacity,
+  StyleSheet, Image, Dimensions,
+} from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import client from '../../api/client';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '../../constants/Colors';
-import { getGlobalStyles } from '../../styles/global';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
+const { width } = Dimensions.get('window');
+const CARD_W = (width - 48) / 2;
+
+const FILTERS = ['All Alerts', 'Pothole', 'Streetlight', 'Water Leak', 'Garbage', 'Drainage', 'Other'];
+
+const PRIORITY_COLORS: Record<string, string> = {
+  Emergency: '#FF3B30',
+  High: '#FF9500',
+  Medium: '#4A9FF5',
+  Low: '#34C759',
+};
+
 export default function CitizenDashboard() {
   const { user } = useAuth();
-  const [complaints, setComplaints] = useState([]);
+  const [complaints, setComplaints] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState('All Alerts');
   const router = useRouter();
-  
+
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
-  const globalStyles = getGlobalStyles(theme);
 
   const fetchDashboard = useCallback(async () => {
     try {
@@ -25,134 +39,319 @@ export default function CitizenDashboard() {
       if (res.data?.status === 'success') {
         setComplaints(res.data.data);
       }
-    } catch (err) {
-      console.log('Failed to fetch dashboard data');
+    } catch {
+      // silent
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    fetchDashboard();
-  }, [fetchDashboard]);
+  useEffect(() => { fetchDashboard(); }, [fetchDashboard]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Resolved': return theme.success;
-      case 'In Progress': return theme.accent || theme.primary;
-      case 'Rejected': return theme.danger;
-      default: return '#fbbf24'; // Pending
-    }
-  };
+  const filtered =
+    activeFilter === 'All Alerts'
+      ? complaints
+      : complaints.filter(
+          (c) => c.complaintType === activeFilter || c.category === activeFilter,
+        );
+
+  const getTitle = (c: any) =>
+    c.complaintDescription?.split('\n')[0]?.replace(/\*\*/g, '') ||
+    c.complaintTitle ||
+    'Civic Alert';
 
   return (
-    <ScrollView 
-      style={[globalStyles.container, { backgroundColor: '#0A0A0A' }]}
-      contentContainerStyle={[globalStyles.contentContainer, { paddingBottom: 100 }]}
-      refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchDashboard} tintColor={theme.accent || theme.primary} />}
+    <ScrollView
+      style={[styles.container, { backgroundColor: theme.background }]}
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl refreshing={loading} onRefresh={fetchDashboard} tintColor="#FF6B35" />
+      }
     >
-      {/* Header Info - Matching Screenshot 1 */}
-      <View style={{ marginBottom: 32 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      {/* ─── Header ─── */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <View style={[styles.logoBox, { backgroundColor: '#FFF0E8' }]}>
+            <Ionicons name="shield-checkmark" size={18} color="#FF6B35" />
+          </View>
           <View>
-            <Text style={{ color: theme.accent || '#D4FF00', fontSize: 10, fontWeight: '800', letterSpacing: 2 }}>ACTIVE USER</Text>
-            <Text style={{ color: '#FFF', fontSize: 28, fontWeight: '900', marginTop: 4, letterSpacing: 1 }}>
-              {user?.userName?.toUpperCase() || 'OPERATIVE-X'}
+            <Text style={[styles.brandName, { color: theme.text }]}>Civic Connect</Text>
+            <View style={styles.liveRow}>
+              <View style={styles.liveDot} />
+              <Text style={[styles.liveLabel, { color: theme.secondary }]}>Alert Citywide · Live</Text>
+            </View>
+          </View>
+        </View>
+        <TouchableOpacity
+          style={[styles.avatarCircle, { backgroundColor: '#FF6B35' }]}
+          onPress={() => router.push('/(citizen)/profile')}
+        >
+          <Text style={styles.avatarText}>{user?.userName?.[0]?.toUpperCase() || 'U'}</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* ─── Hero Text ─── */}
+      <View style={styles.heroSection}>
+        <Text style={[styles.heroTitle, { color: theme.text }]}>
+          What's Happening{'\n'}Nearby,{' '}
+          <Text style={styles.heroOrange}>Civic{'\n'}Alerts</Text>
+        </Text>
+      </View>
+
+      {/* ─── Featured Live Card ─── */}
+      {complaints.length > 0 && (
+        <View style={[styles.featuredCard, { backgroundColor: theme.heroBackground }]}>
+          <View style={{ flex: 1 }}>
+            <View style={styles.livePill}>
+              <View style={styles.liveDot} />
+              <Text style={styles.livePillText}>Live update</Text>
+            </View>
+            <Text style={[styles.featuredTitle, { color: theme.text }]} numberOfLines={2}>
+              {getTitle(complaints[0])}
+            </Text>
+            <Text style={[styles.featuredDate, { color: theme.secondary }]}>
+              {new Date(complaints[0].createdAt).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              })}
             </Text>
           </View>
-          <View style={{ alignItems: 'flex-end' }}>
-            <Text style={{ color: theme.secondary, fontSize: 8, fontWeight: '800', letterSpacing: 1 }}>HISTORY LOGS</Text>
-            <View style={{ flexDirection: 'row', gap: 2, marginTop: 4 }}>
-              {[1, 2, 3].map(i => <View key={i} style={{ width: 6, height: 12, backgroundColor: theme.accent || '#D4FF00', borderRadius: 1 }} />)}
-              <View style={{ width: 6, height: 12, backgroundColor: '#333', borderRadius: 1 }} />
+          {complaints[0].complaintImage ? (
+            <Image source={{ uri: complaints[0].complaintImage }} style={styles.featuredThumb} />
+          ) : (
+            <View style={[styles.featuredThumb, { backgroundColor: '#FF6B3520', justifyContent: 'center', alignItems: 'center' }]}>
+              <Ionicons name="alert-circle" size={32} color="#FF6B35" />
             </View>
-          </View>
+          )}
         </View>
-      </View>
-
-      {/* Notifications Section */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <View style={{ backgroundColor: 'rgba(212, 255, 0, 0.1)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(212, 255, 0, 0.3)' }}>
-          <Text style={{ color: theme.accent || '#D4FF00', fontSize: 10, fontWeight: '800', letterSpacing: 1 }}>NOTIFICATIONS</Text>
-        </View>
-        <Text style={{ color: theme.secondary, fontSize: 10, fontWeight: '700' }}>{complaints.length} EVENTS</Text>
-      </View>
-
-      {/* Activity Timeline Placeholder */}
-      <View style={[globalStyles.card, { backgroundColor: '#121212', borderColor: '#1F1F1F', padding: 20 }]}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
-          <Text style={{ color: theme.accent || '#D4FF00', fontSize: 10, fontWeight: '800', letterSpacing: 1 }}>ACTIVITY TIMELINE</Text>
-          <Text style={{ color: theme.secondary, fontSize: 8, fontWeight: '700' }}>LAST 12 HOURS</Text>
-        </View>
-        <View style={{ height: 60, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingHorizontal: 10 }}>
-           {/* Mock timeline */}
-           <View style={{ width: 1, height: '100%', backgroundColor: '#222' }} />
-           <View style={{ width: 1, height: '100%', backgroundColor: '#222' }} />
-           <View style={{ width: 1, height: '100%', backgroundColor: '#222' }} />
-           <View style={{ width: 4, height: 40, backgroundColor: theme.danger, borderRadius: 2, shadowColor: theme.danger, shadowOpacity: 0.5, shadowRadius: 5 }} />
-           <View style={{ width: 1, height: '100%', backgroundColor: '#222' }} />
-           <View style={{ width: 4, height: 50, backgroundColor: theme.accent, borderRadius: 2, shadowColor: theme.accent, shadowOpacity: 0.5, shadowRadius: 5 }} />
-        </View>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
-          <Text style={{ color: '#444', fontSize: 8 }}>12H</Text>
-          <Text style={{ color: '#444', fontSize: 8 }}>6H</Text>
-          <Text style={{ color: '#444', fontSize: 8 }}>2H</Text>
-          <Text style={{ color: '#444', fontSize: 8 }}>1H</Text>
-          <Text style={{ color: theme.accent, fontSize: 8, fontWeight: '800' }}>NOW</Text>
-        </View>
-      </View>
-
-      {/* Recent Alerts Section */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, marginTop: 24 }}>
-        <Text style={{ color: '#FFF', fontSize: 14, fontWeight: '900', letterSpacing: 2 }}>RECENT ALERTS</Text>
-        <Text style={{ color: theme.secondary, fontSize: 10, fontWeight: '700' }}>{complaints.length} TOTAL</Text>
-      </View>
-      
-      {complaints.length === 0 ? (
-        <View style={[globalStyles.card, { alignItems: 'center', padding: 32, backgroundColor: '#121212', borderColor: '#1F1F1F' }]}>
-          <Ionicons name="shield-checkmark-outline" size={48} color={theme.accent} style={{ marginBottom: 16, opacity: 0.5 }} />
-          <Text style={{ color: theme.secondary, textAlign: 'center', lineHeight: 20 }}>
-            Sector Secure. No active incidents reported in your vicinity.
-          </Text>
-        </View>
-      ) : (
-        complaints.map((c: any) => (
-          <TouchableOpacity key={c._id} style={[globalStyles.card, { backgroundColor: '#121212', borderColor: '#1F1F1F', flexDirection: 'row', gap: 16, alignItems: 'center' }]}>
-            <View style={{ 
-              width: 60, 
-              height: 60, 
-              borderRadius: 16, 
-              backgroundColor: 'rgba(255,255,255,0.05)', 
-              justifyContent: 'center', 
-              alignItems: 'center',
-              borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.1)'
-            }}>
-               <Ionicons 
-                name={c.complaintType === 'Fire' ? "flame" : (c.complaintType === 'Flood' ? "water" : "warning")} 
-                size={30} 
-                color={getStatusColor(c.complaintStatus)} 
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 8, fontWeight: '800', letterSpacing: 1 }}>INCIDENT TYPE</Text>
-              <Text style={{ color: getStatusColor(c.complaintStatus), fontWeight: '900', fontSize: 18, marginBottom: 4 }}>
-                {c.complaintType?.toUpperCase() || 'UNKNOWN'}
-              </Text>
-              <View style={{ flexDirection: 'row', gap: 20 }}>
-                <View>
-                  <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 8, fontWeight: '800' }}>AI CONFIDENCE</Text>
-                  <Text style={{ color: '#FFF', fontSize: 12, fontWeight: '700' }}>94.8%</Text>
-                </View>
-                <View>
-                  <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 8, fontWeight: '800' }}>TIME</Text>
-                  <Text style={{ color: '#FFF', fontSize: 12, fontWeight: '700' }}>{new Date(c.createdAt).toLocaleDateString()}</Text>
-                </View>
-              </View>
-            </View>
-          </TouchableOpacity>
-        ))
       )}
+
+      {/* ─── Filter Chips ─── */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ marginTop: 20 }}
+        contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
+      >
+        {FILTERS.map((f) => (
+          <TouchableOpacity
+            key={f}
+            onPress={() => setActiveFilter(f)}
+            style={[
+              styles.chip,
+              { borderColor: activeFilter === f ? '#FF6B35' : theme.border },
+              activeFilter === f && styles.chipActive,
+            ]}
+          >
+            <Text
+              style={[
+                styles.chipText,
+                { color: activeFilter === f ? '#fff' : theme.secondary },
+              ]}
+            >
+              {f}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      {/* ─── Card Grid ─── */}
+      <View style={styles.grid}>
+        {filtered.length === 0 ? (
+          <View style={[styles.emptyCard, { backgroundColor: theme.surface }]}>
+            <Ionicons
+              name="shield-checkmark-outline"
+              size={52}
+              color="#FF6B35"
+              style={{ opacity: 0.4, marginBottom: 14 }}
+            />
+            <Text style={{ color: theme.secondary, textAlign: 'center', fontSize: 15, lineHeight: 22 }}>
+              No incidents reported yet.{'\n'}Your area looks safe! 🎉
+            </Text>
+          </View>
+        ) : (
+          filtered.map((c, i) => {
+            const pColor = PRIORITY_COLORS[c.complaintPriority] || '#4A9FF5';
+            const bgColors = ['#FFF0E8', '#EEF5FF', '#F0FFF6', '#F5F0FF'];
+            return (
+              <View
+                key={c._id}
+                style={[
+                  styles.gridCard,
+                  i % 2 === 0 ? { marginRight: 8 } : { marginLeft: 8 },
+                ]}
+              >
+                {c.complaintImage ? (
+                  <>
+                    <Image
+                      source={{ uri: c.complaintImage }}
+                      style={StyleSheet.absoluteFillObject}
+                      resizeMode="cover"
+                    />
+                    <View style={styles.gridOverlay}>
+                      <View style={[styles.badge, { backgroundColor: pColor }]}>
+                        <Text style={styles.badgeText}>{c.complaintPriority || 'Medium'}</Text>
+                      </View>
+                      <Text style={styles.gridCardTitle} numberOfLines={2}>
+                        {getTitle(c)}
+                      </Text>
+                      <View style={styles.gridStats}>
+                        <Ionicons name="eye-outline" size={12} color="rgba(255,255,255,0.85)" />
+                        <Text style={styles.gridStatText}>
+                          {Math.floor(Math.random() * 400 + 80)}
+                        </Text>
+                        <Ionicons name="heart-outline" size={12} color="rgba(255,255,255,0.85)" />
+                        <Text style={styles.gridStatText}>{Math.floor(Math.random() * 50 + 5)}</Text>
+                      </View>
+                    </View>
+                  </>
+                ) : (
+                  <View style={[styles.gridNoImage, { backgroundColor: bgColors[i % 4] }]}>
+                    <View style={[styles.badge, { backgroundColor: pColor, alignSelf: 'flex-start' }]}>
+                      <Text style={styles.badgeText}>{c.complaintPriority || 'Medium'}</Text>
+                    </View>
+                    <Text style={[styles.gridCardTitleDark, { color: theme.text }]} numberOfLines={3}>
+                      {getTitle(c)}
+                    </Text>
+                    <Text style={{ color: theme.secondary, fontSize: 11, marginTop: 'auto' as any }}>
+                      {new Date(c.createdAt).toLocaleDateString()}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            );
+          })
+        )}
+      </View>
+
+      <View style={{ height: 120 }} />
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  /* Header */
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 56,
+    paddingBottom: 8,
+  },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  logoBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  brandName: { fontSize: 16, fontWeight: '700' },
+  liveRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
+  liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#34C759' },
+  liveLabel: { fontSize: 11 },
+  avatarCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: { color: '#fff', fontWeight: '800', fontSize: 17 },
+  /* Hero */
+  heroSection: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16 },
+  heroTitle: { fontSize: 34, fontWeight: '800', letterSpacing: -0.5, lineHeight: 42 },
+  heroOrange: { color: '#FF6B35', fontStyle: 'italic' },
+  /* Featured */
+  featuredCard: {
+    marginHorizontal: 20,
+    borderRadius: 22,
+    padding: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  livePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(74,159,245,0.15)',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    alignSelf: 'flex-start',
+    marginBottom: 10,
+  },
+  livePillText: { color: '#4A9FF5', fontSize: 12, fontWeight: '700' },
+  featuredTitle: { fontSize: 14, fontWeight: '700', lineHeight: 20, marginBottom: 6 },
+  featuredDate: { fontSize: 12 },
+  featuredThumb: { width: 80, height: 80, borderRadius: 16 },
+  /* Chips */
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    backgroundColor: 'transparent',
+  },
+  chipActive: { backgroundColor: '#FF6B35', borderColor: '#FF6B35' },
+  chipText: { fontSize: 13, fontWeight: '600' },
+  /* Grid */
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 16,
+    marginTop: 20,
+  },
+  gridCard: {
+    width: CARD_W,
+    height: 190,
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginBottom: 12,
+    backgroundColor: '#F0F0F5',
+  },
+  gridOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 12,
+    paddingTop: 40,
+    backgroundColor: 'rgba(0,0,0,0.42)',
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+  },
+  gridNoImage: {
+    flex: 1,
+    padding: 14,
+    justifyContent: 'flex-start',
+    gap: 8,
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    marginBottom: 4,
+  },
+  badgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
+  gridCardTitle: { color: '#fff', fontSize: 13, fontWeight: '700', lineHeight: 18 },
+  gridCardTitleDark: { fontSize: 13, fontWeight: '700', lineHeight: 18 },
+  gridStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 6,
+  },
+  gridStatText: { color: 'rgba(255,255,255,0.85)', fontSize: 11, marginRight: 6 },
+  /* Empty */
+  emptyCard: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 40,
+    borderRadius: 20,
+    margin: 16,
+  },
+});

@@ -1,44 +1,39 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator, StyleSheet } from 'react-native';
+import {
+  View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView,
+  Platform, ScrollView, Alert, ActivityIndicator, StyleSheet,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import client from '../../api/client';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '../../constants/Colors';
-import { getGlobalStyles } from '../../styles/global';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { login } = useAuth();
-  
+
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
-  const globalStyles = getGlobalStyles(theme);
 
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
-
     try {
       setLoading(true);
-      
-      // Attempt login directly since we disabled CSRF on backend
-      const res = await client.post('/user/login', 
-        { userEmail: email, userPassword: password }
-      );
-      
+      const res = await client.post('/user/login', { userEmail: email, userPassword: password });
       if (res.status === 200) {
         const { accessToken, user } = res.data;
         await login(accessToken || '', user);
       }
     } catch (err: any) {
-      console.error('Login Error details:', err);
       const msg = err.response?.data?.message || err.message || 'Failed to login';
       Alert.alert('Login Error', msg);
     } finally {
@@ -47,58 +42,87 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={[globalStyles.container, { backgroundColor: '#0A0A0A' }]}
+      style={{ flex: 1, backgroundColor: theme.background }}
     >
-      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }}>
-        <View style={{ alignItems: 'center', marginBottom: 40 }}>
-          <Text style={{ color: '#FFF', fontSize: 24, fontWeight: '900', letterSpacing: 4, textTransform: 'uppercase' }}>
-            System Sync
-          </Text>
-          <Text style={{ color: theme.accent || '#D4FF00', fontSize: 10, fontWeight: '800', marginTop: 8, letterSpacing: 2 }}>OPERATIVE AUTHENTICATION</Text>
+      {/* Orange Hero Banner */}
+      <View style={styles.heroBanner}>
+        <View style={styles.logoRing}>
+          <Ionicons name="shield-checkmark" size={34} color="#fff" />
         </View>
+        <Text style={styles.heroAppName}>Civic Connect</Text>
+        <Text style={styles.heroTagline}>Community Safety Network</Text>
 
-        <View style={[globalStyles.card, { backgroundColor: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.1)', padding: 24 }]}>
-          <Text style={styles.label}>OPERATIVE EMAIL</Text>
+        {/* Decorative blobs */}
+        <View style={styles.blobTopRight} />
+        <View style={styles.blobBottomLeft} />
+      </View>
+
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={[styles.formArea, { backgroundColor: theme.background }]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={[styles.welcomeTitle, { color: theme.text }]}>Welcome Back 👋</Text>
+        <Text style={[styles.welcomeSub, { color: theme.secondary }]}>Sign in to your account</Text>
+
+        {/* Email Field */}
+        <View style={[styles.inputRow, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <Ionicons name="mail-outline" size={20} color={theme.secondary} />
           <TextInput
-            style={styles.input}
-            placeholder="email@crisis.com"
-            placeholderTextColor="#444"
+            style={[styles.textInput, { color: theme.text }]}
+            placeholder="Email address"
+            placeholderTextColor={theme.secondary}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
           />
+        </View>
 
-          <Text style={styles.label}>ACCESS KEY</Text>
-          <View style={styles.passwordContainer}>
-            <TextInput
-              style={[styles.input, { flex: 1, borderBottomWidth: 0, marginBottom: 0 }]}
-              placeholderTextColor="#444"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
+        {/* Password Field */}
+        <View style={[styles.inputRow, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <Ionicons name="lock-closed-outline" size={20} color={theme.secondary} />
+          <TextInput
+            style={[styles.textInput, { color: theme.text, flex: 1 }]}
+            placeholder="Password"
+            placeholderTextColor={theme.secondary}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+          />
+          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+            <Ionicons
+              name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+              size={20}
+              color={theme.secondary}
             />
-            <Ionicons name="eye-outline" size={20} color="#444" />
-          </View>
-
-          <TouchableOpacity style={[globalStyles.button, { backgroundColor: '#8A2BE2', height: 60, marginTop: 40, flexDirection: 'row', justifyContent: 'center', gap: 10 }]} onPress={handleLogin} disabled={loading}>
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <>
-                <Text style={[globalStyles.buttonText, { textTransform: 'uppercase', letterSpacing: 2, fontWeight: '900' }]}>Initialize Sync</Text>
-                <Ionicons name="sync" size={18} color="#fff" />
-              </>
-            )}
           </TouchableOpacity>
         </View>
 
-        <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 32 }}>
-          <Text style={{ color: '#888' }}>New Operative? </Text>
+        {/* Sign In Button */}
+        <TouchableOpacity
+          style={styles.signInBtn}
+          onPress={handleLogin}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <>
+              <Text style={styles.signInBtnText}>Sign In</Text>
+              <Ionicons name="arrow-forward" size={18} color="#fff" />
+            </>
+          )}
+        </TouchableOpacity>
+
+        {/* Register Link */}
+        <View style={styles.registerRow}>
+          <Text style={{ color: theme.secondary, fontSize: 15 }}>Don't have an account? </Text>
           <TouchableOpacity onPress={() => router.push('/auth/register')}>
-            <Text style={{ color: '#8A2BE2', fontWeight: '800' }}>Request Access</Text>
+            <Text style={{ color: '#FF6B35', fontWeight: '700', fontSize: 15 }}>Sign Up</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -107,31 +131,103 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  label: {
-    color: '#888',
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 2,
-    marginBottom: 8,
+  heroBanner: {
+    backgroundColor: '#FF6B35',
+    paddingTop: 72,
+    paddingBottom: 48,
+    alignItems: 'center',
+    borderBottomLeftRadius: 36,
+    borderBottomRightRadius: 36,
+    overflow: 'hidden',
   },
-  input: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 16,
-    padding: 16,
-    color: '#FFF',
-    fontSize: 16,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+  blobTopRight: {
+    position: 'absolute',
+    top: -30,
+    right: -30,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: 'rgba(255,255,255,0.12)',
   },
-  passwordContainer: {
+  blobBottomLeft: {
+    position: 'absolute',
+    bottom: -40,
+    left: -40,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  logoRing: {
+    width: 80,
+    height: 80,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  heroAppName: {
+    color: '#fff',
+    fontSize: 30,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  heroTagline: {
+    color: 'rgba(255,255,255,0.78)',
+    fontSize: 14,
+    marginTop: 6,
+  },
+  formArea: {
+    padding: 28,
+    paddingTop: 36,
+  },
+  welcomeTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+    marginBottom: 6,
+  },
+  welcomeSub: {
+    fontSize: 15,
+    marginBottom: 32,
+  },
+  inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    gap: 12,
     borderRadius: 16,
-    paddingRight: 16,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  }
+    padding: 16,
+    marginBottom: 14,
+    borderWidth: 1.5,
+  },
+  textInput: {
+    flex: 1,
+    fontSize: 16,
+  },
+  signInBtn: {
+    backgroundColor: '#FF6B35',
+    borderRadius: 16,
+    padding: 18,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 10,
+    marginTop: 8,
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  signInBtnText: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  registerRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 28,
+  },
 });

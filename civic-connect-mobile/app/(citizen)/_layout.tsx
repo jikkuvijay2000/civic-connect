@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { useColorScheme, TouchableOpacity, View } from 'react-native';
+import { useColorScheme, TouchableOpacity, View, StyleSheet } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
@@ -13,84 +13,82 @@ export default function CitizenTabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: theme.tint,
+        tabBarActiveTintColor: '#4A9FF5',
+        tabBarInactiveTintColor: '#C7C7CC',
         headerShown: true,
         headerStyle: {
           backgroundColor: theme.background,
           elevation: 0,
           shadowOpacity: 0,
-          borderBottomWidth: 1,
-          borderBottomColor: theme.border,
+          borderBottomWidth: 0,
         },
         headerTitleStyle: {
-          fontWeight: '900',
-          fontSize: 16,
-          textTransform: 'uppercase',
-          letterSpacing: 2,
-          color: theme.accent || theme.primary,
+          fontWeight: '700',
+          fontSize: 18,
+          color: theme.text,
+          letterSpacing: -0.3,
         },
         headerRight: () => (
-          <TouchableOpacity onPress={logout} style={{ marginRight: 16 }}>
-            <Ionicons name="log-out-outline" size={24} color={theme.text} />
+          <TouchableOpacity onPress={logout} style={{ marginRight: 20, padding: 4 }}>
+            <Ionicons name="log-out-outline" size={22} color={theme.secondary} />
           </TouchableOpacity>
         ),
-        headerTintColor: theme.text,
         tabBarStyle: {
-          backgroundColor: 'rgba(10, 10, 10, 0.95)',
+          backgroundColor: theme.surface,
           borderTopWidth: 0,
-          height: 70,
+          height: 72,
           position: 'absolute',
-          bottom: 20,
+          bottom: 16,
           left: 20,
           right: 20,
-          borderRadius: 35,
+          borderRadius: 40,
           paddingBottom: 0,
-          elevation: 10,
+          paddingTop: 0,
+          elevation: 24,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 10 },
-          shadowOpacity: 0.5,
-          shadowRadius: 10,
+          shadowOpacity: 0.14,
+          shadowRadius: 24,
         },
         tabBarShowLabel: false,
-      }}>
+        tabBarItemStyle: {
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
-          headerTitle: 'Command Center',
-          tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "grid" : "grid-outline"} size={24} color={color} />,
+          headerShown: false,
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
+              <Ionicons name={focused ? 'globe' : 'globe-outline'} size={22} color={focused ? '#fff' : color} />
+            </View>
+          ),
         }}
       />
       <Tabs.Screen
         name="map"
         options={{
           title: 'Map',
-          headerTitle: 'Tactical Overlay',
-          tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "radio" : "radio-outline"} size={24} color={color} />,
+          headerTitle: 'Nearby Incidents',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
+              <Ionicons name={focused ? 'location' : 'location-outline'} size={22} color={focused ? '#fff' : color} />
+            </View>
+          ),
         }}
       />
       <Tabs.Screen
         name="report"
         options={{
           title: 'Report',
-          headerTitle: 'Incident Report',
-          tabBarIcon: ({ color, focused }) => (
-            <View style={{ 
-              backgroundColor: '#8A2BE2', 
-              width: 50, 
-              height: 50, 
-              borderRadius: 25, 
-              justifyContent: 'center', 
-              alignItems: 'center',
-              marginBottom: 10,
-              borderWidth: 4,
-              borderColor: '#0A0A0A',
-              shadowColor: '#8A2BE2',
-              shadowOffset: { width: 0, height: 0 },
-              shadowOpacity: 0.8,
-              shadowRadius: 10,
-            }}>
-              <Ionicons name="scan" size={24} color="#fff" />
+          headerTitle: 'Report Incident',
+          tabBarIcon: () => (
+            <View style={styles.reportBtn}>
+              <Ionicons name="add" size={30} color="#fff" />
             </View>
           ),
         }}
@@ -98,19 +96,54 @@ export default function CitizenTabLayout() {
       <Tabs.Screen
         name="rewards"
         options={{
-          title: 'Predictive',
-          headerTitle: 'Predictive Analysis',
-          tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "stats-chart" : "stats-chart-outline"} size={24} color={color} />,
+          title: 'Rewards',
+          headerTitle: 'Civic Rewards',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
+              <Ionicons name={focused ? 'ribbon' : 'ribbon-outline'} size={22} color={focused ? '#fff' : color} />
+            </View>
+          ),
         }}
       />
-       <Tabs.Screen
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
-          headerTitle: 'Operative Profile',
-          tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "person" : "person-outline"} size={24} color={color} />,
+          headerShown: false,
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
+              <Ionicons name={focused ? 'person' : 'person-outline'} size={22} color={focused ? '#fff' : color} />
+            </View>
+          ),
         }}
       />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  iconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconWrapActive: {
+    backgroundColor: '#4A9FF5',
+  },
+  reportBtn: {
+    width: 56,
+    height: 56,
+    borderRadius: 20,
+    backgroundColor: '#FF6B35',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+});
