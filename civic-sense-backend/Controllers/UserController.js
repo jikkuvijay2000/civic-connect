@@ -243,8 +243,8 @@ const forgotPassword = async (req, res) => {
         await user.save();
 
         // Create reset URL
-        // In production, this should be the frontend URL
-        const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+        // Use the origin from the request to dynamically match the live server URL, falling back to env or localhost
+        const clientUrl = req.headers.origin || process.env.CLIENT_URL || "http://localhost:5173";
         const resetUrl = `${clientUrl}/reset-password/${resetToken}`;
 
         const message = `You are receiving this email because you (or someone else) has requested the reset of a password.

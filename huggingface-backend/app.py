@@ -43,9 +43,10 @@ def is_blurry(image_pil, threshold=30.0):
 
 def generate_blip_caption(image, prompt_text, max_new_tokens=120, min_new_tokens=10):
     inputs = blip_processor(images=image, text=prompt_text, return_tensors="pt").to(device)
+    beams = 5 if device == "cuda" else 1
     outputs = blip_model.generate(
         **inputs, max_new_tokens=max_new_tokens, min_new_tokens=min_new_tokens,
-        num_beams=5, repetition_penalty=1.3, length_penalty=1.2, early_stopping=True,
+        num_beams=beams, repetition_penalty=1.3, length_penalty=1.2, early_stopping=True,
     )
     return blip_processor.decode(outputs[0], skip_special_tokens=True)
 
