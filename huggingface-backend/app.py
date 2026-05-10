@@ -4,6 +4,8 @@ import torch
 import numpy as np
 import json
 import re
+import subprocess
+import imageio_ffmpeg
 from flask import Flask, request, jsonify
 from transformers import pipeline, BlipProcessor, BlipForConditionalGeneration, DistilBertTokenizerFast, DistilBertForSequenceClassification
 from PIL import Image
@@ -34,6 +36,26 @@ except Exception as e:
 
 # ----------------- HELPER FUNCTIONS -----------------
 
+def convert_to_mp4(input_path, output_path):
+    """Converts any video format to a standard MP4 for reliable OpenCV processing."""
+    try:
+        ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+        command = [
+            ffmpeg_exe,
+            "-y",               # Overwrite output
+            "-i", input_path,   # Input file
+            "-c:v", "libx264",  # Use H.264 codec
+            "-preset", "ultrafast", # Fastest encoding
+            "-crf", "28",       # Decent quality
+            "-an",              # Remove audio (not needed for analysis)
+            output_path
+        ]
+        subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+        return True
+    except Exception as e:
+        print(f"Video conversion failed: {e}")
+        return False
+
 def is_blurry(image_pil, threshold=30.0):
     image_cv = np.array(image_pil)
     image_cv = image_cv[:, :, ::-1].copy()
@@ -61,35 +83,47 @@ def clean_caption(raw: str, prompt: str) -> str:
 
 def detect_issue_domain(caption: str) -> str:
     caption = caption.lower()
-    if any(k in caption for k in ["pothole", "crack", "road", "tarmac", "asphalt", "pavement", "sidewalk", "footpath", "manhole"]):
+    # PREVENT HALLUCINATION TRIGGER: Remove 'fire hydrant' before checking for 'fire'
+    safe_caption = caption.replace("fire hydrant", "damaged area")
+    
+    # Expanded keywords for better visual accuracy
+    if any(k in safe_caption for k in ["pothole", "crack", "road", "tarmac", "asphalt", "pavement", "sidewalk", "footpath", "manhole", "street", "highway"]):
         return "road"
-    if any(k in caption for k in ["garbage", "trash", "waste", "litter", "dump", "rubbish", "debris", "sewage"]):
+    if any(k in safe_caption for k in ["garbage", "trash", "waste", "litter", "dump", "rubbish", "debris", "sewage", "bin", "container", "overflowing"]):
         return "waste"
-    if any(k in caption for k in ["flood", "water", "drain", "puddle", "waterlog", "overflow", "leak"]):
+    if any(k in safe_caption for k in ["flood", "water", "drain", "puddle", "waterlog", "overflow", "leak", "pipe", "burst", "stream", "canal"]):
         return "water"
-    if any(k in caption for k in ["fire", "smoke", "flame", "burn", "blaze"]):
+    if any(k in safe_caption for k in ["fire", "smoke", "flame", "burn", "blaze", "ash", "explosion", "scorch"]):
         return "fire"
-    if any(k in caption for k in ["streetlight", "lamp post", "wire", "cable", "transformer", "electric"]):
+    if any(k in safe_caption for k in ["streetlight", "lamp post", "wire", "cable", "transformer", "electric", "power line", "pole", "blackout"]):
         return "electricity"
-    if any(k in caption for k in ["tree", "branch", "fallen", "park", "vegetation", "overgrown"]):
+    if any(k in safe_caption for k in ["tree", "branch", "fallen", "park", "vegetation", "overgrown", "grass", "bush", "garden", "foliage"]):
         return "greenery"
-    if any(k in caption for k in ["building", "wall", "structure", "construction", "collapse"]):
+    if any(k in safe_caption for k in ["building", "wall", "structure", "construction", "collapse", "bridge", "tunnel", "scaffolding"]):
         return "infrastructure"
     return "general"
 
 def extract_all_details(image) -> dict:
+    # Use more specific, restrictive prompts to reduce hallucinations
     prompts = {
-        "scene": "a civic complaint photograph showing",
-        "condition": "the physical condition visible in this image is",
-        "subject": "the main problem or damage captured in this photo is",
-        "severity": "the extent of damage or severity of the issue in this image is",
-        "location_context": "the surrounding environment and location context of this issue is",
-        "action_needed": "the repair or action needed to fix this issue is",
+        "scene": "the specific civic problem or infrastructure damage in this photo is",
+        "condition": "the state of the object or ground in this image is",
+        "subject": "the main object that is broken or needs repair is",
+        "severity": "the level of danger or extent of the damage is",
+        "location_context": "this issue is located on a",
+        "action_needed": "to fix this issue, the authorities should",
     }
     results = {}
     for key, prompt in prompts.items():
         raw = generate_blip_caption(image, prompt)
-        results[key] = clean_caption(raw, prompt)
+        cleaned = clean_caption(raw, prompt)
+        
+        # Hallucination Filter: BLIP often hallucinations 'fire hydrant' or 'people' in blurry textures
+        # If it says 'fire hydrant' but also mentions road/pothole/dirt, it's likely a hallucination of a cone or marker
+        if "fire hydrant" in cleaned.lower() and any(k in cleaned.lower() for k in ["road", "pothole", "dirt", "asphalt", "gravel"]):
+            cleaned = cleaned.lower().replace("fire hydrant", "damaged area").strip()
+            
+        results[key] = cleaned
     return results
 
 def normalise(text: str) -> str:
@@ -112,10 +146,13 @@ def build_dynamic_description(details: dict, domain: str, is_emergency: bool) ->
 
     seen_word_sets = []
     unique_parts = []
-    for text in [scene, condition, subject, severity, loc_ctx]:
+    
+    # Priority order for description: subject > scene > condition > severity > location
+    for text in [subject, scene, condition, severity, loc_ctx]:
         if not useful(text): continue
         words = set(re.sub(r"[^a-z0-9 ]", "", text.lower()).split())
-        is_dup = any(len(words & prior) / max(len(words | prior), 1) > 0.60 for prior in seen_word_sets)
+        # Stricter overlap check to prevent repetition of hallucinations
+        is_dup = any(len(words & prior) / max(len(words | prior), 1) > 0.40 for prior in seen_word_sets)
         if not is_dup:
             seen_word_sets.append(words)
             unique_parts.append(text)
@@ -136,18 +173,14 @@ def build_dynamic_description(details: dict, domain: str, is_emergency: bool) ->
 
     if is_emergency:
         header = f"[EMERGENCY REPORT] {emergency_label}"
-        closing_parts = []
-        if useful(action): closing_parts.append(f"Immediate action required: {action[0].lower() + action[1:]}")
-        closing_parts.append("Emergency intervention must be dispatched without delay to prevent harm to citizens.")
-        closing = " ".join(closing_parts)
     else:
         header = normal_label
-        closing_parts = []
-        if useful(action): closing_parts.append(f"Recommended action: {action[0].lower() + action[1:]}")
-        closing_parts.append("Kindly arrange for an inspection and the necessary repairs at the earliest convenience.")
-        closing = " ".join(closing_parts)
 
-    return f"{header}: {body} {closing}".strip()
+    # Clean up any remaining hallucination artifacts globally
+    header = re.sub(r"fire hydrant", "infrastructure area", header, flags=re.IGNORECASE)
+    final_body = re.sub(r"fire hydrant", "damaged area", body, flags=re.IGNORECASE)
+    
+    return f"{header}: {final_body}".strip()
 
 # ----------------- ENDPOINTS -----------------
 
@@ -163,11 +196,39 @@ def predict():
         inputs = predict_tokenizer(text, return_tensors="pt", truncation=True, padding=True)
         outputs = predict_model(**inputs)
         probs = torch.nn.functional.softmax(outputs.logits, dim=1)
+        
+        # DOMAIN NUDGE: Extract domain hint from text if it was generated by video analysis
+        domain_hint = None
+        if "Road Infrastructure" in text or "Road Damage" in text: domain_hint = "Roads Department"
+        elif "Waste Management" in text or "Waste & Public Health" in text: domain_hint = "Sanitation Department"
+        elif "Water / Drainage" in text or "Flooding" in text: domain_hint = "Water Department"
+        elif "Fire / Safety" in text or "Fire or Severe Hazard" in text: domain_hint = "Fire Department"
+        elif "Electrical Infrastructure" in text or "Electrical Safety" in text: domain_hint = "Power Department"
+        elif "Public Greenery" in text or "Fallen Tree" in text: domain_hint = "Health Department" # Greenery usually handled by health/civic? No, usually others.
+        elif "Structural Issue" in text or "Structural Failure" in text: domain_hint = "Public Works Department"
+        
+        # Find the best prediction
         confidence = torch.max(probs, dim=1).values.item()
         pred = torch.argmax(outputs.logits, dim=1).item()
         label = label_mapping[str(pred)]
-
         department, priority = label.split(" | ")
+        
+        # Apply nudge: If we have a domain hint and model is not extremely confident, trust the hint
+        if domain_hint and confidence < 0.95:
+            # Re-map the hint to match model labels if necessary
+            target_dept = domain_hint
+            if target_dept == "Public Works Department": target_dept = "Roads Department"
+            if target_dept == "Electricity Department": target_dept = "Power Department"
+            
+            # Search for a label that matches the target_dept
+            for idx, lbl in label_mapping.items():
+                if target_dept in lbl and priority in lbl:
+                    pred = int(idx)
+                    label = lbl
+                    department, _ = label.split(" | ")
+                    confidence = max(confidence, 0.85) # Boost confidence of nudged result
+                    break
+
         department = department.title()
         if department == "Roads Department": department = "Public Works Department"
         if department == "Power Department": department = "Electricity Department"
@@ -205,9 +266,19 @@ def detect_fake_image():
 def detect_fake_video():
     video_path = None
     try:
-        if "video" not in request.files: return jsonify({"error": "No video uploaded"}), 400
+        video_file = request.files["video"]
+        temp_ext = os.path.splitext(video_file.filename)[1] or ".tmp"
+        temp_input = f"temp_input_fake_{os.getpid()}{temp_ext}"
         video_path = f"temp_video_fake_{os.getpid()}.mp4"
-        request.files["video"].save(video_path)
+        
+        video_file.save(temp_input)
+        
+        # Convert to standard MP4 to ensure OpenCV can read it
+        success = convert_to_mp4(temp_input, video_path)
+        if os.path.exists(temp_input): os.remove(temp_input)
+        
+        if not success or not os.path.exists(video_path):
+            return jsonify({"error": "Video conversion failed. Format might be unsupported."}), 400
 
         cap = cv2.VideoCapture(video_path)
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -278,11 +349,21 @@ def caption():
 def analyze_video():
     video_path = None
     try:
-        if "video" not in request.files: return jsonify({"error": "No video uploaded"}), 400
+        video_file = request.files["video"]
         is_emergency = request.form.get("emergency", "false").lower() in ("true", "1", "yes") or request.form.get("priority", "").lower() in ("high", "emergency")
         
+        temp_ext = os.path.splitext(video_file.filename)[1] or ".tmp"
+        temp_input = f"temp_input_analyze_{os.getpid()}{temp_ext}"
         video_path = f"temp_video_analyze_{os.getpid()}.mp4"
-        request.files["video"].save(video_path)
+        
+        video_file.save(temp_input)
+        
+        # Convert to standard MP4 to ensure OpenCV can read it
+        success = convert_to_mp4(temp_input, video_path)
+        if os.path.exists(temp_input): os.remove(temp_input)
+        
+        if not success or not os.path.exists(video_path):
+            return jsonify({"error": "Video conversion failed. Format might be unsupported."}), 400
 
         cap = cv2.VideoCapture(video_path)
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -313,25 +394,40 @@ def analyze_video():
             if frame_count > 900: # hard limit 30 secs at 30fps to avoid memory/CPU issues
                 break
                 
+        # Pick top 3 clearest frames instead of just 1
+        scored_frames = []
         for frame in frames_to_check:
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             variance = cv2.Laplacian(gray, cv2.CV_64F).var()
-            if variance > max_variance:
-                max_variance = variance
-                best_frame = frame
+            scored_frames.append((variance, frame))
+            
+        # Sort by variance descending and take top 3
+        scored_frames.sort(key=lambda x: x[0], reverse=True)
+        top_frames = [f[1] for f in scored_frames[:3]]
                     
         cap.release()
         if os.path.exists(video_path): os.remove(video_path)
 
-        if best_frame is None:
+        if not top_frames:
             return jsonify({"error": "Could not read video frames"}), 400
 
-        image = Image.fromarray(cv2.cvtColor(best_frame, cv2.COLOR_BGR2RGB))
-        details = extract_all_details(image)
-        domain = detect_issue_domain(" ".join(details.values()))
-        description = build_dynamic_description(details, domain, is_emergency)
+        # Aggregate details from all top frames
+        all_details = []
+        for frame in top_frames:
+            image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+            all_details.append(extract_all_details(image))
+            
+        # Merge details: Take the best/most unique descriptions from all frames
+        merged_details = {}
+        for key in ["scene", "condition", "subject", "severity", "location_context", "action_needed"]:
+            # Pick the longest/most descriptive caption for each field across the 3 frames
+            captions = [d.get(key, "") for d in all_details]
+            merged_details[key] = max(captions, key=len)
+            
+        domain = detect_issue_domain(" ".join(merged_details.values()))
+        description = build_dynamic_description(merged_details, domain, is_emergency)
 
-        return jsonify({"description": f"Video Analysis: {description}", "raw_caption": details.get("scene", ""), "domain": domain})
+        return jsonify({"description": f"Video Analysis: {description}", "raw_caption": merged_details.get("scene", ""), "domain": domain})
     except Exception as e:
         if video_path and os.path.exists(video_path): os.remove(video_path)
         return jsonify({"error": str(e)}), 500
