@@ -210,13 +210,29 @@ def detect_fake_video():
 
         cap = cv2.VideoCapture(video_path)
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        sample_positions = [int(total_frames * i / 9) for i in range(1, 9)]
-
+        
         sampled_frames = []
-        for pos in sample_positions:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, pos)
+        frame_count = 0
+        
+        while True:
             ret, frame = cap.read()
-            if ret: sampled_frames.append(Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)))
+            if not ret:
+                break
+            
+            # Sample max 8 frames evenly distributed across the video
+            if total_frames > 0:
+                step = max(1, total_frames // 8)
+                if frame_count % step == 0 and len(sampled_frames) < 8:
+                    sampled_frames.append(Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)))
+            else:
+                # Fallback if total_frames is 0 or unreadable
+                if frame_count % 15 == 0 and len(sampled_frames) < 8:
+                    sampled_frames.append(Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)))
+                    
+            frame_count += 1
+            if frame_count > 900: # hard limit 30 secs at 30fps
+                break
+                
         cap.release()
         if os.path.exists(video_path): os.remove(video_path)
 
@@ -273,17 +289,35 @@ def analyze_video():
         best_frame = None
         max_variance = -1
         
-        # Sample frames at 25%, 50%, and 75%
-        for pos in [total_frames // 4, total_frames // 2, total_frames * 3 // 4]:
-            if pos < 0: continue
-            cap.set(cv2.CAP_PROP_POS_FRAMES, pos)
+        # Sequentially read and sample frames to avoid cv2.CAP_PROP_POS_FRAMES bugs on different OS
+        frame_count = 0
+        frames_to_check = []
+        
+        while True:
             ret, frame = cap.read()
-            if ret:
-                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                variance = cv2.Laplacian(gray, cv2.CV_64F).var()
-                if variance > max_variance:
-                    max_variance = variance
-                    best_frame = frame
+            if not ret:
+                break
+            
+            # Sample max 15 frames evenly distributed across the video
+            if total_frames > 0:
+                step = max(1, total_frames // 15)
+                if frame_count % step == 0:
+                    frames_to_check.append(frame)
+            else:
+                # Fallback if total_frames is 0 or unreadable
+                if frame_count % 10 == 0:
+                    frames_to_check.append(frame)
+                    
+            frame_count += 1
+            if frame_count > 900: # hard limit 30 secs at 30fps to avoid memory/CPU issues
+                break
+                
+        for frame in frames_to_check:
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            variance = cv2.Laplacian(gray, cv2.CV_64F).var()
+            if variance > max_variance:
+                max_variance = variance
+                best_frame = frame
                     
         cap.release()
         if os.path.exists(video_path): os.remove(video_path)
