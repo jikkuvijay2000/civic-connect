@@ -118,10 +118,10 @@ def extract_all_details(image) -> dict:
         raw = generate_blip_caption(image, prompt)
         cleaned = clean_caption(raw, prompt)
         
-        # Hallucination Filter: BLIP often hallucinations 'fire hydrant' or 'people' in blurry textures
-        # If it says 'fire hydrant' but also mentions road/pothole/dirt, it's likely a hallucination of a cone or marker
-        if "fire hydrant" in cleaned.lower() and any(k in cleaned.lower() for k in ["road", "pothole", "dirt", "asphalt", "gravel"]):
-            cleaned = cleaned.lower().replace("fire hydrant", "damaged area").strip()
+        # MAXIMUM POWER HALLUCINATION FILTER: Globally ban 'fire hydrant'
+        # In this app, it is 100% of the time a hallucination of a yellow cone, bollard, or marking.
+        if "fire hydrant" in cleaned.lower():
+            cleaned = re.sub(r"fire hydrant", "damaged area", cleaned, flags=re.IGNORECASE)
             
         results[key] = cleaned
     return results
@@ -213,20 +213,20 @@ def predict():
         label = label_mapping[str(pred)]
         department, priority = label.split(" | ")
         
-        # Apply nudge: If we have a domain hint and model is not extremely confident, trust the hint
-        if domain_hint and confidence < 0.95:
-            # Re-map the hint to match model labels if necessary
+        # MAXIMUM POWER NUDGE: If visual analysis identified a clear domain, override the text model
+        # The visual analysis is much more robust for video/images than a text classifier looking at hallucinations
+        if domain_hint:
             target_dept = domain_hint
             if target_dept == "Public Works Department": target_dept = "Roads Department"
             if target_dept == "Electricity Department": target_dept = "Power Department"
             
-            # Search for a label that matches the target_dept
+            # Forced Override: Use the visual domain's department
             for idx, lbl in label_mapping.items():
                 if target_dept in lbl and priority in lbl:
                     pred = int(idx)
                     label = lbl
                     department, _ = label.split(" | ")
-                    confidence = max(confidence, 0.85) # Boost confidence of nudged result
+                    confidence = 1.0 # Force maximum confidence for visual match
                     break
 
         department = department.title()
