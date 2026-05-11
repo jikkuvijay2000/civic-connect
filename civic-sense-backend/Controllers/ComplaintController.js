@@ -229,50 +229,38 @@ const createComplaint = async (req, res) => {
             });
         }
 
-        // Check for High Priority / Emergency — emit popup alert to all authority clients
+        // Check for High Priority / Emergency
         if (priority === 'High' || priority === 'Emergency') {
             const Notification = require('../Models/Notification');
-
-            const notifLabel = priority === 'Emergency' ? 'EMERGENCY COMPLAINT' : 'HIGH PRIORITY COMPLAINT';
 
             // Create notification for Authority
             const newNotification = new Notification({
                 recipientRole: 'Authority',
-                message: `${notifLabel}: ${title} - ${category}`,
-                type: priority === 'Emergency' ? 'Emergency' : 'High',
+                message: `EMERGENCY COMPLAINT: ${title} - ${category}`,
+                type: 'Emergency',
                 relatedId: newComplaint.complaintId
             });
             await newNotification.save();
 
-            // Emit socket event to all connected authority clients
+            // Emit socket event to authorities
             const io = req.app.get('io');
             if (io) {
-                // Attach title and priority explicitly so the frontend popup can
-                // render the correct label and accent colour.
-                const complaintPayload = newComplaint.toObject();
-                complaintPayload.complaintTitle = title; // expose title separately
-
                 io.emit('new_emergency_complaint', {
-                    complaint: complaintPayload,
+                    complaint: newComplaint,
                     notification: newNotification
                 });
-                console.log(`Emitted new_emergency_complaint event (priority: ${priority})`);
+                console.log("Emitted new_emergency_complaint event");
             }
 
             // Send Email to Department Authorities
             try {
                 const authorities = await userModel.find({ userRole: 'Authority', userDepartment: newComplaint.complaintAuthority });
-                const emailSubject = priority === 'Emergency'
-                    ? 'URGENT 🚨: New Emergency Complaint Received'
-                    : '⚠️ New High Priority Complaint Received';
-                const emailBody = `A ${priority.toLowerCase()} priority complaint has been filed in your department (${newComplaint.complaintAuthority}).\n\nTitle: ${title}\nCategory: ${category}\nLocation: ${location}\nPriority: ${priority}\n\nPlease check your Civic Connect dashboard immediately.`;
-
                 authorities.forEach(auth => {
                     sendEmail({
                         email: auth.userEmail,
-                        subject: emailSubject,
-                        message: emailBody
-                    }).catch(err => console.error(`Failed to send alert email to ${auth.userEmail}:`, err.message));
+                        subject: 'URGENT: New Emergency Complaint Received',
+                        message: `An emergency complaint has been filed in your department (${newComplaint.complaintAuthority}).\n\nTitle: ${title}\nCategory: ${category}\nLocation: ${location}\nPriority: ${priority}\n\nPlease check your Civic Connect dashboard immediately for more details.`
+                    }).catch(err => console.error(`Failed to send emergency email to authority ${auth.userEmail}:`, err.message));
                 });
             } catch (authError) {
                 console.error("Error fetching authorities for email notification:", authError.message);
