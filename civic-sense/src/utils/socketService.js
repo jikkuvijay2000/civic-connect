@@ -6,17 +6,31 @@ let socket;
 
 export const initiateSocketConnection = () => {
     if (!socket) {
+        // Pass the stored access token so authenticated socket events work
+        // on both local and hosted environments.
+        const token = localStorage.getItem('accessToken') || '';
+
         socket = io(SOCKET_URL, {
             withCredentials: true,
             reconnection: true,
-            reconnectionAttempts: 5
+            reconnectionAttempts: 10,
+            reconnectionDelay: 1000,
+            auth: { token },
+        });
+
+        socket.on("connect", () => {
+            console.log("Socket connected:", socket.id);
         });
 
         socket.on("connect_error", (err) => {
             console.error("Socket Connection Error:", err.message);
         });
 
-        console.log("Connecting to socket...");
+        socket.on("disconnect", (reason) => {
+            console.warn("Socket disconnected:", reason);
+        });
+
+        console.log("Connecting to socket at:", SOCKET_URL);
     } else {
         if (socket.disconnected) {
             socket.connect();

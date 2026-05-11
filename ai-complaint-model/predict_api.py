@@ -40,6 +40,30 @@ def predict():
     if department == "Power Department":
         department = "Electricity Department"
 
+    # ── Priority calibration ────────────────────────────────────────
+    # The model sometimes over-predicts Emergency. We apply two rules:
+    #
+    # Rule 1 – Downgrade: if the model says Emergency but no life-threatening
+    #   keywords are present, demote to High.
+    # Rule 2 – Upgrade: if the model says High or Medium and explicit
+    #   life-threatening keywords ARE present, promote to Emergency.
+    #
+    EMERGENCY_KEYWORDS = [
+        "fire", "burning", "explosion", "blast", "electrocution",
+        "electric shock", "drowning", "flood", "collapse", "building collapse",
+        "structure collapse", "gas leak", "toxic", "hazmat",
+        "death", "dead body", "fatality", "severe injury", "critical",
+        "ambulance", "hospital emergency", "road accident", "accident",
+        "trapped", "rescue", "sinkhole", "landslide", "outbreak",
+    ]
+
+    has_emergency_keyword = any(kw in text_lower for kw in EMERGENCY_KEYWORDS)
+
+    if priority == "Emergency" and not has_emergency_keyword:
+        priority = "High"
+    elif priority in ("High", "Medium") and has_emergency_keyword:
+        priority = "Emergency"
+
     # Strict non-overlapping severity bands per priority level:
     #   Low       →  1 – 25
     #   Medium    → 26 – 50
