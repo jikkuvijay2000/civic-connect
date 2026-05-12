@@ -246,8 +246,8 @@ const createComplaint = async (req, res) => {
             const io = req.app.get('io');
             if (io) {
                 io.emit('new_emergency_complaint', {
-                    complaint: newComplaint,
-                    notification: newNotification
+                    complaint: newComplaint.toObject(),
+                    notification: newNotification.toObject()
                 });
                 console.log("Emitted new_emergency_complaint event");
             }

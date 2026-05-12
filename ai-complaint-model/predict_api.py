@@ -34,9 +34,7 @@ def predict():
 
     text_lower = text.lower()
 
-    # Rename Roads to Public Works as requested
-    if department == "Roads Department":
-        department = "Public Works Department"
+    # Rename Power to Electricity
     if department == "Power Department":
         department = "Electricity Department"
 

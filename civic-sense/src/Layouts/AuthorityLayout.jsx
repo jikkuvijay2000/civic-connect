@@ -37,13 +37,13 @@ const AuthorityLayout = () => {
             </div>
 
             {/* Persistent Emergency Modal */}
-            {emergencyModal && emergencyData && (
+            {emergencyModal && emergencyData?.complaint && (
                 <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ zIndex: 9999, backgroundColor: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(8px)' }}>
-                    <div className="bg-white rounded-4 overflow-hidden position-relative animate__animated animate__zoomIn" style={{ maxWidth: '500px', width: '90%', boxShadow: '0 20px 40px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05)', borderLeft: '6px solid #ef4444' }}>
+                    <div className="bg-white rounded-4 overflow-hidden position-relative shadow-2xl" style={{ maxWidth: '500px', width: '90%', borderLeft: `6px solid ${emergencyData.complaint.complaintPriority === 'Emergency' ? '#ef4444' : '#f97316'}` }}>
 
                         <div className="px-4 pt-4 pb-0 d-flex align-items-center justify-content-between">
-                            <span className="badge bg-danger-subtle text-danger rounded-pill px-3 py-2 d-flex align-items-center gap-2 border border-danger-subtle fw-bold" style={{ letterSpacing: '0.5px' }}>
-                                <FaExclamationTriangle /> EMERGENCY ALERT
+                            <span className={`badge ${emergencyData.complaint.complaintPriority === 'Emergency' ? 'bg-danger-subtle text-danger border-danger-subtle' : 'bg-warning-subtle text-warning border-warning-subtle'} rounded-pill px-3 py-2 d-flex align-items-center gap-2 border fw-bold`} style={{ letterSpacing: '0.5px' }}>
+                                <FaExclamationTriangle /> {emergencyData.complaint.complaintPriority === 'Emergency' ? 'EMERGENCY ALERT' : 'HIGH PRIORITY'}
                             </span>
                             <button onClick={() => setEmergencyModal(false)} className="btn btn-sm btn-light rounded-circle p-2 d-flex align-items-center justify-content-center text-secondary hover-scale transition-fast" style={{ width: '32px', height: '32px' }}>
                                 <FaTimes />
@@ -63,20 +63,22 @@ const AuthorityLayout = () => {
                             </p>
 
                             <div className="bg-light p-3 rounded-4 mb-4 text-start border shadow-sm">
-                                <p className="mb-0 text-secondary" style={{ whiteSpace: 'pre-line', lineHeight: '1.6', fontSize: '0.95rem' }}>{emergencyData.complaint.complaintDescription.replace(/\*\*/g, '')}</p>
+                                <p className="mb-0 text-secondary" style={{ whiteSpace: 'pre-line', lineHeight: '1.6', fontSize: '0.95rem' }}>
+                                    {emergencyData.complaint.complaintDescription ? emergencyData.complaint.complaintDescription.replace(/\*\*/g, '') : 'No description provided.'}
+                                </p>
                             </div>
 
                             <button
                                 onClick={() => setEmergencyModal(false)}
-                                className="btn btn-danger w-100 py-3 rounded-pill fw-bold hover-scale shadow-sm"
+                                className={`btn ${emergencyData.complaint.complaintPriority === 'Emergency' ? 'btn-danger' : 'btn-warning'} w-100 py-3 rounded-pill fw-bold hover-scale shadow-sm`}
                             >
-                                Acknowledge & Secure
+                                {emergencyData.complaint.complaintPriority === 'Emergency' ? 'Acknowledge & Secure' : 'Acknowledge & Dispatch'}
                             </button>
                         </div>
 
                         <div className="bg-light p-3 text-center border-top">
                             <small className="text-secondary fw-semibold text-uppercase" style={{ letterSpacing: '0.5px', fontSize: '11px' }}>
-                                Reported by Citizen • {new Date(emergencyData.complaint.createdAt).toLocaleTimeString()}
+                                Reported by Citizen • {emergencyData.complaint.createdAt ? new Date(emergencyData.complaint.createdAt).toLocaleTimeString() : 'Just now'}
                             </small>
                         </div>
                     </div>

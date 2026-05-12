@@ -1,15 +1,20 @@
 import { io } from "socket.io-client";
 
-const SOCKET_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5000`;
+const SOCKET_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5005`;
 
 let socket;
 
 export const initiateSocketConnection = () => {
     if (!socket) {
+        const token = localStorage.getItem('accessToken');
         socket = io(SOCKET_URL, {
             withCredentials: true,
             reconnection: true,
-            reconnectionAttempts: 5
+            reconnectionAttempts: 10, // Increased for stability
+            reconnectionDelay: 1000,
+            auth: {
+                token: token
+            }
         });
 
         socket.on("connect_error", (err) => {

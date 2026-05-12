@@ -43,7 +43,7 @@ departments_issues = {
             "Truck overturned spilling fuel on road", "High-speed chase risk"
         ]
     },
-    "Roads Department": {
+    "Public Works Department": {
         "Low": [
             "Small crack on footpath", "Road uneven in some spots", "Paint on zebra crossing fading",
             "Minor patchwork needed"
